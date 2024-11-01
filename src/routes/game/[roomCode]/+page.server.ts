@@ -5,6 +5,7 @@ interface Player {
 	id: string;
 	username: string;
 	points: number;
+	isAdmin: boolean;
 }
 
 interface Message {
@@ -21,6 +22,10 @@ interface RoomInfo {
 	currentRound: number;
 	maxRounds: number;
 	currentSvgCode: string;
+	currentTime: number;
+	maxTime: number;
+	isPlaying: boolean;
+	isDrawing: boolean;
 }
 
 /**
@@ -42,7 +47,11 @@ export async function load({ params }: { params: { roomCode: string } }): Promis
 			messages: [],
 			currentRound: 0,
 			maxRounds: 0,
-			currentSvgCode: ''
+			currentSvgCode: '',
+			currentTime: 0,
+			maxTime: 0,
+			isPlaying: false,
+			isDrawing: false
 		};
 	}
 }
@@ -80,7 +89,11 @@ async function getRoomInfo(roomCode: string): Promise<RoomInfo> {
 		messages: currentMessages || [],
 		currentRound: room.items[0].currentRound,
 		maxRounds: room.items[0].maxRounds,
-		currentSvgCode: room.items[0].currentSvgCode
+		currentSvgCode: room.items[0].currentSvgCode,
+		currentTime: room.items[0].currentTime,
+		maxTime: room.items[0].maxTime,
+		isPlaying: room.items[0].isPlaying,
+		isDrawing: room.items[0].isDrawing
 	};
 
 	return roomObj;

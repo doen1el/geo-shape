@@ -6,17 +6,18 @@
 	export let svgCode: string;
 	export let currentRound: number;
 	export let maxRounds: number;
-	export let time: number;
-
-	let condition = false;
+	export let currentTime: number;
+	export let maxTime: number;
+	export let isPlaying: boolean;
+	export let isDrawing: boolean;
 </script>
 
 <div class="flex-[3] p-4 block">
 	<div class="flex justify-between items-center mb-2 mr-2 ml-2">
 		<div>{currentRound} / {maxRounds}</div>
-		<div>{time}s</div>
+		<div>{'GameStatus: ' + (isPlaying ? 'Playing' : 'Not Playing')}</div>
+		<div>{currentTime}s / {maxTime}s</div>
 	</div>
-	<button on:click={() => (condition = !condition)}> show svg </button>
 	<svg
 		viewBox="-30 10 182 115"
 		preserveAspectRatio="xMidYMid meet"
@@ -24,7 +25,7 @@
 		width="100%"
 		height="100%"
 	>
-		{#if condition}
+		{#if isDrawing}
 			<path
 				transition:draw={{ duration: 20500, easing: linear }}
 				stroke="black"

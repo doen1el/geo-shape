@@ -18,6 +18,7 @@ export interface User {
 	id: string;
 	username: string;
 	points: number;
+	isAdmin: boolean;
 }
 
 /**
@@ -31,6 +32,19 @@ const umlautMap: { [key: string]: string } = {
 	'\u00e4': 'ae',
 	'\u00f6': 'oe',
 	'\u00df': 'ss'
+};
+
+/**
+ * Map of umlaut characters to their corresponding replacements.
+ */
+export const convertAnswertToCountryCode: { [key: string]: string } = {
+	'nordrhein-westfalen': 'nw',
+	niedersachsen: 'ni',
+	bremen: 'hb',
+	hamburg: 'hh',
+	'schleswig-holstein': 'sh',
+	'mecklenburg-vorpommern ': 'mv',
+	brandenburg: 'bb'
 };
 
 /**
@@ -70,7 +84,8 @@ export async function createUser(
 		const userData = {
 			username: sanitizedUsername,
 			password,
-			passwordConfirm: password
+			passwordConfirm: password,
+			isAdmin: isCreatingRoom ? true : false
 		};
 
 		// Create user in poketbase collection
@@ -185,7 +200,8 @@ async function createRoom(roomCode: string, userId: string): Promise<void> {
 		await pb.collection(rooms).create({
 			roomCode,
 			players: [userId],
-			maxRounds: 5
+			maxRounds: 5,
+			maxTime: 120
 		});
 
 		goto(`/game/${roomCode}`);
@@ -249,4 +265,93 @@ export async function logOutPlayer(userId: string) {
 	pb.collection(users).delete(userId);
 
 	pb.authStore.clear();
+}
+
+/**
+ * Checks if a user is an admin.
+ *
+ * @param userId - The ID of the user to check.
+ * @returns A promise that resolves to a boolean indicating whether the user is an admin.
+ */
+export async function checkIfUserIsAdmin(userId: string): Promise<boolean> {
+	const user = await pb.collection(users).getOne(userId);
+	return user.isAdmin;
+}
+
+/**
+ * Updates the maximum number of rounds for a room.
+ *
+ * @param roomCode - The code of the room.
+ * @param maxRounds - The new maximum number of rounds.
+ * @returns {Promise<void>} - A promise that resolves when the update is complete.
+ */
+export async function updateRoomMaxRounds(roomCode: string, maxRounds: number): Promise<void> {
+	const room = await pb.collection(rooms).getList(1, 1, {
+		filter: `roomCode = "${roomCode}"`
+	});
+
+	if (room.items.length > 0) {
+		room.items[0].maxRounds = maxRounds;
+		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+	} else {
+		console.error(`No room found with ${roomCode}!`);
+	}
+}
+
+/**
+ * Updates the maximum time for a room.
+ *
+ * @param roomCode - The code of the room.
+ * @param maxTime - The new maximum time for the room.
+ * @returns A promise that resolves with void.
+ */
+export async function updateRoomMaxTime(roomCode: string, maxTime: number): Promise<void> {
+	const room = await pb.collection(rooms).getList(1, 1, {
+		filter: `roomCode = "${roomCode}"`
+	});
+
+	if (room.items.length > 0) {
+		room.items[0].maxTime = maxTime;
+		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+	} else {
+		console.error(`No room found with ${roomCode}!`);
+	}
+}
+
+/**
+ * Starts the game for a specific room.
+ *
+ * @param roomCode - The code of the room to start the game for.
+ * @returns A promise that resolves when the game has started.
+ */
+export async function startGame(roomCode: string) {
+	const room = await pb.collection(rooms).getList(1, 1, {
+		filter: `roomCode = "${roomCode}"`
+	});
+
+	if (room.items.length > 0) {
+		room.items[0].isPlaying = true;
+		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+	} else {
+		console.error(`No room found with ${roomCode}!`);
+	}
+}
+
+/**
+ * Ends the game for a specific room.
+ *
+ * @param roomCode - The code of the room.
+ * @returns Promise<void>
+ */
+export async function endGame(roomCode: string) {
+	const room = await pb.collection(rooms).getList(1, 1, {
+		filter: `roomCode = "${roomCode}"`
+	});
+
+	if (room.items.length > 0) {
+		room.items[0].isPlaying = false;
+		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+	} else {
+		console.error(`No room found with ${roomCode}!`);
+	}
 }
