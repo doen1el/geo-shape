@@ -1,0 +1,20 @@
+{
+	"room_code": "ROOM-CODE",
+	"join": "JOIN",
+	"create": "CREATE",
+	"or": "OR",
+	"home": "HOME",
+	"message": "MESSAGE",
+	"send": "SEND",
+	"you": "YOU",
+	"room-code-length-error": "ROOM CODE MUST BE 5 CHARACTERS LONG",
+	"room-code-invalid-error": "ROOM CODE MUST BE ALPHANUMERIC",
+	"room-not-found": "ROOM {roomCode} NOT FOUND",
+	"back": "BACK",
+	"error-during-join": "ERROR DURING JOIN",
+	"username-already-exists": "USERNAME ALREADY EXISTS",
+	"username": "USERNAME",
+	"required": "REQUIRED",
+	"error-during-create": "ERROR DURING CREATE",
+	"room-code": "ROOM CODE"
+}

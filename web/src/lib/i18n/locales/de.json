@@ -1,0 +1,20 @@
+{
+	"room_code": "RAUMCODE",
+	"join": "BEITRETEN",
+	"create": "ERSTELLEN",
+	"or": "ODER",
+	"home": "STARTSEITE",
+	"room-not-found": "RAUM {roomCode} NICHT GEFUNDEN",
+	"message": "NACHRICHT",
+	"send": "SENDEN",
+	"you": "DU",
+	"room-code-length-error": "RAUMCODE MUSS 5 ZEICHEN LANG SEIN",
+	"room-code-invalid-error": "RAUMCODE SOLL NUR BUCHSTABEN UND ZAHLEN ENTHALTEN",
+	"back": "ZURÜCK",
+	"error-during-join": "FEHLER BEIM BEITRETEN",
+	"username-already-exists": "BENUTZERNAME EXISTIERT BEREITS",
+	"username": "BENUTZERNAME",
+	"required": "ERFORDERLICH",
+	"error-during-create": "FEHLER BEIM ERSTELLEN",
+	"room-code": "RAUMCODE"
+}
