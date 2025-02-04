@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Schema for validating a record ID.
@@ -16,7 +16,7 @@ import { z } from 'zod';
  * console.log(result.success); // false
  */
 const RecordIdSchema = z.object({
-	id: z.string().length(15)
+  id: z.string().length(15),
 });
 
 export { RecordIdSchema };

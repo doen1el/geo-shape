@@ -1,4 +1,4 @@
-import { writable, type Writable } from 'svelte/store';
+import { type Writable, writable } from "svelte/store";
 
 /**
  * Represents a toast notification.
@@ -9,9 +9,9 @@ import { writable, type Writable } from 'svelte/store';
  * @property {string} text - The text message displayed in the toast notification.
  */
 export type Toast = {
-	type: 'info' | 'success' | 'warning' | 'error';
-	icon: string;
-	text: string;
+  type: "info" | "success" | "warning" | "error";
+  icon: string;
+  text: string;
 };
 
 /**
@@ -29,7 +29,7 @@ export const toast: Writable<Toast | null> = writable();
  * @param duration - The duration in milliseconds for which the toast should be displayed. Defaults to 3000ms.
  */
 export function show_toast(newToast: Toast, duration: number = 3000) {
-	toast.set(newToast);
+  toast.set(newToast);
 
-	setTimeout(() => toast.set(null), duration);
+  setTimeout(() => toast.set(null), duration);
 }

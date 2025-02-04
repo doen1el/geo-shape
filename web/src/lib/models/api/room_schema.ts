@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
-import { z, ZodType } from 'zod';
-import type { Room } from '../room';
+import { z, ZodType } from "zod";
+import type { Room } from "../room";
 
 /**
  * Schema for creating a room.
@@ -18,10 +18,12 @@ import type { Room } from '../room';
  * This schema satisfies the `ZodType<Partial<Room>>` type.
  */
 const RoomCreateSchema = z.object({
-	roomCode: z
-		.string({ message: 'required' })
-		.min(5, 'must-be-5-characters-long')
-		.regex(/^[\w][\w\.]*$/, 'invalid-room-code')
+  roomCode: z
+    .string({ message: "required" })
+    .min(5, "must-be-5-characters-long")
+    .regex(/^[\w][\w\.]*$/, "invalid-room-code"),
+  maxRounds: z.number(),
+  maxTime: z.number(),
 }) satisfies ZodType<Partial<Room>>;
 
 // const RoomUpdatechema = z.object({

@@ -1,7 +1,7 @@
-import { APIError } from '$lib/util/api_util';
-import { writable, type Writable } from 'svelte/store';
-import type { Room } from '$lib/models/room';
-import type { User } from '$lib/models/user';
+import { APIError } from "$lib/util/api_util";
+import { type Writable, writable } from "svelte/store";
+import { createRoom, type Room } from "$lib/models/room";
+import type { User } from "$lib/models/user";
 
 /**
  * A writable store that holds the current room information.
@@ -20,23 +20,21 @@ export const currentRoom: Writable<Room | null> = writable<Room | null>();
  * @throws {APIError} If the server responds with an error.
  */
 export async function room_create(room_code: string): Promise<Room> {
-	const room = {
-		roomCode: room_code
-	};
+  const newRoom = createRoom({ roomCode: room_code });
 
-	const r = await fetch(`/api/room/${room_code}`, {
-		method: 'POST',
-		body: JSON.stringify(room)
-	});
+  const r = await fetch(`/api/room/${room_code}`, {
+    method: "POST",
+    body: JSON.stringify(newRoom),
+  });
 
-	if (!r.ok) {
-		const response = await r.json();
-		throw new APIError(r.status, response.message, response.detail);
-	}
+  if (!r.ok) {
+    const response = await r.json();
+    throw new APIError(r.status, response.message, response.detail);
+  }
 
-	const createdRoom: Room = await r.json();
+  const createdRoom: Room = await r.json();
 
-	return createdRoom;
+  return createdRoom;
 }
 
 /**
@@ -48,17 +46,15 @@ export async function room_create(room_code: string): Promise<Room> {
  * @throws {APIError} If the request to join the room fails.
  */
 export async function join_room(user: User, room_code: string): Promise<void> {
-	const r = await fetch(`/api/room/${room_code}/join`, {
-		method: 'PUT',
-		body: JSON.stringify({ ...user })
-	});
+  const r = await fetch(`/api/room/${room_code}/join`, {
+    method: "PUT",
+    body: JSON.stringify({ ...user }),
+  });
 
-	if (!r.ok) {
-		const response = await r.json();
-		throw new APIError(r.status, response.message, response.detail);
-	}
-
-	console.log(`User ${user.username} joined room ${room_code}`);
+  if (!r.ok) {
+    const response = await r.json();
+    throw new APIError(r.status, response.message, response.detail);
+  }
 }
 
 /**
@@ -70,28 +66,28 @@ export async function join_room(user: User, room_code: string): Promise<void> {
  */
 
 export async function get_room(room_code: string): Promise<Room> {
-	const r = await fetch(`/api/room/${room_code}`, {
-		method: 'GET'
-	});
+  const r = await fetch(`/api/room/${room_code}`, {
+    method: "GET",
+  });
 
-	if (r.status === 404) {
-		return {} as Room;
-	}
+  if (r.status === 404) {
+    return {} as Room;
+  }
 
-	const room: Room = await r.json();
+  const room: Room = await r.json();
 
-	return room;
+  return room;
 }
 
 // TODO: die join Funktion kann man auch hier implementieren, da man den Room ja schon hat
 export async function update_room(updatedRoom: Room): Promise<void> {
-	const r = await fetch(`/api/room/${updatedRoom.id}`, {
-		method: 'PUT',
-		body: JSON.stringify(updatedRoom)
-	});
+  const r = await fetch(`/api/room/${updatedRoom.id}`, {
+    method: "PUT",
+    body: JSON.stringify(updatedRoom),
+  });
 
-	if (!r.ok) {
-		const response = await r.json();
-		throw new APIError(r.status, response.message, response.detail);
-	}
+  if (!r.ok) {
+    const response = await r.json();
+    throw new APIError(r.status, response.message, response.detail);
+  }
 }

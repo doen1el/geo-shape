@@ -11,18 +11,18 @@
  * @requires $lib/pocketbase
  * @requires svelte-i18n
  */
-import { browser } from '$app/environment';
-import { pb } from '$lib/pocketbase';
-import { init, register } from 'svelte-i18n';
+import { browser } from "$app/environment";
+import { pb } from "$lib/pocketbase";
+import { init, register } from "svelte-i18n";
 
-const defaultLocale = 'en';
+const defaultLocale = "en";
 
-register('en', () => import('./locales/en.json'));
-register('de', () => import('./locales/de.json'));
+register("en", () => import("./locales/en.json"));
+register("de", () => import("./locales/de.json"));
 
 init({
-	fallbackLocale: defaultLocale,
-	initialLocale: browser
-		? (pb.authStore.model?.language ?? window.navigator.language)
-		: defaultLocale
+  fallbackLocale: defaultLocale,
+  initialLocale: browser
+    ? (pb.authStore.record?.language ?? window.navigator.language)
+    : defaultLocale,
 });

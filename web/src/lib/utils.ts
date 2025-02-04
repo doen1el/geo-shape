@@ -1,50 +1,50 @@
-import { goto } from '$app/navigation';
-import { messages, rooms, users } from './util/constants';
-import { pb } from './pocketbase';
+import { goto } from "$app/navigation";
+import { messages, rooms, users } from "./util/constants";
+import { pb } from "./pocketbase";
 
 /**
  * Represents a message in the chat.
  */
 export interface Message {
-	id: string;
-	user: string;
-	text: string;
+  id: string;
+  user: string;
+  text: string;
 }
 
 /**
  * Represents a user in the game.
  */
 export interface User {
-	id: string;
-	username: string;
-	points: number;
-	isAdmin: boolean;
+  id: string;
+  username: string;
+  points: number;
+  isAdmin: boolean;
 }
 
 /**
  * Map of umlaut characters to their corresponding replacements.
  */
 const umlautMap: { [key: string]: string } = {
-	'\u00dc': 'UE',
-	'\u00c4': 'AE',
-	'\u00d6': 'OE',
-	'\u00fc': 'ue',
-	'\u00e4': 'ae',
-	'\u00f6': 'oe',
-	'\u00df': 'ss'
+  "\u00dc": "UE",
+  "\u00c4": "AE",
+  "\u00d6": "OE",
+  "\u00fc": "ue",
+  "\u00e4": "ae",
+  "\u00f6": "oe",
+  "\u00df": "ss",
 };
 
 /**
  * Map of umlaut characters to their corresponding replacements.
  */
 export const convertAnswertToCountryCode: { [key: string]: string } = {
-	'nordrhein-westfalen': 'nw',
-	niedersachsen: 'ni',
-	bremen: 'hb',
-	hamburg: 'hh',
-	'schleswig-holstein': 'sh',
-	'mecklenburg-vorpommern ': 'mv',
-	brandenburg: 'bb'
+  "nordrhein-westfalen": "nw",
+  niedersachsen: "ni",
+  bremen: "hb",
+  hamburg: "hh",
+  "schleswig-holstein": "sh",
+  "mecklenburg-vorpommern ": "mv",
+  brandenburg: "bb",
 };
 
 /**
@@ -53,13 +53,15 @@ export const convertAnswertToCountryCode: { [key: string]: string } = {
  * @returns The string with umlaut characters replaced.
  */
 export function replaceUmlaute(str: string): string {
-	return str
-		.replace(/[\u00dc|\u00c4|\u00d6][a-z]/g, (a) => {
-			const big = umlautMap[a.slice(0, 1)];
-			return big.charAt(0) + big.charAt(1).toLowerCase() + a.slice(1);
-		})
-
-		.replace(new RegExp('[' + Object.keys(umlautMap).join('|') + ']', 'g'), (a) => umlautMap[a]);
+  return str
+    .replace(/[\u00dc|\u00c4|\u00d6][a-z]/g, (a) => {
+      const big = umlautMap[a.slice(0, 1)];
+      return big.charAt(0) + big.charAt(1).toLowerCase() + a.slice(1);
+    })
+    .replace(
+      new RegExp("[" + Object.keys(umlautMap).join("|") + "]", "g"),
+      (a) => umlautMap[a],
+    );
 }
 
 /**
@@ -70,32 +72,38 @@ export function replaceUmlaute(str: string): string {
  * @returns {Promise<void>} A Promise that resolves to void.
  */
 export async function createUser(
-	isCreatingRoom: boolean,
-	username: string,
-	roomCode: string
+  isCreatingRoom: boolean,
+  username: string,
+  roomCode: string,
 ): Promise<void> {
-	try {
-		// Replace umlaute in username
-		const sanitizedUsername = replaceUmlaute(username);
+  try {
+    // Replace umlaute in username
+    const sanitizedUsername = replaceUmlaute(username);
 
-		// Generate a random password
-		const password = Math.random().toString(36).substring(2, 30);
+    // Generate a random password
+    const password = Math.random().toString(36).substring(2, 30);
 
-		const userData = {
-			username: sanitizedUsername,
-			password,
-			passwordConfirm: password,
-			isAdmin: isCreatingRoom ? true : false
-		};
+    const userData = {
+      username: sanitizedUsername,
+      password,
+      passwordConfirm: password,
+      isAdmin: isCreatingRoom ? true : false,
+    };
 
-		// Create user in poketbase collection
-		const user = await pb.collection(users).create(userData);
+    // Create user in poketbase collection
+    const user = await pb.collection(users).create(userData);
 
-		// Login in the newly created user
-		await loginUser(sanitizedUsername, password, isCreatingRoom, roomCode, user.id);
-	} catch (err) {
-		console.error(`CreateUser: ${err}`);
-	}
+    // Login in the newly created user
+    await loginUser(
+      sanitizedUsername,
+      password,
+      isCreatingRoom,
+      roomCode,
+      user.id,
+    );
+  } catch (err) {
+    console.error(`CreateUser: ${err}`);
+  }
 }
 
 /**
@@ -110,25 +118,25 @@ export async function createUser(
  * @returns {Promise<void>} A Promise that resolves when the login and additional actions are completed.
  */
 async function loginUser(
-	username: string,
-	password: string,
-	isCreatingRoom: boolean,
-	roomCode: string,
-	userId: string
+  username: string,
+  password: string,
+  isCreatingRoom: boolean,
+  roomCode: string,
+  userId: string,
 ): Promise<void> {
-	try {
-		// Login user in pocketbase
-		await pb.collection(users).authWithPassword(username, password);
+  try {
+    // Login user in pocketbase
+    await pb.collection(users).authWithPassword(username, password);
 
-		// If the user is creating a room, create a room and join else join the room
-		if (isCreatingRoom) {
-			await createRoom(roomCode, userId);
-		} else {
-			await joinRoom(roomCode, userId);
-		}
-	} catch (err) {
-		console.error(`LoginUser: ${err}`);
-	}
+    // If the user is creating a room, create a room and join else join the room
+    if (isCreatingRoom) {
+      await createRoom(roomCode, userId);
+    } else {
+      await joinRoom(roomCode, userId);
+    }
+  } catch (err) {
+    console.error(`LoginUser: ${err}`);
+  }
 }
 
 /**
@@ -138,36 +146,36 @@ async function loginUser(
  * @returns {Promise<void>} A Promise that resolves to void.
  */
 async function joinRoom(roomCode: string, userId: string): Promise<void> {
-	try {
-		let currentPlayers: Array<string> = [];
+  try {
+    let currentPlayers: Array<string> = [];
 
-		//Get the room with the provided room code
-		const room = await pb.collection(rooms).getList(1, 1, {
-			filter: `roomCode = "${roomCode}"`
-		});
+    //Get the room with the provided room code
+    const room = await pb.collection(rooms).getList(1, 1, {
+      filter: `roomCode = "${roomCode}"`,
+    });
 
-		// If the room exists, add the current user to the room
-		if (room.items.length > 0) {
-			currentPlayers = room.items[0].players;
-			// prevent null user
+    // If the room exists, add the current user to the room
+    if (room.items.length > 0) {
+      currentPlayers = room.items[0].players;
+      // prevent null user
 
-			currentPlayers.push(userId);
-		} else {
-			console.error(`No room found with ${roomCode}!`);
-		}
+      currentPlayers.push(userId);
+    } else {
+      console.error(`No room found with ${roomCode}!`);
+    }
 
-		const playerData = {
-			players: currentPlayers
-		};
+    const playerData = {
+      players: currentPlayers,
+    };
 
-		// Update the room with the new player
-		await pb.collection(rooms).update(room.items[0].id, playerData);
+    // Update the room with the new player
+    await pb.collection(rooms).update(room.items[0].id, playerData);
 
-		// Redirect to the game page
-		goto(`/game/${roomCode}`);
-	} catch (err) {
-		console.error(`JoinRoom: ${err}`);
-	}
+    // Redirect to the game page
+    goto(`/game/${roomCode}`);
+  } catch (err) {
+    console.error(`JoinRoom: ${err}`);
+  }
 }
 
 /**
@@ -177,18 +185,18 @@ async function joinRoom(roomCode: string, userId: string): Promise<void> {
  * @returns {Promise<void>} A Promise that resolves when the room is successfully created.
  */
 async function createRoom(roomCode: string, userId: string): Promise<void> {
-	try {
-		await pb.collection(rooms).create({
-			roomCode,
-			players: [userId],
-			maxRounds: 5,
-			maxTime: 120
-		});
+  try {
+    await pb.collection(rooms).create({
+      roomCode,
+      players: [userId],
+      maxRounds: 5,
+      maxTime: 120,
+    });
 
-		goto(`/game/${roomCode}`);
-	} catch (err) {
-		console.error(`CreateRoom: ${err}`);
-	}
+    goto(`/game/${roomCode}`);
+  } catch (err) {
+    console.error(`CreateRoom: ${err}`);
+  }
 }
 
 /**
@@ -197,17 +205,17 @@ async function createRoom(roomCode: string, userId: string): Promise<void> {
  * @returns {Promise<boolean>} A promise that resolves when the room existence is checked.
  */
 export async function checkIfRoomExists(roomCode: string): Promise<boolean> {
-	try {
-		// Get the room with the provided room code
-		const currentRoom = await pb.collection(rooms).getList(1, 1, {
-			filter: `roomCode = "${roomCode}"`
-		});
+  try {
+    // Get the room with the provided room code
+    const currentRoom = await pb.collection(rooms).getList(1, 1, {
+      filter: `roomCode = "${roomCode}"`,
+    });
 
-		// Set roomExists to true if the room exists
-		return currentRoom.items.length > 0;
-	} catch {
-		return false;
-	}
+    // Set roomExists to true if the room exists
+    return currentRoom.items.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -220,21 +228,21 @@ export async function checkIfRoomExists(roomCode: string): Promise<boolean> {
  * @returns A Promise that resolves when the message is sent.
  */
 export async function sendMessage(
-	newMessage: string,
-	userId: string,
-	currentMessagesIds: Array<string>,
-	roomId: string
+  newMessage: string,
+  userId: string,
+  currentMessagesIds: Array<string>,
+  roomId: string,
 ) {
-	if (newMessage.trim() === '') return;
+  if (newMessage.trim() === "") return;
 
-	const message = await pb.collection(messages).create({
-		text: newMessage,
-		user: userId
-	});
+  const message = await pb.collection(messages).create({
+    text: newMessage,
+    user: userId,
+  });
 
-	pb.collection(rooms).update(roomId, {
-		messages: [...currentMessagesIds, message.id]
-	});
+  pb.collection(rooms).update(roomId, {
+    messages: [...currentMessagesIds, message.id],
+  });
 }
 
 /**
@@ -243,9 +251,9 @@ export async function sendMessage(
  * @returns A promise that resolves once the player is logged out.
  */
 export async function logOutPlayer(userId: string) {
-	pb.collection(users).delete(userId);
+  pb.collection(users).delete(userId);
 
-	pb.authStore.clear();
+  pb.authStore.clear();
 }
 
 /**
@@ -255,8 +263,8 @@ export async function logOutPlayer(userId: string) {
  * @returns A promise that resolves to a boolean indicating whether the user is an admin.
  */
 export async function checkIfUserIsAdmin(userId: string): Promise<boolean> {
-	const user = await pb.collection(users).getOne(userId);
-	return user.isAdmin;
+  const user = await pb.collection(users).getOne(userId);
+  return user.isAdmin;
 }
 
 /**
@@ -266,17 +274,20 @@ export async function checkIfUserIsAdmin(userId: string): Promise<boolean> {
  * @param maxRounds - The new maximum number of rounds.
  * @returns {Promise<void>} - A promise that resolves when the update is complete.
  */
-export async function updateRoomMaxRounds(roomCode: string, maxRounds: number): Promise<void> {
-	const room = await pb.collection(rooms).getList(1, 1, {
-		filter: `roomCode = "${roomCode}"`
-	});
+export async function updateRoomMaxRounds(
+  roomCode: string,
+  maxRounds: number,
+): Promise<void> {
+  const room = await pb.collection(rooms).getList(1, 1, {
+    filter: `roomCode = "${roomCode}"`,
+  });
 
-	if (room.items.length > 0) {
-		room.items[0].maxRounds = maxRounds;
-		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
-	} else {
-		console.error(`No room found with ${roomCode}!`);
-	}
+  if (room.items.length > 0) {
+    room.items[0].maxRounds = maxRounds;
+    await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+  } else {
+    console.error(`No room found with ${roomCode}!`);
+  }
 }
 
 /**
@@ -286,17 +297,20 @@ export async function updateRoomMaxRounds(roomCode: string, maxRounds: number): 
  * @param maxTime - The new maximum time for the room.
  * @returns A promise that resolves with void.
  */
-export async function updateRoomMaxTime(roomCode: string, maxTime: number): Promise<void> {
-	const room = await pb.collection(rooms).getList(1, 1, {
-		filter: `roomCode = "${roomCode}"`
-	});
+export async function updateRoomMaxTime(
+  roomCode: string,
+  maxTime: number,
+): Promise<void> {
+  const room = await pb.collection(rooms).getList(1, 1, {
+    filter: `roomCode = "${roomCode}"`,
+  });
 
-	if (room.items.length > 0) {
-		room.items[0].maxTime = maxTime;
-		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
-	} else {
-		console.error(`No room found with ${roomCode}!`);
-	}
+  if (room.items.length > 0) {
+    room.items[0].maxTime = maxTime;
+    await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+  } else {
+    console.error(`No room found with ${roomCode}!`);
+  }
 }
 
 /**
@@ -306,16 +320,16 @@ export async function updateRoomMaxTime(roomCode: string, maxTime: number): Prom
  * @returns A promise that resolves when the game has started.
  */
 export async function startGame(roomCode: string) {
-	const room = await pb.collection(rooms).getList(1, 1, {
-		filter: `roomCode = "${roomCode}"`
-	});
+  const room = await pb.collection(rooms).getList(1, 1, {
+    filter: `roomCode = "${roomCode}"`,
+  });
 
-	if (room.items.length > 0) {
-		room.items[0].isPlaying = true;
-		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
-	} else {
-		console.error(`No room found with ${roomCode}!`);
-	}
+  if (room.items.length > 0) {
+    room.items[0].isPlaying = true;
+    await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+  } else {
+    console.error(`No room found with ${roomCode}!`);
+  }
 }
 
 /**
@@ -325,14 +339,14 @@ export async function startGame(roomCode: string) {
  * @returns Promise<void>
  */
 export async function endGame(roomCode: string) {
-	const room = await pb.collection(rooms).getList(1, 1, {
-		filter: `roomCode = "${roomCode}"`
-	});
+  const room = await pb.collection(rooms).getList(1, 1, {
+    filter: `roomCode = "${roomCode}"`,
+  });
 
-	if (room.items.length > 0) {
-		room.items[0].isPlaying = false;
-		await pb.collection(rooms).update(room.items[0].id, room.items[0]);
-	} else {
-		console.error(`No room found with ${roomCode}!`);
-	}
+  if (room.items.length > 0) {
+    room.items[0].isPlaying = false;
+    await pb.collection(rooms).update(room.items[0].id, room.items[0]);
+  } else {
+    console.error(`No room found with ${roomCode}!`);
+  }
 }

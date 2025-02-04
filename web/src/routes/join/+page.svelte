@@ -42,7 +42,7 @@
             loading = true;
 
             try {
-                await user_create(values.username);
+                await user_create(values.username.toLowerCase());
 
                 const sanitizedRoomCode = values.room_code.toUpperCase();
                 goto(`/game/${sanitizedRoomCode}`);
@@ -80,13 +80,13 @@
     }
 
     async function checkIfUserNameExists(username: string): Promise<boolean> {
-        const user = await get_user(username);
+        const user = await get_user(username.toLowerCase());
         if (Object.keys(user).length != 0) {
             show_toast({
                 icon: "close",
                 type: "error",
                 text: $_("username-already-exists", {
-                    values: { username: username },
+                    values: { username: username.toUpperCase() },
                 }),
             });
             return true;

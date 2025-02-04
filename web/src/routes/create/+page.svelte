@@ -41,7 +41,7 @@
 
             try {
 				// Create user
-				await user_create(values.username, true);
+				await user_create(values.username.toLowerCase(), true);
 
                 // Create room
                 await room_create(roomCode);
@@ -68,13 +68,13 @@
     }
 
     async function checkIfUserNameExists(username: string): Promise<boolean> {
-        const user = await get_user(username);
+        const user = await get_user(username.toLowerCase());
         if (Object.keys(user).length != 0) {
             show_toast({
                 icon: "close",
                 type: "error",
                 text: $_("username-already-exists", {
-                    values: { username: username },
+                    values: { username: username.toUpperCase() },
                 }),
             });
             return true;
