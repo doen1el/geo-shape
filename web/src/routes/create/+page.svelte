@@ -98,9 +98,14 @@
 				oninput={handleUserNameInput}
 				bind:this={usernameInput}
 				/>
-
-				<h3 class="mb-2">{$_("room-code")}: <b>{roomCode}</b></h3>
-				
+				<h3 class="mb-2">{$_("room-code")}: 
+                    {#if roomCode}
+                    <b>{roomCode}</b>
+                    {:else}
+                    <i>{$_("loading")}...</i>
+                    
+                    {/if}
+                </h3>
 				<div class="flex space-x-11 w-full">
                     <Button 
                         primary={true}

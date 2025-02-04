@@ -1,38 +1,33 @@
-@import "tailwindcss/utilities";
-@import "tailwindcss/base";
-@import "tailwindcss/components";
+@import 'tailwindcss/utilities';
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
 
-.btn-primary {
-  @apply h-12 rounded-md border-2 border-black bg-[#a6faff] p-2.5
-    shadow-[2px_2px_0px_rgba(0, 0, 0, 1)] hover:bg-[#79f7ff]
-    active:bg-[#00e1ef];
-}
+@layer components {
+	.btn-primary {
+		@apply h-12 rounded-md border-2 border-black bg-[#a6faff] p-2.5 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-[#79f7ff] active:bg-[#00e1ef];
+	}
 
-.btn-disabled {
-  @apply opacity-40;
-}
+	.btn-disabled {
+		@apply opacity-40;
+	}
 
-.btn-admin-primary {
-  @apply rounded-md border-2 border-black p-2 shadow-[2px_2px_0px_rgba(0, 0, 0,
-    1)] focus:bg-[#ffa6f6] focus:outline-none active:shadow-[2px_2px_0px_rgba(0,
-    0, 0, 1)] disabled:opacity-40;
-}
+	.btn-admin-primary {
+		@apply rounded-md border-2 border-black p-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] focus:bg-[#ffa6f6] focus:outline-none active:shadow-[2px_2px_0px_rgba(0,0,0,1)] disabled:opacity-40;
+	}
 
-.input-primary {
-  @apply mb-4 rounded-md border-2 border-black p-2.5 shadow-[2px_2px_0px_rgba(0,
-    0, 0, 1)] focus:bg-[#ffa6f6] focus:outline-none
-    active:shadow-[2px_2px_0px_rgba(0, 0, 0, 1)];
-}
+	.input-primary {
+		@apply mb-4 rounded-md border-2 border-black p-2.5 shadow-[2px_2px_0px_rgba(0,0,0,1)] focus:bg-[#ffa6f6] focus:outline-none active:shadow-[2px_2px_0px_rgba(0,0,0,1)];
+	}
 
-.box-small {
-  @apply flex items-center rounded-md border-2 border-black bg-white
-    shadow-[8px_8px_0px_rgba(0, 0, 0, 1)];
-}
+	.box-small {
+		@apply flex items-center rounded-md border-2 border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)];
+	}
 
-.box-padding-medium {
-  @apply h-full px-6 py-5 text-left;
-}
+	.box-padding-medium {
+		@apply h-full px-6 py-5 text-left;
+	}
 
-.center {
-  @apply flex h-screen items-center justify-center;
+	.center {
+		@apply flex h-screen items-center justify-center;
+	}
 }
