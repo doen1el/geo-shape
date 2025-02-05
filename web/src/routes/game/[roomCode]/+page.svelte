@@ -3,7 +3,6 @@
     import { pb } from '$lib/pocketbase.js';
     import { rooms } from '$lib/util/constants.js';
     import { page } from "$app/state";
-
     import Chat from '$lib/components/chat.svelte';
     import { currentUser } from '$lib/stores/user_store';
     import { get_room, join_room } from '$lib/stores/room_store';

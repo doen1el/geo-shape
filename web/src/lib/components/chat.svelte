@@ -7,7 +7,7 @@
 	import { show_toast } from "$lib/stores/toast_store";
 	import TextField from "$lib/components/text_field.svelte";
 	import Button from "$lib/components/button.svelte";
-	import { message_create } from "$lib/stores/message_store";
+	import { checkIfMessageIsRightAnswer, message_create } from "$lib/stores/message_store";
 	import { update_room } from "$lib/stores/room_store";
 	import { createRoom, type Room } from "$lib/models/room";
 
@@ -53,6 +53,8 @@
 				}
 				const message = await message_create($currentUser, values.message);
 
+				checkIfMessageIsRightAnswer(currentRoomInfo, message, $currentUser);
+
 				const updatedRoomInfo = createRoom({
 					...currentRoomInfo,
 					messages: [...currentRoomInfo.messages!, message.id]
@@ -80,10 +82,10 @@
     });
 </script>
 
-<div class="flex-1 p-4 border-l border-black flex flex-col">
+<div class="flex-1 p-4 border-l border-black flex flex-col ">
 	<h2 class=""><b>CHAT</b></h2>
 	<div
-		class="mb-10 border-black border-2 flex-1 overflow-y-auto rounded-md shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+		class="mb-5 border-black border-2 flex-1 overflow-y-auto rounded-md shadow-[2px_2px_0px_rgba(0,0,0,1)]"
 		bind:this={chatContainer}
 	>
 		{#each currentRoomInfo.expand?.messages ?? [] as message (message.id)}

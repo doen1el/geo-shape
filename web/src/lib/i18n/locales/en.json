@@ -22,5 +22,16 @@
 	"admin-panel": "ADMIN PANEL",
 	"user-not-logged-in": "USER NOT LOGGED IN",
 	"players-in": "PLAYERS IN",
-	"loading": "LOADING"
+	"loading": "LOADING",
+	"gamestatus": "GAME STATUS",
+	"playing": "PLAYING",
+	"notPlaying": "ENDED",
+	"svg-category": "CATEGORY",
+	"time": "TIME",
+	"rounds": "ROUNDS",
+	"end-game": "END GAME",
+	"start-game": "START GAME",
+	"german-states": "GERMAN STATES",
+	"european-countries": "EUROPEAN COUNTRIES",
+	"world-countries": "WORLD COUNTRIES"
 }

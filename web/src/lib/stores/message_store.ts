@@ -1,7 +1,10 @@
-import { type Writable, writable } from "svelte/store";
-import { createMessage, type Message } from "$lib/models/message";
-import { APIError } from "$lib/util/api_util";
-import type { User } from "$lib/models/user";
+import { type Writable, writable } from 'svelte/store';
+import { createMessage, type Message } from '$lib/models/message';
+import { APIError } from '$lib/util/api_util';
+import { createUser, type User } from '$lib/models/user';
+import { correctAnswers } from '$lib/util/svg_utils/correctAnswers';
+import { currentUser, update_user } from './user_store';
+import type { Room } from '$lib/models/room';
 
 /**
  * A writable store that holds the current message.
@@ -10,27 +13,41 @@ import type { User } from "$lib/models/user";
  *
  * @type {Writable<Message | null>}
  */
-export const currentMessage: Writable<Message | null> = writable<
-  Message | null
->();
+export const currentMessage: Writable<Message | null> = writable<Message | null>();
 
-export async function message_create(
-  user: User,
-  text: string,
-): Promise<Message> {
-  const message = createMessage({ text: text, user: user.id });
+export async function message_create(user: User, text: string): Promise<Message> {
+	const message = createMessage({ text: text, user: user.id });
 
-  const r = await fetch(`/api/message`, {
-    method: "POST",
-    body: JSON.stringify(message),
-  });
+	const r = await fetch(`/api/message`, {
+		method: 'POST',
+		body: JSON.stringify(message)
+	});
 
-  if (!r.ok) {
-    const response = await r.json();
-    throw new APIError(r.status, response.message, response.detail);
-  }
+	if (!r.ok) {
+		const response = await r.json();
+		throw new APIError(r.status, response.message, response.detail);
+	}
 
-  const createdMessage: Message = await r.json();
+	const createdMessage: Message = await r.json();
 
-  return createdMessage;
+	return createdMessage;
+}
+
+export async function checkIfMessageIsRightAnswer(room: Room, message: Message, user: User) {
+	if (room.isPlaying) {
+		console.log(room.category, room.currentSvgCode);
+		const anwers = correctAnswers[room.category!][room.currentSvgCode!];
+		console.log('answers', anwers);
+
+		if (anwers.includes(message.text.toLowerCase())) {
+			const updatedUser = createUser({
+				...user,
+				points: user.points + 1
+			});
+
+			update_user(updatedUser);
+
+			currentUser.set(updatedUser);
+		}
+	}
 }

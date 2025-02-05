@@ -1,5 +1,5 @@
-import type { Message } from "./message";
-import type { User } from "./user";
+import type { Message } from './message';
+import type { User } from './user';
 
 /**
  * Represents a room in the geo-shape application.
@@ -20,23 +20,24 @@ import type { User } from "./user";
  * @property {object} [expand] - Additional properties for the room.
  */
 export type Room = {
-  id: string;
-  roomCode?: string;
-  players?: string[];
-  messages?: string[];
-  currentRound?: number;
-  maxRounds?: number;
-  currentSvgCode?: string;
-  currentTime?: number;
-  maxTime?: number;
-  isPlaying?: boolean;
-  isDrawing?: boolean;
-  created?: string;
-  svgCode?: string;
-  expand?: {
-    players?: User[];
-    messages?: Message[];
-  };
+	id: string;
+	roomCode?: string;
+	players?: string[];
+	messages?: string[];
+	currentRound?: number;
+	maxRounds?: number;
+	currentSvgCode?: number;
+	currentTime?: number;
+	maxTime?: number;
+	isPlaying?: boolean;
+	isDrawing?: boolean;
+	created?: string;
+	svgCode?: string;
+	category?: number;
+	expand?: {
+		players?: User[];
+		messages?: Message[];
+	};
 };
 
 /**
@@ -46,24 +47,25 @@ export type Room = {
  * @returns {Room} - The new Room object with default values.
  */
 export function createRoom(overrides: Partial<Room> = {}): Room {
-  return {
-    id: "",
-    roomCode: "",
-    players: [],
-    messages: [],
-    currentRound: 0,
-    maxRounds: 5,
-    currentSvgCode: "",
-    currentTime: 0,
-    maxTime: 120,
-    isPlaying: false,
-    isDrawing: false,
-    svgCode: "",
-    created: new Date().toISOString(),
-    expand: {
-      players: [],
-      messages: [],
-    },
-    ...overrides,
-  };
+	return {
+		id: '',
+		roomCode: '',
+		players: [],
+		messages: [],
+		currentRound: 0,
+		maxRounds: 5,
+		currentSvgCode: 0,
+		currentTime: 0,
+		maxTime: 120,
+		isPlaying: false,
+		isDrawing: false,
+		svgCode: '',
+		category: 0,
+		created: new Date().toISOString(),
+		expand: {
+			players: [],
+			messages: []
+		},
+		...overrides
+	};
 }

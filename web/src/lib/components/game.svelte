@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { svgsMap } from '$lib/svgs.js';
+	// import { svgsMap } from '$lib/svgs.js';
 	import { draw } from 'svelte/transition';
 	import { linear } from 'svelte/easing';
 	import type { Room } from '$lib/models/room';
+	import { _ } from 'svelte-i18n';
 
 	const {currentRoomInfo}: {currentRoomInfo: Room} = $props();
 
@@ -12,7 +13,7 @@
 <div class="flex-[3] p-4 block">
 	<div class="flex justify-between items-center mb-2 mr-2 ml-2">
 		<div>{currentRoomInfo.currentRound} / {currentRoomInfo.maxRounds}</div>
-		<div>{'GameStatus: ' + (currentRoomInfo.isPlaying ? 'Playing' : 'Not Playing')}</div>
+		<div>{$_("gamestatus")}: {(currentRoomInfo.isPlaying ? $_("playing") : $_("notPlaying"))}</div>
 		<div>{currentRoomInfo.currentTime}s / {currentRoomInfo.maxTime}s</div>
 	</div>
 	<svg
@@ -23,7 +24,7 @@
 		height="100%"
 	>
 		{#if currentRoomInfo.isDrawing}
-			<path
+			<!-- <path
 				transition:draw={{ duration: 20500, easing: linear }}
 				stroke="black"
 				fill="none"
@@ -32,7 +33,7 @@
 				stroke-width="2"
 				version="1.2"
 				d={svgsMap[currentRoomInfo.svgCode!]}
-			/>
+			/> -->
 		{/if}
 	</svg>
 </div>

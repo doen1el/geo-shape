@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
-import { z, ZodType } from "zod";
-import type { Message } from "../message";
+import { z, ZodType } from 'zod';
+import type { Message } from '../message';
 
 /**
  * Schema for creating a message.
@@ -16,11 +16,11 @@ import type { Message } from "../message";
  * - If `text` does not match the regex pattern, the error message will be 'invalid-message'.
  */
 const MessageCreateSchema = z.object({
-  text: z
-    .string({ message: "required" })
-    .min(1, "must-be-1-characters-long")
-    .regex(/^[\w][\w\.]*$/, "invalid-message"),
-  user: z.string().length(15),
+	text: z
+		.string({ message: 'required' })
+		.min(1, 'must-be-1-characters-long')
+		.regex(/^[\w\s][\w\s\.]*$/, 'invalid-message'),
+	user: z.string().length(15)
 }) satisfies ZodType<Partial<Message>>;
 
 export { MessageCreateSchema };
