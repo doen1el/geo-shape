@@ -1,10 +1,11 @@
 import { APIError } from '$lib/util/api_util';
 import { type Writable, writable } from 'svelte/store';
 import { createRoom, type Room } from '$lib/models/room';
-import type { User } from '$lib/models/user';
+import { createUser, type User } from '$lib/models/user';
 import { europeanCountriesSvgMap } from '$lib/util/svg_utils/european-countries';
 import { germanStatesSvgMap } from '$lib/util/svg_utils/german_states';
 import { worldCountriesSvgMap } from '$lib/util/svg_utils/world-countries';
+import { update_user } from './user_store';
 
 /**
  * A writable store that holds the current room information.
@@ -133,12 +134,47 @@ export async function end_game(roomCode: string): Promise<void> {
 		throw new APIError(404, 'Room not found');
 	}
 
+	// Find the player(s) with the most points
+	let maxPoints = -1;
+	let winnerIds: string[] = [];
+	let winnerNames: string[] = [];
+	for (const player of room.expand!.players!) {
+		if (player.points > maxPoints) {
+			maxPoints = player.points;
+			winnerIds = [player.id];
+			winnerNames = [player.username];
+		} else if (player.points === maxPoints) {
+			winnerIds.push(player.id);
+		}
+	}
+
+	// Check if all players have 0 points
+	if (maxPoints === 0) {
+		winnerIds = [];
+		winnerNames = [];
+	}
+
+	// Choose the first player with the highest points as the winner
+	const winnerId = winnerIds.length > 0 ? winnerIds[0] : null;
+
+	const updateUserPromises = room.expand!.players!.map(async (player) => {
+		const updatedUser = createUser({
+			...player,
+			points: 0,
+			gamesWon: player.id === winnerId ? player.gamesWon + 1 : player.gamesWon
+		});
+		return update_user(updatedUser);
+	});
+
+	await Promise.all(updateUserPromises);
+
 	const updatedRoom = createRoom({
 		...room,
 		isPlaying: false,
 		currentRound: 0,
 		currentTime: 0,
-		isDrawing: false
+		isDrawing: false,
+		winnerName: winnerNames[0]
 	});
 
 	await update_room(updatedRoom);
@@ -150,6 +186,11 @@ export async function end_game(roomCode: string): Promise<void> {
 }
 
 async function end_round(roomCode: string) {
+	if (roundTimer) {
+		stop_round_timer(roundTimer);
+		roundTimer = null;
+	}
+
 	const room = await get_room(roomCode);
 	if (!room) {
 		return;
@@ -163,6 +204,11 @@ async function end_round(roomCode: string) {
 	await update_room(updatedRoom1);
 
 	if (room.currentRound! >= room.maxRounds!) {
+		await end_game(roomCode); // End game if the last round is over
+		return;
+	}
+
+	if (room.currentRound! >= room.maxRounds!) {
 		const updatedRoom2 = createRoom({
 			...room,
 			isPlaying: true,
@@ -173,7 +219,6 @@ async function end_round(roomCode: string) {
 	}
 
 	const usedSvgCodes = new Set<number>();
-	console.log(usedSvgCodes);
 	const currentSvgCode = getRandomSvgCode(room.category!, usedSvgCodes);
 
 	const updatedRoom3 = createRoom({

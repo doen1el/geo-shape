@@ -59,7 +59,6 @@
             pb.collection(rooms).subscribe(currentRoomId, async ({ action, record }) => {
                 const expandedRecord = await pb.collection(rooms).getOne(record.id, { expand: 'players,messages,messages.user' });
                 currentRoomInfo = expandedRecord;
-                console.log('Room updated: ', currentRoomInfo);
             });
 
             if (!$currentUser?.id) {

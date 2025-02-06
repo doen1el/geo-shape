@@ -16,6 +16,8 @@
 	let chatContainer: any;
 	let messageInput: any = $state(null);
 	let loading = $state(false)
+	let isRightAnswer = $state(false);
+	let previousRound = $state(currentRoomInfo.currentRound);
 
 	scrollToBottom();
 
@@ -29,8 +31,13 @@
 
 	// Scroll to the bottom of the chat container after each update
 	$effect(() => {
+		console.log(currentRoomInfo.currentSvgCode)
         if (currentRoomInfo) {
             scrollToBottom();
+        }
+		if (currentRoomInfo.currentRound !== previousRound) {
+            isRightAnswer = false;
+            previousRound = currentRoomInfo.currentRound;
         }
     });
 
@@ -51,17 +58,28 @@
 				if (!$currentUser) {
 					throw new Error("User not found");
 				}
-				const message = await message_create($currentUser, values.message);
 
-				checkIfMessageIsRightAnswer(currentRoomInfo, message, $currentUser);
+				isRightAnswer = await checkIfMessageIsRightAnswer(currentRoomInfo, values.message, $currentUser);
 
-				const updatedRoomInfo = createRoom({
-					...currentRoomInfo,
-					messages: [...currentRoomInfo.messages!, message.id]
-				});
+				if (isRightAnswer) {
+						show_toast({
+							icon: "check",
+							type: "success",
+							text: $_("right-answer", {
+						values: { answer: values.message.toUpperCase() },
+						}),
+					});
+				} else {
+					const message = await message_create($currentUser, values.message);
 
-                // Update room
-                await update_room(updatedRoomInfo);
+					const updatedRoomInfo = createRoom({
+						...currentRoomInfo,
+						messages: [...currentRoomInfo.messages!, message.id]
+					});
+
+					// Update room
+					await update_room(updatedRoomInfo);
+				}
 				
 				// Clear the message input field
                 messageInput.clear();
@@ -113,7 +131,7 @@
 			primary={true}
 			type="submit"
             extraClasses="mt-2 ml-5"
-            disabled={!messageInput?.getValue() || loading}
+            disabled={!messageInput?.getValue() || loading || isRightAnswer}
 		>
 			{$_("send")}
 		</Button>

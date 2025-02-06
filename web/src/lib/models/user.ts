@@ -8,15 +8,16 @@
  * @property {string} [created] - The optional date when the user was created.
  */
 export type User = {
-  collectionId: string;
-  collectionName: string;
-  id: string;
-  password: string;
-  passwordConfirm: string;
-  username: string;
-  points: number;
-  isAdmin: boolean;
-  created?: string;
+	collectionId: string;
+	collectionName: string;
+	id: string;
+	password: string;
+	passwordConfirm: string;
+	username: string;
+	points: number;
+	gamesWon: number;
+	isAdmin: boolean;
+	created?: string;
 };
 
 /**
@@ -26,16 +27,17 @@ export type User = {
  * @returns {User} - The new User object with default values.
  */
 export function createUser(overrides: Partial<User> = {}): User {
-  return {
-    id: "",
-    collectionId: "",
-    collectionName: "",
-    username: "",
-    points: 0,
-    password: "",
-    passwordConfirm: "",
-    isAdmin: false,
-    created: new Date().toISOString(),
-    ...overrides,
-  };
+	return {
+		id: '',
+		collectionId: '',
+		collectionName: '',
+		username: '',
+		points: 0,
+		gamesWon: 0,
+		password: '',
+		passwordConfirm: '',
+		isAdmin: false,
+		created: new Date().toISOString(),
+		...overrides
+	};
 }

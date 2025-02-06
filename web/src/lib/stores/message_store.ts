@@ -33,13 +33,14 @@ export async function message_create(user: User, text: string): Promise<Message>
 	return createdMessage;
 }
 
-export async function checkIfMessageIsRightAnswer(room: Room, message: Message, user: User) {
+export async function checkIfMessageIsRightAnswer(
+	room: Room,
+	message: string,
+	user: User
+): Promise<boolean> {
 	if (room.isPlaying) {
-		console.log(room.category, room.currentSvgCode);
 		const anwers = correctAnswers[room.category!][room.currentSvgCode!];
-		console.log('answers', anwers);
-
-		if (anwers.includes(message.text.toLowerCase())) {
+		if (anwers.includes(message.toLowerCase())) {
 			const updatedUser = createUser({
 				...user,
 				points: user.points + 1
@@ -48,6 +49,9 @@ export async function checkIfMessageIsRightAnswer(room: Room, message: Message, 
 			update_user(updatedUser);
 
 			currentUser.set(updatedUser);
+
+			return true;
 		}
 	}
+	return false;
 }

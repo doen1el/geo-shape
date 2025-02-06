@@ -34,5 +34,7 @@
 	"german-states": "DEUTSCHE BUNDESLÄNDER",
 	"european-countries": "EUROPÄISCHE LÄNDER",
 	"world-countries": "LÄNDER DER WELT",
-	"leave-game": "SPIEL VERLASSEN"
+	"leave-game": "SPIEL VERLASSEN",
+	"right-answer": "{answer} IST DIE RICHTIGE ANTWORT",
+	"won-the-game": "HAT DAS SPIEL GEWONNEN"
 }

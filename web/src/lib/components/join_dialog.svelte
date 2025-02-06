@@ -60,7 +60,6 @@
         let username = input.value.replace(/[^A-Za-z0-9]/g, '');
         input.value = username;
         usernameInput.setValue(username);
-		console.log(username);
         username_exists = await checkIfUserNameExists(username.toLowerCase());
     }
 

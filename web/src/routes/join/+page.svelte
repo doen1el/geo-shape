@@ -61,7 +61,6 @@
     async function handleRoomCodeInput(event: Event) {
         const input = event.target as HTMLInputElement;
         let roomCode = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        console.log(roomCode)
         input.value = roomCode;
         roomCodeInput.setValue(roomCode);
         if (schema.shape.room_code.safeParse(roomCode).success) {
