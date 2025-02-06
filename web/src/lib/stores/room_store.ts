@@ -2,6 +2,9 @@ import { APIError } from '$lib/util/api_util';
 import { type Writable, writable } from 'svelte/store';
 import { createRoom, type Room } from '$lib/models/room';
 import type { User } from '$lib/models/user';
+import { europeanCountriesSvgMap } from '$lib/util/svg_utils/european-countries';
+import { germanStatesSvgMap } from '$lib/util/svg_utils/german_states';
+import { worldCountriesSvgMap } from '$lib/util/svg_utils/world-countries';
 
 /**
  * A writable store that holds the current room information.
@@ -13,6 +16,12 @@ import type { User } from '$lib/models/user';
 export const currentRoom: Writable<Room | null> = writable<Room | null>();
 
 let roundTimer: NodeJS.Timeout | null = null;
+
+const svgCodesByCategory: { [key: number]: { [key: number]: string } } = {
+	0: germanStatesSvgMap,
+	1: europeanCountriesSvgMap,
+	2: worldCountriesSvgMap
+};
 
 /**
  * Creates a new room by sending a POST request to the server.
@@ -100,14 +109,17 @@ export async function start_game(roomCode: string): Promise<void> {
 		throw new APIError(404, 'Room not found');
 	}
 
-	console.log('Starting game in room', room);
+	const usedSvgCodes = new Set<number>(JSON.parse(room.usedSvgCodes || '[]'));
+	const currentSvgCode = getRandomSvgCode(room.category!, usedSvgCodes);
 
 	const updatedRoom = createRoom({
 		...room,
 		currentRound: 1,
-		currentSvgCode: 0,
+		currentSvgCode: currentSvgCode,
 		currentTime: room.maxTime,
-		isPlaying: true
+		isPlaying: true,
+		isDrawing: true,
+		usedSvgCodes: JSON.stringify(Array.from(usedSvgCodes))
 	});
 
 	await update_room(updatedRoom);
@@ -125,7 +137,8 @@ export async function end_game(roomCode: string): Promise<void> {
 		...room,
 		isPlaying: false,
 		currentRound: 0,
-		currentTime: 0
+		currentTime: 0,
+		isDrawing: false
 	});
 
 	await update_room(updatedRoom);
@@ -142,23 +155,38 @@ async function end_round(roomCode: string) {
 		return;
 	}
 
+	const updatedRoom1 = createRoom({
+		...room,
+		isDrawing: false
+	});
+
+	await update_room(updatedRoom1);
+
 	if (room.currentRound! >= room.maxRounds!) {
-		const updatedRoom = createRoom({
+		const updatedRoom2 = createRoom({
 			...room,
-			isPlaying: false
+			isPlaying: true,
+			isDrawing: false
 		});
-		await update_room(updatedRoom);
+		await update_room(updatedRoom2);
 		return;
 	}
 
-	const updatedRoom = createRoom({
+	const usedSvgCodes = new Set<number>();
+	console.log(usedSvgCodes);
+	const currentSvgCode = getRandomSvgCode(room.category!, usedSvgCodes);
+
+	const updatedRoom3 = createRoom({
 		...room,
 		currentRound: room.currentRound! + 1,
-		currentTime: room.maxTime
+		currentTime: room.maxTime,
+		currentSvgCode: currentSvgCode,
+		isDrawing: true,
+		usedSvgCodes: JSON.stringify(Array.from(usedSvgCodes))
 	});
-	await update_room(updatedRoom);
+	await update_room(updatedRoom3);
 
-	roundTimer = await start_round_timer(roomCode, updatedRoom.maxTime!);
+	roundTimer = await start_round_timer(roomCode, updatedRoom3.maxTime!);
 }
 
 async function start_round_timer(roomCode: string, duration: number): Promise<NodeJS.Timeout> {
@@ -187,4 +215,24 @@ async function start_round_timer(roomCode: string, duration: number): Promise<No
 
 function stop_round_timer(timer: NodeJS.Timeout) {
 	clearInterval(timer);
+}
+
+function getRandomSvgCode(category: number, usedSvgCodes: Set<number>): number {
+	if (!svgCodesByCategory[category]) {
+		throw new Error(`Category ${category} not found in svgCodesByCategory`);
+	}
+
+	let availableSvgCodes = Object.keys(svgCodesByCategory[category])
+		.map(Number)
+		.filter((code) => !usedSvgCodes.has(code));
+
+	if (availableSvgCodes.length === 0) {
+		usedSvgCodes.clear();
+		availableSvgCodes = Object.keys(svgCodesByCategory[category]).map(Number);
+	}
+
+	const randomIndex = Math.floor(Math.random() * availableSvgCodes.length);
+	const selectedCode = availableSvgCodes[randomIndex];
+	usedSvgCodes.add(selectedCode);
+	return selectedCode;
 }

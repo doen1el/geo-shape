@@ -34,6 +34,7 @@ export type Room = {
 	created?: string;
 	svgCode?: string;
 	category?: number;
+	usedSvgCodes?: string;
 	expand?: {
 		players?: User[];
 		messages?: Message[];
@@ -62,6 +63,7 @@ export function createRoom(overrides: Partial<Room> = {}): Room {
 		svgCode: '',
 		category: 0,
 		created: new Date().toISOString(),
+		usedSvgCodes: '',
 		expand: {
 			players: [],
 			messages: []

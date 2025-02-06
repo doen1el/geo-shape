@@ -127,7 +127,7 @@
                 onclick={() => goto("/")}
                 primary={true}
             >
-                {$_("home")}
+                {$_("leave-game")}
             </Button>
             <Button
                 onclick={toggleGameState}
@@ -141,7 +141,7 @@
         onclick={() => goto("/")}
         primary={true}
         >
-            {$_("home")}
+            {$_("leave-game")}
         </Button>
     {/if}
 </div>
