@@ -78,7 +78,7 @@
         >
             {#if drawingPath != ""}
                 <path
-                    transition:draw={{ duration: currentRoomInfo.maxTime! * 60 * 10, easing: linear }}
+                    transition:draw={{ duration: currentRoomInfo.maxTime! * 1000, easing: linear }}
                     stroke="black"
                     fill="none"
                     stroke-linecap="round"
