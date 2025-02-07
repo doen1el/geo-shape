@@ -70,15 +70,15 @@
 		</div>
     {:else if currentRoomInfo.isDrawing}
         <svg
-            viewBox="-30 10 182 115"
             preserveAspectRatio="xMidYMid meet" 
+            viewBox="0 0 400 400"
             xmlns="http://www.w3.org/2000/svg"
             width="100%"
             height="100%"
         >
             {#if drawingPath != ""}
                 <path
-                    transition:draw={{ duration: 20500, easing: linear }}
+                    transition:draw={{ duration: currentRoomInfo.maxTime! * 60 * 10, easing: linear }}
                     stroke="black"
                     fill="none"
                     stroke-linecap="round"

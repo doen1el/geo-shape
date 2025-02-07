@@ -1,5 +1,4 @@
 import { RecordIdSchema } from '$lib/models/api/base_schema';
-import { UserUpdateSchema } from '$lib/models/api/user_schema';
 import type { User } from '$lib/models/user';
 import { pb } from '$lib/pocketbase';
 import { handleError } from '$lib/util/api_util';

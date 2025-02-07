@@ -15,12 +15,12 @@
     import Game from '$lib/components/game.svelte';
 	import Spinner from '$lib/components/spinner.svelte';
 
-    let doesRoomExist = false;
-    let userIsLoggedIn = false;
-    let isLoading = true;
-    let currentRoomId = '';
-    let currentRoomCode = '';
-    let currentRoomInfo: Room = {} as Room;
+    let doesRoomExist = $state(false);
+    let userIsLoggedIn = $state(false);
+    let isLoading = $state(true);
+    let currentRoomId = $state('');
+    let currentRoomCode = $state('');
+    let currentRoomInfo: Room = $state({} as Room);
 
     onMount(async () => {
         isLoading = true;
