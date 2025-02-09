@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  db:
+    container_name: geoshpae-db
+    image: flomp/geoshape-db
+    ports:
+      - "8090:8090"
+    networks:
+      - wanderer
+    restart: unless-stopped
+    volumes:
+      - ./data/pb_data:/pb_data
+  web:
+    container_name: geoshape-web
+    image: flomp/geoshape-web
+    depends_on:
+      db:
+        condition: service_started
+    environment:
+      ORIGIN: http://localhost:3000
+      PUBLIC_POCKETBASE_URL: http://db:8090
+    ports:
+      - "3000:3000"
+    networks:
+      - geoshape
+    restart: unless-stopped
+
+networks:
+  geoshape:
+    driver: bridge
