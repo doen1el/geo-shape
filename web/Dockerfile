@@ -11,9 +11,8 @@ COPY ./cron.sh /etc/periodic/2hour/cron
 RUN chmod +x /etc/periodic/2hour/cron
 
 COPY . .
-ENV NODE_ENV=production
 EXPOSE 3000
 
 RUN deno task build
 
-CMD cron && deno run --allow-env --allow-read --allow-net build/index.js
+CMD cron && deno run -A build/index.js

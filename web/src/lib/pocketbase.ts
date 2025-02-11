@@ -1,9 +1,8 @@
-import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 import PocketBase from 'pocketbase';
 
 export function createInstance() {
-	console.log('PUBLIC_POCKETBASE_URL:', PUBLIC_POCKETBASE_URL);
-	return new PocketBase(PUBLIC_POCKETBASE_URL);
+	console.log('PUBLIC_POCKETBASE_URL:', 'http://db:8090');
+	return new PocketBase('http://db:8090');
 }
 
 export const pb = createInstance();
