@@ -1,14 +1,20 @@
-FROM node:22-alpine
-WORKDIR /app
-COPY ./build build/
-COPY package*.json .
-RUN npm ci --omit=dev
-EXPOSE 3000
-ENV NODE_ENV=production
+FROM denoland/deno:2.1.9
 
-COPY ./cron.sh /etc/periodic/15min/cron
-RUN chmod +x /etc/periodic/15min/cron
-RUN apk add curl
+RUN apt-get update && apt-get install -y cron
+
+WORKDIR /app
+COPY deno.lock .
+COPY package.json .
+RUN deno install
+
+COPY ./cron.sh /etc/periodic/2hour/cron
+RUN chmod +x /etc/periodic/2hour/cron
 ENV PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
 
-CMD crond && node build
+COPY . .
+ENV NODE_ENV=production
+EXPOSE 3000
+
+RUN deno task build
+
+CMD cron && deno run --allow-env --allow-read --allow-net build/index.js

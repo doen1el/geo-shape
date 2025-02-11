@@ -32,6 +32,7 @@ export type Room = {
 	isPlaying?: boolean;
 	isDrawing?: boolean;
 	created?: string;
+	updated?: string;
 	svgCode?: string;
 	category?: number;
 	usedSvgCodes?: string;
@@ -64,6 +65,7 @@ export function createRoom(overrides: Partial<Room> = {}): Room {
 		svgCode: '',
 		category: 0,
 		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
 		usedSvgCodes: '',
 		winnerName: '',
 		expand: {

@@ -18,6 +18,7 @@ export type User = {
 	gamesWon: number;
 	isAdmin: boolean;
 	created?: string;
+	updated?: string;
 };
 
 /**
@@ -38,6 +39,7 @@ export function createUser(overrides: Partial<User> = {}): User {
 		passwordConfirm: '',
 		isAdmin: false,
 		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
 		...overrides
 	};
 }
