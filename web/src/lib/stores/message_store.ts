@@ -1,10 +1,11 @@
 import { type Writable, writable } from 'svelte/store';
 import { createMessage, type Message } from '$lib/models/message';
 import { APIError } from '$lib/util/api_util';
-import { createUser, type User } from '$lib/models/user';
+import { type User } from '$lib/models/user';
 import { correctAnswers } from '$lib/util/svg_utils/correctAnswers';
-import { currentUser, update_user } from './user_store';
+import { currentProfile, update_profile } from './profile_store';
 import type { Room } from '$lib/models/room';
+import { createProfile, type Profile } from '$lib/models/profile';
 
 /**
  * A writable store that holds the current message.
@@ -15,7 +16,7 @@ import type { Room } from '$lib/models/room';
  */
 export const currentMessage: Writable<Message | null> = writable<Message | null>();
 
-export async function message_create(user: User, text: string): Promise<Message> {
+export async function create_message(user: User, text: string): Promise<Message> {
 	const message = createMessage({ text: text, user: user.id });
 
 	const r = await fetch(`/api/message`, {
@@ -36,19 +37,19 @@ export async function message_create(user: User, text: string): Promise<Message>
 export async function checkIfMessageIsRightAnswer(
 	room: Room,
 	message: string,
-	user: User
+	profile: Profile
 ): Promise<boolean> {
 	if (room.isPlaying) {
 		const anwers = correctAnswers[room.category!][room.currentSvgCode!];
 		if (anwers.includes(message.toLowerCase())) {
-			const updatedUser = createUser({
-				...user,
-				points: user.points + 1
+			const updateProfile = createProfile({
+				...profile,
+				points: profile.points + 1
 			});
 
-			update_user(updatedUser);
+			update_profile(updateProfile);
 
-			currentUser.set(updatedUser);
+			currentProfile.set(updateProfile);
 
 			return true;
 		}

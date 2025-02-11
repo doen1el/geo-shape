@@ -6,8 +6,8 @@
 	import { z } from "zod";
 	import { createForm } from "felte";
 	import { validator } from "@felte/validator-zod";
-	import { room_create } from '$lib/stores/room_store';
-	import { get_user, user_create } from '$lib/stores/user_store';
+	import { create_room } from '$lib/stores/room_store';
+	import { create_user } from '$lib/stores/user_store';
 	import { show_toast } from '$lib/stores/toast_store';
 	import { goto } from '$app/navigation';
 	import { pb } from '$lib/pocketbase';
@@ -16,18 +16,16 @@
 
 	let loading: boolean = $state(false);
 	let roomCode: string = $state("");
-	let username_exists: boolean = $state(false);
     let usernameInput: any = $state(null);
 
 	onMount(async () => {
         if (pb.authStore.record?.username){
-            usernameInput?.setValue(pb.authStore.record?.username)
-            username_exists = await checkIfUserNameExists(pb.authStore.record?.username);
+            handleUserNameInput(undefined, pb.authStore.record?.username)
         }
 		roomCode = await generateUniqueRoomCode();
 	});
 
-	const { form, errors } = createForm({
+	const { form, errors, setFields } = createForm({
         initialValues: {
             username: "",
         },
@@ -40,11 +38,9 @@
             loading = true;
 
             try {
-				// Create user
-				await user_create(values.username.toLowerCase(), true);
+			    await create_user(values.username.toLowerCase(), true);
 
-                // Create room
-                await room_create(roomCode);
+                await create_room(roomCode);
                
                 goto(`/game/${roomCode}`);
             } catch (e) {
@@ -59,27 +55,18 @@
         },
     });
 
-	async function handleUserNameInput(event: Event) {
-        const input = event.target as HTMLInputElement;
-        let username = input.value.replace(/[^A-Za-z0-9]/g, '');
-        input.value = username;
-        usernameInput.setValue(username);
-        username_exists = await checkIfUserNameExists(username);
-    }
-
-    async function checkIfUserNameExists(username: string): Promise<boolean> {
-        const user = await get_user(username.toLowerCase());
-        if (Object.keys(user).length != 0) {
-            show_toast({
-                icon: "close",
-                type: "error",
-                text: $_("username-already-exists", {
-                    values: { username: username.toUpperCase() },
-                }),
-            });
-            return true;
+	async function handleUserNameInput(event?: Event, username?: string) {
+        let name;
+        if (event) {
+            const input = event.target as HTMLInputElement;
+            name = input.value.replace(/[^A-Za-z0-9]/g, '');
+            input.value = name;
+        } else {
+            name = username;
         }
-        return false;
+
+        usernameInput?.setValue(name?.toUpperCase());
+        setFields('username', name?.toLocaleUpperCase() || '');
     }
 </script>
 
@@ -117,7 +104,7 @@
                     type="submit"
                 
 
-                    disabled={username_exists || !usernameInput?.getValue() || loading}
+                    disabled={!usernameInput?.getValue() || loading}
                 >{$_("create")}</Button>
 			</form>
 		</div>

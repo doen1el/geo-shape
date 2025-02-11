@@ -10,7 +10,6 @@ export async function PUT(event: RequestEvent): Promise<Response> {
 	try {
 		const params = event.params;
 		const safeParams = RecordIdSchema.parse(params);
-		//const safeData = UserUpdateSchema.parse(data);
 
 		const r = await pb.collection(users).update<User>(safeParams.id, data);
 

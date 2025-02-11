@@ -14,6 +14,7 @@
     import JoinDialog from '$lib/components/join_dialog.svelte';
     import Game from '$lib/components/game.svelte';
 	import Spinner from '$lib/components/spinner.svelte';
+	import { currentProfile, get_profile } from '$lib/stores/profile_store';
 
     let doesRoomExist = $state(false);
     let userIsLoggedIn = $state(false);
@@ -57,7 +58,7 @@
             currentRoomInfo = room;
 
             pb.collection(rooms).subscribe(currentRoomId, async ({ action, record }) => {
-                const expandedRecord = await pb.collection(rooms).getOne(record.id, { expand: 'players,messages,messages.user' });
+                const expandedRecord = await pb.collection(rooms).getOne(record.id, { expand: "players,messages,messages.user,players.user" });
                 currentRoomInfo = expandedRecord;
             });
 
@@ -67,13 +68,16 @@
                     type: "error",
                     text: $_("user-not-logged-in"),
                 });
+                await getInitialRoomInfo();
                 isLoading = false;
                 return;
             }
 
+            await get_profile($currentUser);
+            
             userIsLoggedIn = true;
-            await join_room($currentUser, currentRoomId);
-
+            await join_room($currentProfile!, currentRoomId);
+            
             // Fetch initial room info again
             await getInitialRoomInfo();
         } catch (error) {
@@ -88,8 +92,8 @@
     });
 
     async function joinNewUser() {
-        if ($currentUser) {
-            await join_room($currentUser, currentRoomId);
+        if ($currentProfile) {
+            await join_room($currentProfile, currentRoomId);
             userIsLoggedIn = true;
         }
     }
@@ -119,13 +123,13 @@
     {:else}
         <div class="flex flex-col items-center border-black border-2 rounded-md shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-white w-4/5">
             <div class="flex w-full p-5 text-left h-[600px]">
-                <PlayersAdmin currentRoomInfo={currentRoomInfo} isAdmin={!!$currentUser?.isAdmin} />
+                <PlayersAdmin currentRoomInfo={currentRoomInfo} isAdmin={!!$currentProfile?.isAdmin} />
                 <Game currentRoomInfo={currentRoomInfo} />
                 <Chat currentRoomInfo={currentRoomInfo} />
             </div>
         </div>
         {#if !userIsLoggedIn}
-            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="absolute inset-0 flex items-center justify-center">
                 <JoinDialog joinNewUser={joinNewUser} />
             </div>
         {/if}

@@ -1,5 +1,5 @@
 import type { Message } from './message';
-import type { User } from './user';
+import type { Profile } from './profile';
 
 /**
  * Represents a room in the geo-shape application.
@@ -38,7 +38,7 @@ export type Room = {
 	usedSvgCodes?: string;
 	winnerName?: string;
 	expand?: {
-		players?: User[];
+		players?: Profile[];
 		messages?: Message[];
 	};
 };

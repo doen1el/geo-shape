@@ -19,7 +19,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 
 		const r = await pb.collection(users).create<User>(safeData);
 
-		await authWithPassword(safeData.username!, data.password);
+		await authWithPassword(safeData.email!, data.password);
 
 		return json(r);
 	} catch (e: unknown) {
@@ -28,12 +28,12 @@ export async function POST(event: RequestEvent): Promise<Response> {
 }
 
 /**
- * Authenticates a user with a username and password.
+ * Authenticates a user with a email and password.
  *
- * @param username - The username of the user.
+ * @param email - The email of the user.
  * @param password - The password of the user.
  * @returns A promise that resolves when the authentication is complete.
  */
-async function authWithPassword(username: string, password: string): Promise<void> {
-	await pb.collection('users').authWithPassword(username, password);
+async function authWithPassword(email: string, password: string): Promise<void> {
+	await pb.collection('users').authWithPassword(email, password);
 }

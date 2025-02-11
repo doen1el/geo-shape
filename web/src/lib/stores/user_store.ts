@@ -2,6 +2,7 @@ import { pb } from '$lib/pocketbase';
 import { createUser, type User } from '$lib/models/user';
 import { APIError } from '$lib/util/api_util';
 import { type Writable, writable } from 'svelte/store';
+import { create_profile } from './profile_store';
 
 /**
  * A writable store that holds the current user information.
@@ -19,7 +20,7 @@ export const currentUser: Writable<User | null> = writable<User | null>();
  * @returns A promise that resolves to the created user object.
  * @throws {APIError} If the API request fails.
  */
-export async function user_create(username: string, is_admin: boolean = false): Promise<User> {
+export async function create_user(username: string, isAdmin: boolean = false): Promise<User> {
 	if (pb.authStore.record && pb.authStore.record?.username == username) {
 		return pb.authStore.record as User;
 	}
@@ -29,11 +30,13 @@ export async function user_create(username: string, is_admin: boolean = false): 
 	// since we only use throwaway user, we can just generate a random password
 	const password = Math.random().toString(36).substring(2, 30);
 
+	const email = `${Math.random().toString(36).substring(2, 20)}@geoshape.com`;
+
 	const user = createUser({
 		username: username,
-		isAdmin: is_admin,
 		password: password,
-		passwordConfirm: password
+		passwordConfirm: password,
+		email: email
 	});
 
 	const r = await fetch('/api/user/create', {
@@ -49,6 +52,8 @@ export async function user_create(username: string, is_admin: boolean = false): 
 	const createdUser: User = await r.json();
 
 	pb.authStore.loadFromCookie(document.cookie);
+
+	await create_profile(createdUser, isAdmin);
 
 	return createdUser;
 }

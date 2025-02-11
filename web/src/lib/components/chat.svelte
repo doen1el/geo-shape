@@ -7,9 +7,10 @@
 	import { show_toast } from "$lib/stores/toast_store";
 	import TextField from "$lib/components/text_field.svelte";
 	import Button from "$lib/components/button.svelte";
-	import { checkIfMessageIsRightAnswer, message_create } from "$lib/stores/message_store";
+	import { checkIfMessageIsRightAnswer, create_message } from "$lib/stores/message_store";
 	import { update_room } from "$lib/stores/room_store";
 	import { createRoom, type Room } from "$lib/models/room";
+	import { currentProfile } from "$lib/stores/profile_store";
 
 	const { currentRoomInfo }: {currentRoomInfo : Room} = $props();
 	
@@ -31,7 +32,6 @@
 
 	// Scroll to the bottom of the chat container after each update
 	$effect(() => {
-		console.log(currentRoomInfo.currentSvgCode)
         if (currentRoomInfo) {
             scrollToBottom();
         }
@@ -59,7 +59,7 @@
 					throw new Error("User not found");
 				}
 
-				isRightAnswer = await checkIfMessageIsRightAnswer(currentRoomInfo, values.message, $currentUser);
+				isRightAnswer = await checkIfMessageIsRightAnswer(currentRoomInfo, values.message, $currentProfile!);
 
 				if (isRightAnswer) {
 						show_toast({
@@ -70,7 +70,7 @@
 						}),
 					});
 				} else {
-					const message = await message_create($currentUser, values.message);
+					const message = await create_message($currentUser, values.message);
 
 					const updatedRoomInfo = createRoom({
 						...currentRoomInfo,
@@ -107,7 +107,7 @@
 		bind:this={chatContainer}
 	>
 		{#each currentRoomInfo.expand?.messages ?? [] as message (message.id)}
-			{#if $currentUser && message.expand?.user.username === $currentUser.username}
+			{#if $currentUser && message.expand?.user.id === $currentUser.id}
 				<div class="flex items-center justify-end">
 					<p class="mr-2 mt-1"><b>{$_("you")}</b>: {message.text}</p>
 				</div>

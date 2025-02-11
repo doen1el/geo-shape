@@ -7,7 +7,7 @@
 
     const { currentRoomInfo, isAdmin }: {currentRoomInfo: Room, isAdmin: boolean} = $props()
 
-    let svgCategories = [$_("german-states"), $_("european-countries"), $_("world-countries")];
+    let svgCategories = [$_("german-states")]; // , $_("european-countries"), $_("world-countries")
     let selectedCategory: string = $state(svgCategories[0]);
 
     function updateRoomInfo(updates: Partial<Room>) {
@@ -52,12 +52,12 @@
         <div class="flex items-center mt-2">
             <img
                 class="avatar"
-                src={`https://api.dicebear.com/9.x/croodles/svg?seed=${player.username}&backgroundColor=ffdfbf,ffd5dc,d1d4f9,c0aede,b6e3f4&scale=110&radius=10`}
+                src={`https://api.dicebear.com/9.x/croodles/svg?seed=${player.expand!.user.username}&backgroundColor=ffdfbf,ffd5dc,d1d4f9,c0aede,b6e3f4&scale=110&radius=10`}
                 alt="avatar"
                 width="30px"
             />
             <p class="ml-2 {player.isAdmin ? 'font-bold' : ''}">
-                {player.username.toUpperCase()}: {player.points} <u>{player.gamesWon > 0 ? player.gamesWon : ''}</u>
+                {player.expand!.user.username.toUpperCase()}: {player.points} <u>{player.gamesWon > 0 ? player.gamesWon : ''}</u>
             </p>
         </div>
     {/each}

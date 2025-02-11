@@ -1,11 +1,11 @@
 import { APIError } from '$lib/util/api_util';
 import { type Writable, writable } from 'svelte/store';
 import { createRoom, type Room } from '$lib/models/room';
-import { createUser, type User } from '$lib/models/user';
 import { europeanCountriesSvgMap } from '$lib/util/svg_utils/european-countries';
 import { germanStatesSvgMap } from '$lib/util/svg_utils/german_states';
 import { worldCountriesSvgMap } from '$lib/util/svg_utils/world-countries';
-import { update_user } from './user_store';
+import { createProfile, type Profile } from '$lib/models/profile';
+import { update_profile } from './profile_store';
 
 /**
  * A writable store that holds the current room information.
@@ -31,7 +31,7 @@ const svgCodesByCategory: { [key: number]: { [key: number]: string } } = {
  * @returns A promise that resolves to the created room object.
  * @throws {APIError} If the server responds with an error.
  */
-export async function room_create(room_code: string): Promise<Room> {
+export async function create_room(room_code: string): Promise<Room> {
 	const newRoom = createRoom({ roomCode: room_code });
 
 	const r = await fetch(`/api/room/${room_code}`, {
@@ -57,10 +57,10 @@ export async function room_create(room_code: string): Promise<Room> {
  * @returns A promise that resolves when the user has successfully joined the room.
  * @throws {APIError} If the request to join the room fails.
  */
-export async function join_room(user: User, room_code: string): Promise<void> {
+export async function join_room(profile: Profile, room_code: string): Promise<void> {
 	const r = await fetch(`/api/room/${room_code}/join`, {
 		method: 'PUT',
-		body: JSON.stringify({ ...user })
+		body: JSON.stringify({ ...profile })
 	});
 
 	if (!r.ok) {
@@ -142,7 +142,7 @@ export async function end_game(roomCode: string): Promise<void> {
 		if (player.points > maxPoints) {
 			maxPoints = player.points;
 			winnerIds = [player.id];
-			winnerNames = [player.username];
+			winnerNames = [player.expand!.user.username];
 		} else if (player.points === maxPoints) {
 			winnerIds.push(player.id);
 		}
@@ -157,16 +157,16 @@ export async function end_game(roomCode: string): Promise<void> {
 	// Choose the first player with the highest points as the winner
 	const winnerId = winnerIds.length > 0 ? winnerIds[0] : null;
 
-	const updateUserPromises = room.expand!.players!.map(async (player) => {
-		const updatedUser = createUser({
+	const updateProfilePromises = room.expand!.players!.map(async (player) => {
+		const updateProfile = createProfile({
 			...player,
 			points: 0,
 			gamesWon: player.id === winnerId ? player.gamesWon + 1 : player.gamesWon
 		});
-		return update_user(updatedUser);
+		return update_profile(updateProfile);
 	});
 
-	await Promise.all(updateUserPromises);
+	await Promise.all(updateProfilePromises);
 
 	const updatedRoom = createRoom({
 		...room,
