@@ -9,7 +9,6 @@ RUN deno install
 
 COPY ./cron.sh /etc/periodic/2hour/cron
 RUN chmod +x /etc/periodic/2hour/cron
-ENV PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
 
 COPY . .
 ENV NODE_ENV=production

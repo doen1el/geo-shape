@@ -2,7 +2,7 @@ FROM alpine:3.16
 
 WORKDIR /
 
-COPY pb_migrations ./pb_migrations
+# COPY migrations ./migrations
 
 ARG TARGETARCH
 RUN echo ${TARGETARCH}
