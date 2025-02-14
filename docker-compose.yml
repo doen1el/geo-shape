@@ -18,7 +18,7 @@ services:
       db:
         condition: service_started
     environment:
-      PUBLIC_POCKETBASE_URL: https://geoshape.danielmuenstermann.de/api
+      PUBLIC_POCKETBASE_URL: https://geoshape.danielmuenstermann.de/pb
     ports:
       - "3000:3000"
     networks:
