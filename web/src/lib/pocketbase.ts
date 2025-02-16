@@ -1,8 +1,9 @@
 import PocketBase from 'pocketbase';
+import { PUBLIC_POCKETBASE_URL } from '$env/static/public';
 
 export function createInstance() {
-	console.log('PUBLIC_POCKETBASE_URL:', 'https://geoshape.danielmuenstermann.de/pb');
-	return new PocketBase('https://geoshape.danielmuenstermann.de/pb');
+	console.log('PUBLIC_POCKETBASE_URL:', PUBLIC_POCKETBASE_URL);
+	return new PocketBase(PUBLIC_POCKETBASE_URL);
 }
 
 export const pb = createInstance();

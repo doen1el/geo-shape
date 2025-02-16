@@ -11,4 +11,4 @@ RUN chmod +x /pocketbase
 
 EXPOSE 8090
 
-ENTRYPOINT ["/pocketbase", "serve", "--http=195.20.225.54:8090", "--dir=/pb_data"]
+ENTRYPOINT ["/pocketbase", "serve", "--http=0.0.0.0:8090", "--dir=/pb_data"]
