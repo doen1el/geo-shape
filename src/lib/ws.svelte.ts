@@ -7,6 +7,7 @@ export type PublicPlayer = {
 	name: string;
 	avatar: string;
 	score: number;
+	wins: number;
 	isHost: boolean;
 	connected: boolean;
 	solved: boolean;
@@ -47,7 +48,13 @@ export type RoundResult = {
 };
 export type GameOver = { winnerName: string | null; isTie: boolean; players: PublicPlayer[] };
 export type Verdict = 'correct' | 'close' | 'wrong';
-export type ChatEntry = { id: number; kind: 'guess' | 'solved'; name: string; text?: string };
+export type ChatEntry = {
+	id: number;
+	kind: 'guess' | 'solved' | 'msg';
+	name: string;
+	text?: string;
+	playerId?: string;
+};
 
 export type LeaderboardEntry = {
 	name: string;
@@ -78,6 +85,7 @@ class GameSocket {
 	gameOver = $state<GameOver | null>(null);
 	verdict = $state<{ value: Verdict; at: number } | null>(null);
 	chat = $state<ChatEntry[]>([]);
+	countdown = $state<{ until: number } | null>(null);
 
 	// --- persistence-backed views ---
 	leaderboard = $state<LeaderboardEntry[]>([]);
@@ -130,11 +138,17 @@ class GameSocket {
 			case ServerMsg.ROOM_STATE:
 				this.room = msg.room;
 				break;
+			case ServerMsg.COUNTDOWN:
+				this.gameOver = null;
+				this.roundResult = null;
+				this.countdown = { until: msg.startsAt + msg.durationMs };
+				break;
 			case ServerMsg.ROUND_START:
 				if (msg.round === 1) this.chat = [];
 				this.roundResult = null;
 				this.gameOver = null;
 				this.verdict = null;
+				this.countdown = null;
 				this.round = {
 					round: msg.round,
 					maxRounds: msg.maxRounds,
@@ -164,8 +178,17 @@ class GameSocket {
 			case ServerMsg.CHAT:
 				this.chat = [
 					...this.chat.slice(-49),
-					{ id: ++chatSeq, kind: msg.kind, name: msg.name, text: msg.text }
+					{ id: ++chatSeq, kind: msg.kind, name: msg.name, text: msg.text, playerId: msg.playerId }
 				];
+				break;
+			case ServerMsg.CHAT_HISTORY:
+				this.chat = (msg.entries ?? []).map((e: any) => ({
+					id: ++chatSeq,
+					kind: e.kind,
+					name: e.name,
+					text: e.text,
+					playerId: e.playerId
+				}));
 				break;
 			case ServerMsg.ROOM_EXISTS:
 				this.roomCheck = { code: msg.code, exists: !!msg.exists };
@@ -188,6 +211,7 @@ class GameSocket {
 		this.gameOver = null;
 		this.verdict = null;
 		this.chat = [];
+		this.countdown = null;
 	}
 
 	#send(data: object): void {
@@ -210,7 +234,11 @@ class GameSocket {
 		});
 	}
 
-	setSettings(settings: { categoryId?: number; maxRounds?: number }): void {
+	setSettings(settings: {
+		categoryId?: number;
+		maxRounds?: number;
+		roundDurationSec?: number;
+	}): void {
 		this.#send({ type: ClientMsg.SETTINGS, ...settings });
 	}
 
@@ -220,6 +248,10 @@ class GameSocket {
 
 	guess(text: string): void {
 		this.#send({ type: ClientMsg.GUESS, text });
+	}
+
+	say(text: string): void {
+		this.#send({ type: ClientMsg.SAY, text });
 	}
 
 	async checkRoom(code: string): Promise<void> {

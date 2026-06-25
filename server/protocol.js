@@ -6,6 +6,7 @@ export const ClientMsg = /** @type {const} */ ({
 	SETTINGS: 'settings',
 	START: 'start',
 	GUESS: 'guess',
+	SAY: 'say',
 	CHECK_ROOM: 'check_room',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats'
@@ -15,11 +16,13 @@ export const ClientMsg = /** @type {const} */ ({
 export const ServerMsg = /** @type {const} */ ({
 	CREATED: 'created',
 	ROOM_STATE: 'room_state',
+	COUNTDOWN: 'countdown',
 	ROUND_START: 'round_start',
 	ROUND_END: 'round_end',
 	GAME_OVER: 'game_over',
 	GUESS_RESULT: 'guess_result',
 	CHAT: 'chat',
+	CHAT_HISTORY: 'chat_history',
 	ROOM_EXISTS: 'room_exists',
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
@@ -46,6 +49,7 @@ export const Verdict = /** @type {const} */ ({
  * @property {string} name
  * @property {string} avatar
  * @property {number} score
+ * @property {number} wins
  * @property {boolean} isHost
  * @property {boolean} connected
  * @property {boolean} solved

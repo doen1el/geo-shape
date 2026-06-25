@@ -1,6 +1,7 @@
 import { ServerMsg } from './protocol.js';
 import { DEFAULT_MAX_ROUNDS, ROUND_DURATION_SEC } from './config.js';
 import { PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
+import { getPlayerStats } from './db.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 4;
@@ -18,6 +19,7 @@ let playerSeq = 0;
  * @property {string} id
  * @property {Profile} profile
  * @property {number} score
+ * @property {number} wins
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
  */
@@ -40,6 +42,7 @@ let playerSeq = 0;
  * @property {boolean} roundActive
  * @property {number} roundEndsAt
  * @property {Set<string>} solved
+ * @property {Array<{kind: string, name: string, text?: string, playerId?: string}>} chatLog
  * @property {ReturnType<typeof setTimeout> | null} roundTimer
  * @property {ReturnType<typeof setTimeout> | null} pauseTimer
  */
@@ -83,6 +86,7 @@ export class RoomManager {
 			roundActive: false,
 			roundEndsAt: 0,
 			solved: new Set(),
+			chatLog: [],
 			roundTimer: null,
 			pauseTimer: null
 		};
@@ -109,8 +113,9 @@ export class RoomManager {
 	 */
 	addPlayer(room, profile, socket) {
 		const id = `p${++playerSeq}`;
+		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
 		/** @type {Player} */
-		const player = { id, profile, score: 0, connected: true, socket };
+		const player = { id, profile, score: 0, wins, connected: true, socket };
 		room.players.set(id, player);
 		if (!room.hostId) room.hostId = id;
 		return player;
@@ -152,6 +157,7 @@ export class RoomManager {
 				name: p.profile.name,
 				avatar: p.profile.avatar,
 				score: p.score,
+				wins: p.wins,
 				isHost: p.id === room.hostId,
 				connected: p.connected,
 				solved: room.solved.has(p.id)
@@ -179,6 +185,18 @@ export class RoomManager {
 	 */
 	broadcastState(room) {
 		this.broadcast(room, { type: ServerMsg.ROOM_STATE, room: this.toPublic(room) });
+	}
+
+	/**
+	 * Records a chat entry in the room's history (capped) and broadcasts it, so
+	 * players who join later can be sent the backlog.
+	 * @param {Room} room
+	 * @param {{kind: string, name: string, text?: string, playerId?: string}} entry
+	 */
+	chat(room, entry) {
+		room.chatLog.push(entry);
+		if (room.chatLog.length > 50) room.chatLog.shift();
+		this.broadcast(room, { type: ServerMsg.CHAT, ...entry });
 	}
 }
 

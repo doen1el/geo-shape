@@ -88,6 +88,7 @@ function handleConnection(ws) {
 				console.log(`[ws] ${profile.name} joined room ${room.code} (${room.players.size} total)`);
 				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
 				roomManager.broadcastState(room);
+				if (room.chatLog.length) send({ type: ServerMsg.CHAT_HISTORY, entries: room.chatLog });
 				break;
 			}
 
@@ -114,6 +115,21 @@ function handleConnection(ws) {
 				if (!session) break;
 				const player = session.room.players.get(session.playerId);
 				if (player) handleGuess(session.room, player, msg.text);
+				break;
+			}
+
+			case ClientMsg.SAY: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 120) : '';
+				if (player && text) {
+					roomManager.chat(session.room, {
+						kind: 'msg',
+						name: player.profile.name,
+						text,
+						playerId: player.id
+					});
+				}
 				break;
 			}
 

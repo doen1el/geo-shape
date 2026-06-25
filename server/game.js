@@ -5,12 +5,15 @@ import { judgeGuess } from './match.js';
 import { recordGameResult } from './db.js';
 import {
 	ROUND_END_PAUSE_MS,
+	COUNTDOWN_MS,
 	MAX_ROUND_POINTS,
 	MIN_ROUND_POINTS,
 	FIRST_SOLVE_BONUS,
 	ORDER_BONUS_STEP,
 	MIN_ROUNDS,
-	MAX_ROUNDS
+	MAX_ROUNDS,
+	MIN_ROUND_DURATION_SEC,
+	MAX_ROUND_DURATION_SEC
 } from './config.js';
 
 /** @typedef {import('./rooms.js').Room} Room */
@@ -44,7 +47,7 @@ function allConnectedSolved(room) {
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
  * @param {Player} player
- * @param {{ categoryId?: number, maxRounds?: number }} settings
+ * @param {{ categoryId?: number, maxRounds?: number, roundDurationSec?: number }} settings
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
@@ -53,6 +56,12 @@ export function updateSettings(room, player, settings) {
 	}
 	if (typeof settings.maxRounds === 'number') {
 		room.maxRounds = Math.max(MIN_ROUNDS, Math.min(MAX_ROUNDS, Math.round(settings.maxRounds)));
+	}
+	if (typeof settings.roundDurationSec === 'number') {
+		room.roundDurationSec = Math.max(
+			MIN_ROUND_DURATION_SEC,
+			Math.min(MAX_ROUND_DURATION_SEC, Math.round(settings.roundDurationSec))
+		);
 	}
 	roomManager.broadcastState(room);
 }
@@ -66,12 +75,26 @@ export function startGame(room, player) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
 	if (room.players.size < 1 || !PLAYABLE_CATEGORY_IDS.includes(room.categoryId)) return;
 
+	clearTimers(room);
 	for (const p of room.players.values()) p.score = 0;
 	room.usedShapeIds.clear();
+	room.chatLog = [];
 	room.round = 0;
 	room.status = 'playing';
-	console.log(`[game] ${room.code} started — category ${room.categoryId}, ${room.maxRounds} rounds`);
-	startRound(room);
+	room.roundActive = false;
+	room.currentShape = null;
+
+	roomManager.broadcastState(room);
+	roomManager.broadcast(room, {
+		type: ServerMsg.COUNTDOWN,
+		durationMs: COUNTDOWN_MS,
+		startsAt: Date.now()
+	});
+	console.log(`[game] ${room.code} starting — category ${room.categoryId}, ${room.maxRounds} rounds`);
+	room.pauseTimer = setTimeout(() => {
+		if (!isAlive(room)) return cleanupRoom(room);
+		startRound(room);
+	}, COUNTDOWN_MS);
 }
 
 /**
@@ -133,7 +156,7 @@ export function handleGuess(room, player, text) {
 		player.score += points;
 
 		send(player, { type: ServerMsg.GUESS_RESULT, verdict });
-		roomManager.broadcast(room, { type: ServerMsg.CHAT, kind: 'solved', name: player.profile.name });
+		roomManager.chat(room, { kind: 'solved', name: player.profile.name, playerId: player.id });
 		roomManager.broadcastState(room);
 		console.log(`[game] ${room.code} ${player.profile.name} solved (+${points})`);
 
@@ -147,11 +170,11 @@ export function handleGuess(room, player, text) {
 	}
 
 	send(player, { type: ServerMsg.GUESS_RESULT, verdict });
-	roomManager.broadcast(room, {
-		type: ServerMsg.CHAT,
+	roomManager.chat(room, {
 		kind: 'guess',
 		name: player.profile.name,
-		text: guess.slice(0, 60)
+		text: guess.slice(0, 60),
+		playerId: player.id
 	});
 }
 
