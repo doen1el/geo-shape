@@ -1,0 +1,12 @@
+export const ROUND_DURATION_SEC = 75;
+export const ROUND_END_PAUSE_MS = 6000;
+
+export const DEFAULT_MAX_ROUNDS = 5;
+export const MIN_ROUNDS = 1;
+export const MAX_ROUNDS = 15;
+
+export const MAX_ROUND_POINTS = 100;
+export const MIN_ROUND_POINTS = 20;
+
+export const FIRST_SOLVE_BONUS = 30;
+export const ORDER_BONUS_STEP = 10;

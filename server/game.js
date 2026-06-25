@@ -1,0 +1,248 @@
+import { ServerMsg, Verdict } from './protocol.js';
+import { roomManager } from './rooms.js';
+import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
+import { judgeGuess } from './match.js';
+import { recordGameResult } from './db.js';
+import {
+	ROUND_END_PAUSE_MS,
+	MAX_ROUND_POINTS,
+	MIN_ROUND_POINTS,
+	FIRST_SOLVE_BONUS,
+	ORDER_BONUS_STEP,
+	MIN_ROUNDS,
+	MAX_ROUNDS
+} from './config.js';
+
+/** @typedef {import('./rooms.js').Room} Room */
+/** @typedef {import('./rooms.js').Player} Player */
+
+/** Room is still tracked and has players. @param {Room} room */
+function isAlive(room) {
+	return roomManager.getRoom(room.code) === room && room.players.size > 0;
+}
+
+/** @param {Room} room */
+function clearTimers(room) {
+	if (room.roundTimer) clearTimeout(room.roundTimer);
+	if (room.pauseTimer) clearTimeout(room.pauseTimer);
+	room.roundTimer = null;
+	room.pauseTimer = null;
+}
+
+/** @param {Room} room */
+function connectedPlayers(room) {
+	return [...room.players.values()].filter((p) => p.connected);
+}
+
+/** @param {Room} room */
+function allConnectedSolved(room) {
+	const connected = connectedPlayers(room);
+	return connected.length > 0 && connected.every((p) => room.solved.has(p.id));
+}
+
+/**
+ * Host changes lobby settings (category / number of rounds).
+ * @param {Room} room
+ * @param {Player} player
+ * @param {{ categoryId?: number, maxRounds?: number }} settings
+ */
+export function updateSettings(room, player, settings) {
+	if (room.hostId !== player.id || room.status !== 'lobby') return;
+	if (typeof settings.categoryId === 'number' && PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)) {
+		room.categoryId = settings.categoryId;
+	}
+	if (typeof settings.maxRounds === 'number') {
+		room.maxRounds = Math.max(MIN_ROUNDS, Math.min(MAX_ROUNDS, Math.round(settings.maxRounds)));
+	}
+	roomManager.broadcastState(room);
+}
+
+/**
+ * Host starts the game.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function startGame(room, player) {
+	if (room.hostId !== player.id || room.status !== 'lobby') return;
+	if (room.players.size < 1 || !PLAYABLE_CATEGORY_IDS.includes(room.categoryId)) return;
+
+	for (const p of room.players.values()) p.score = 0;
+	room.usedShapeIds.clear();
+	room.round = 0;
+	room.status = 'playing';
+	console.log(`[game] ${room.code} started — category ${room.categoryId}, ${room.maxRounds} rounds`);
+	startRound(room);
+}
+
+/**
+ * Begins the next round.
+ * @param {Room} room
+ */
+function startRound(room) {
+	clearTimers(room);
+	if (!isAlive(room)) return cleanupRoom(room);
+
+	const shape = pickShape(room.categoryId, room.usedShapeIds);
+	if (!shape) return endGame(room);
+
+	room.round += 1;
+	room.currentShape = shape;
+	room.solved = new Set();
+	room.roundActive = true;
+	room.roundEndsAt = Date.now() + room.roundDurationSec * 1000;
+
+	const category = getCategory(room.categoryId);
+	roomManager.broadcast(room, {
+		type: ServerMsg.ROUND_START,
+		round: room.round,
+		maxRounds: room.maxRounds,
+		categoryId: room.categoryId,
+		viewBox: category?.viewBox ?? '0 0 400 400',
+		path: shape.path,
+		durationSec: room.roundDurationSec,
+		endsAt: room.roundEndsAt
+	});
+	roomManager.broadcastState(room);
+	console.log(`[game] ${room.code} round ${room.round}/${room.maxRounds}: answer = ${shape.name}`);
+
+	room.roundTimer = setTimeout(() => endRound(room), room.roundDurationSec * 1000);
+}
+
+/**
+ * Handles a chat guess.
+ * @param {Room} room
+ * @param {Player} player
+ * @param {string} text
+ */
+export function handleGuess(room, player, text) {
+	const guess = String(text ?? '').trim();
+	if (!guess) return;
+	if (room.status !== 'playing' || !room.roundActive || !room.currentShape) return;
+	if (room.solved.has(player.id)) return;
+
+	const verdict = judgeGuess(guess, room.currentShape.answers);
+
+	if (verdict === Verdict.CORRECT) {
+		const order = room.solved.size;
+		room.solved.add(player.id);
+		const timeLeftMs = Math.max(0, room.roundEndsAt - Date.now());
+		const fraction = timeLeftMs / (room.roundDurationSec * 1000);
+		const timePoints = Math.max(MIN_ROUND_POINTS, Math.round(fraction * MAX_ROUND_POINTS));
+		const orderBonus = Math.max(0, FIRST_SOLVE_BONUS - order * ORDER_BONUS_STEP);
+		const points = timePoints + orderBonus;
+		player.score += points;
+
+		send(player, { type: ServerMsg.GUESS_RESULT, verdict });
+		roomManager.broadcast(room, { type: ServerMsg.CHAT, kind: 'solved', name: player.profile.name });
+		roomManager.broadcastState(room);
+		console.log(`[game] ${room.code} ${player.profile.name} solved (+${points})`);
+
+		if (allConnectedSolved(room)) endRound(room);
+		return;
+	}
+
+	if (verdict === Verdict.CLOSE) {
+		send(player, { type: ServerMsg.GUESS_RESULT, verdict });
+		return;
+	}
+
+	send(player, { type: ServerMsg.GUESS_RESULT, verdict });
+	roomManager.broadcast(room, {
+		type: ServerMsg.CHAT,
+		kind: 'guess',
+		name: player.profile.name,
+		text: guess.slice(0, 60)
+	});
+}
+
+/**
+ * Ends the current round, reveals the answer, then schedules what's next.
+ * @param {Room} room
+ */
+function endRound(room) {
+	clearTimers(room);
+	room.roundActive = false;
+	const answer = room.currentShape?.name ?? '';
+	const info = room.currentShape?.info ?? null;
+	const isLast = room.round >= room.maxRounds;
+
+	roomManager.broadcast(room, {
+		type: ServerMsg.ROUND_END,
+		answer,
+		info,
+		players: roomManager.toPublic(room).players,
+		nextInMs: isLast ? 0 : ROUND_END_PAUSE_MS
+	});
+	console.log(`[game] ${room.code} round ${room.round} ended — answer was ${answer}`);
+
+	if (!isAlive(room)) return cleanupRoom(room);
+
+	room.pauseTimer = setTimeout(() => {
+		if (!isAlive(room)) return cleanupRoom(room);
+		if (isLast) endGame(room);
+		else startRound(room);
+	}, ROUND_END_PAUSE_MS);
+}
+
+/**
+ * Ends the game, announces the winner, then resets the room to its lobby.
+ * @param {Room} room
+ */
+export function endGame(room) {
+	clearTimers(room);
+	room.roundActive = false;
+	room.status = 'finished';
+
+	const finalPlayers = roomManager.toPublic(room).players;
+	const maxScore = finalPlayers.reduce((m, p) => Math.max(m, p.score), 0);
+	const winners = finalPlayers.filter((p) => p.score === maxScore && maxScore > 0);
+	const isTie = winners.length > 1;
+
+	roomManager.broadcast(room, {
+		type: ServerMsg.GAME_OVER,
+		winnerName: !isTie && winners.length === 1 ? winners[0].name : null,
+		isTie,
+		players: finalPlayers
+	});
+	console.log(`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`);
+
+	const winnerIds = new Set(winners.map((w) => w.id));
+	const isContest = room.players.size > 1;
+	for (const p of room.players.values()) {
+		recordGameResult(
+			{ clientId: p.profile.clientId, name: p.profile.name, avatar: p.profile.avatar },
+			{ won: isContest && winnerIds.has(p.id), score: p.score }
+		);
+	}
+
+	room.status = 'lobby';
+	room.round = 0;
+	room.currentShape = null;
+	room.solved = new Set();
+	room.usedShapeIds.clear();
+	for (const p of room.players.values()) p.score = 0;
+	roomManager.broadcastState(room);
+}
+
+/**
+ * Called when a player leaves mid-game: may finish the round early.
+ * @param {Room} room
+ */
+export function notifyPlayerLeft(room) {
+	if (room.status === 'playing' && room.roundActive && allConnectedSolved(room)) {
+		endRound(room);
+	}
+}
+
+/**
+ * Clears any pending timers for a room (e.g. once it has emptied out).
+ * @param {Room} room
+ */
+export function cleanupRoom(room) {
+	clearTimers(room);
+}
+
+/** @param {Player} player @param {object} msg */
+function send(player, msg) {
+	if (player.socket.readyState === 1) player.socket.send(JSON.stringify(msg));
+}
