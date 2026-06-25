@@ -207,7 +207,7 @@
 								: 'opacity-50'}"
 						>
 							<img
-								src={avatarUrl(p.avatar)}
+								src={avatarUrl(p.avatar, p.name)}
 								alt={p.name}
 								width="40"
 								height="40"

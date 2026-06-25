@@ -117,6 +117,12 @@ function handleConnection(ws) {
 				break;
 			}
 
+			case ClientMsg.CHECK_ROOM: {
+				const code = typeof msg.code === 'string' ? msg.code.toUpperCase() : '';
+				send({ type: ServerMsg.ROOM_EXISTS, code, exists: !!roomManager.getRoom(code) });
+				break;
+			}
+
 			case ClientMsg.GET_LEADERBOARD: {
 				send({ type: ServerMsg.LEADERBOARD, players: getLeaderboard(10) });
 				break;

@@ -27,8 +27,24 @@
 		-webkit-font-smoothing: antialiased;
 	}
 
+	html,
+	body {
+		overflow-x: hidden;
+	}
+
 	body {
 		min-height: 100svh;
+	}
+
+	button:not(:disabled),
+	[role='button']:not(:disabled),
+	label[for],
+	summary {
+		cursor: pointer;
+	}
+
+	button:disabled {
+		cursor: not-allowed;
 	}
 
 	body::before {
@@ -41,4 +57,49 @@
 		opacity: 0.08;
 		pointer-events: none;
 	}
+}
+
+@keyframes shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20% {
+		transform: translateX(-7px);
+	}
+	40% {
+		transform: translateX(7px);
+	}
+	60% {
+		transform: translateX(-5px);
+	}
+	80% {
+		transform: translateX(5px);
+	}
+}
+
+@keyframes pulse-grey {
+	0%,
+	100% {
+		background-color: var(--color-surface);
+		border-color: var(--color-border);
+	}
+	50% {
+		background-color: #ededed;
+		border-color: #9ca3af;
+	}
+}
+
+.input-checking {
+	animation: pulse-grey 1.1s ease-in-out infinite;
+}
+
+.input-invalid {
+	animation: shake 0.4s ease;
+	border-color: var(--color-danger) !important;
+	background-color: color-mix(in srgb, var(--color-danger) 12%, white) !important;
+}
+
+.input-valid {
+	border-color: var(--color-main-accent) !important;
 }

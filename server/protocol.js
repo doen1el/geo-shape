@@ -6,6 +6,7 @@ export const ClientMsg = /** @type {const} */ ({
 	SETTINGS: 'settings',
 	START: 'start',
 	GUESS: 'guess',
+	CHECK_ROOM: 'check_room',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats'
 });
@@ -19,6 +20,7 @@ export const ServerMsg = /** @type {const} */ ({
 	GAME_OVER: 'game_over',
 	GUESS_RESULT: 'guess_result',
 	CHAT: 'chat',
+	ROOM_EXISTS: 'room_exists',
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
 	ERROR: 'error'

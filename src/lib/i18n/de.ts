@@ -32,6 +32,11 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'join.subtitle': 'Hast du einen Raum-Code?',
 	'join.codePlaceholder': 'CODE',
 	'join.go': 'Los',
+	'join.checking': 'Prüfe…',
+	'join.found': 'Raum gefunden!',
+	'join.notFound': 'Kein Raum mit diesem Code',
+
+	'identity.tapAvatar': 'Avatar antippen zum Umstylen',
 
 	'solo.title': 'Solo üben',
 	'solo.subtitle': 'Trainiere gegen die Uhr — ganz ohne Mitspieler.',

@@ -30,6 +30,11 @@ export const en = {
 	'join.subtitle': 'Got a room code?',
 	'join.codePlaceholder': 'CODE',
 	'join.go': 'Go',
+	'join.checking': 'Checking…',
+	'join.found': 'Room found!',
+	'join.notFound': 'No room with that code',
+
+	'identity.tapAvatar': 'Tap avatar to restyle',
 
 	'solo.title': 'Practice solo',
 	'solo.subtitle': 'Sharpen your skills against the clock — no friends needed.',

@@ -25,7 +25,7 @@
 				<li class="flex items-center gap-3 rounded-base border-2 border-border bg-bg px-3 py-2">
 					<span class="w-7 text-center text-lg font-extrabold">{medals[i] ?? i + 1}</span>
 					<img
-						src={avatarUrl(p.avatar)}
+						src={avatarUrl(p.avatar, p.name)}
 						alt={p.name}
 						width="36"
 						height="36"

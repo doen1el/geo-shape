@@ -6,8 +6,8 @@
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="mx-auto flex min-h-svh w-full max-w-3xl flex-col px-4 py-6">
-	<header class="mb-8 flex items-center justify-between">
+<div class="mx-auto flex h-svh w-full max-w-3xl flex-col overflow-hidden px-4 py-4">
+	<header class="mb-4 flex shrink-0 items-center justify-between">
 		<a href="/" class="flex items-center gap-2">
 			<span
 				class="rounded-base border-2 border-border bg-main px-3 py-1 text-2xl font-extrabold shadow-shadow"
@@ -23,11 +23,7 @@
 		</a>
 	</header>
 
-	<main class="flex flex-1 flex-col">
+	<main class="flex min-h-0 flex-1 flex-col">
 		{@render children()}
 	</main>
-
-	<footer class="mt-8 text-center text-sm font-medium text-ink/50">
-		{t('app.tagline')}
-	</footer>
 </div>

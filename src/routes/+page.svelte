@@ -16,8 +16,30 @@
 	const canPlay = $derived(name.trim().length > 0);
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
 
+	const code = $derived(joinCode.trim().toUpperCase());
+
+	const checked = $derived(game.roomCheck?.code === code ? game.roomCheck : null);
+	const codeReady = $derived(code.length === 4);
+	const codeValid = $derived(codeReady && checked?.exists === true);
+
+	const codeStateClass = $derived(
+		!codeReady
+			? ''
+			: !checked
+				? 'input-checking'
+				: checked.exists
+					? 'input-valid'
+					: 'input-invalid'
+	);
+
 	onMount(() => {
 		game.requestStats(profile.clientId);
+	});
+
+	$effect(() => {
+		if (code.length !== 4) return;
+		const id = setTimeout(() => game.checkRoom(code), 250);
+		return () => clearTimeout(id);
 	});
 
 	function saveName() {
@@ -30,8 +52,8 @@
 		errorMsg = '';
 		saveName();
 		try {
-			const code = await game.create(profile.toJSON());
-			await goto(`/room/${code}`);
+			const newCode = await game.create(profile.toJSON());
+			await goto(`/room/${newCode}`);
 		} catch {
 			errorMsg = t('error.connect');
 		} finally {
@@ -40,8 +62,7 @@
 	}
 
 	async function joinRoom() {
-		const code = joinCode.trim().toUpperCase();
-		if (!canPlay || code.length < 4) return;
+		if (!canPlay || !codeValid) return;
 		saveName();
 		await goto(`/room/${code}`);
 	}
@@ -52,9 +73,9 @@
 		errorMsg = '';
 		saveName();
 		try {
-			const code = await game.create(profile.toJSON());
+			const newCode = await game.create(profile.toJSON());
 			game.start();
-			await goto(`/room/${code}?solo=1`);
+			await goto(`/room/${newCode}?solo=1`);
 		} catch {
 			errorMsg = t('error.connect');
 		} finally {
@@ -63,19 +84,19 @@
 	}
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex min-h-0 flex-1 flex-col justify-center gap-3">
 	<!-- Identity -->
-	<Card class="p-6">
-		<h2 class="mb-4 text-xl font-extrabold">{t('identity.title')}</h2>
+	<Card class="p-4">
 		<div class="flex items-center gap-4">
-			<img
-				src={avatarUrl(profile.avatar)}
-				alt="avatar"
-				width="72"
-				height="72"
-				class="rounded-base border-2 border-border bg-surface shadow-shadow"
-			/>
-			<div class="flex flex-1 flex-col gap-2">
+			<button
+				type="button"
+				onclick={() => profile.cycleAvatar()}
+				title={t('identity.tapAvatar')}
+				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+			>
+				<img src={avatarUrl(profile.avatar, name)} alt="avatar" width="64" height="64" />
+			</button>
+			<div class="flex min-w-0 flex-1 flex-col gap-1">
 				<Input
 					bind:value={name}
 					placeholder={t('identity.namePlaceholder')}
@@ -83,48 +104,39 @@
 					oninput={saveName}
 					aria-label={t('identity.namePlaceholder')}
 				/>
-				<button
-					type="button"
-					class="self-start text-sm font-bold underline underline-offset-2 hover:text-main-accent"
-					onclick={() => profile.shuffleAvatar()}
-				>
-					{t('identity.shuffleAvatar')}
-				</button>
+				<p class="text-xs font-medium text-ink/50">{t('identity.tapAvatar')}</p>
 			</div>
 		</div>
 	</Card>
 
-	<!-- Create -->
-	<Card class="p-6">
-		<h2 class="mb-1 text-xl font-extrabold">{t('create.title')}</h2>
-		<p class="mb-4 text-sm font-medium text-ink/60">{t('create.subtitle')}</p>
+	<!-- Play -->
+	<Card class="flex flex-col gap-4 p-4">
 		<Button size="lg" class="w-full" disabled={!canPlay || busy} onclick={createRoom}>
 			{busy ? t('create.creating') : t('create.button')}
 		</Button>
-	</Card>
 
-	<!-- Join -->
-	<Card class="p-6">
-		<h2 class="mb-1 text-xl font-extrabold">{t('join.title')}</h2>
-		<p class="mb-4 text-sm font-medium text-ink/60">{t('join.subtitle')}</p>
+		<div class="flex items-center gap-2 text-xs font-bold text-ink/30">
+			<div class="h-0.5 flex-1 bg-ink/10"></div>
+			{t('join.subtitle')}
+			<div class="h-0.5 flex-1 bg-ink/10"></div>
+		</div>
+
 		<form class="flex gap-3" onsubmit={(e) => (e.preventDefault(), joinRoom())}>
-			<Input
-				bind:value={joinCode}
-				placeholder={t('join.codePlaceholder')}
-				maxlength={4}
-				class="text-center text-lg font-extrabold tracking-[0.3em] uppercase"
-				aria-label={t('join.codePlaceholder')}
-			/>
-			<Button variant="secondary" type="submit" disabled={!canPlay || joinCode.trim().length < 4}>
+			<div class="min-w-0 flex-1">
+				<Input
+					bind:value={joinCode}
+					placeholder={t('join.codePlaceholder')}
+					maxlength={4}
+					aria-invalid={codeReady && checked ? !checked.exists : undefined}
+					class={`text-center text-lg font-extrabold tracking-[0.3em] uppercase ${codeStateClass}`}
+					aria-label={t('join.codePlaceholder')}
+				/>
+			</div>
+			<Button variant="secondary" type="submit" disabled={!canPlay || !codeValid}>
 				{t('join.go')}
 			</Button>
 		</form>
-	</Card>
 
-	<!-- Solo -->
-	<Card class="p-6">
-		<h2 class="mb-1 text-xl font-extrabold">{t('solo.title')}</h2>
-		<p class="mb-4 text-sm font-medium text-ink/60">{t('solo.subtitle')}</p>
 		<Button variant="neutral" class="w-full" disabled={!canPlay || busy} onclick={playSolo}>
 			{t('solo.button')}
 		</Button>
@@ -134,36 +146,17 @@
 		<p class="text-center font-bold text-danger">{errorMsg}</p>
 	{/if}
 
-	<!-- Playser Stats -->
+	<!-- Your stats -->
 	{#if game.stats && game.stats.gamesPlayed > 0}
-		<Card class="p-6">
-			<h2 class="mb-4 text-xl font-extrabold">{t('stats.title')}</h2>
-			<dl class="grid grid-cols-4 gap-2 text-center">
-				<div class="rounded-base border-2 border-border bg-bg px-2 py-3">
-					<dd class="text-2xl font-extrabold tabular-nums">{game.stats.gamesPlayed}</dd>
-					<dt class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">
-						{t('stats.games')}
-					</dt>
+		<div class="grid grid-cols-4 gap-2 text-center">
+			{#each [{ v: game.stats.gamesPlayed, l: t('stats.games'), hl: false }, { v: game.stats.gamesWon, l: t('stats.wins'), hl: true }, { v: game.stats.bestScore, l: t('stats.best'), hl: false }, { v: nf.format(game.stats.totalScore), l: t('stats.total'), hl: false }] as s (s.l)}
+				<div
+					class="rounded-base border-2 border-border px-2 py-2 {s.hl ? 'bg-main' : 'bg-surface'}"
+				>
+					<div class="text-xl font-extrabold tabular-nums">{s.v}</div>
+					<div class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">{s.l}</div>
 				</div>
-				<div class="rounded-base border-2 border-border bg-main px-2 py-3">
-					<dd class="text-2xl font-extrabold tabular-nums">{game.stats.gamesWon}</dd>
-					<dt class="text-[10px] font-bold tracking-wide text-ink/60 uppercase">
-						{t('stats.wins')}
-					</dt>
-				</div>
-				<div class="rounded-base border-2 border-border bg-bg px-2 py-3">
-					<dd class="text-2xl font-extrabold tabular-nums">{game.stats.bestScore}</dd>
-					<dt class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">
-						{t('stats.best')}
-					</dt>
-				</div>
-				<div class="rounded-base border-2 border-border bg-bg px-2 py-3">
-					<dd class="text-2xl font-extrabold tabular-nums">{nf.format(game.stats.totalScore)}</dd>
-					<dt class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">
-						{t('stats.total')}
-					</dt>
-				</div>
-			</dl>
-		</Card>
+			{/each}
+		</div>
 	{/if}
 </div>

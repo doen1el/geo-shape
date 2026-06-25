@@ -83,6 +83,8 @@ class GameSocket {
 	leaderboard = $state<LeaderboardEntry[]>([]);
 	stats = $state<PlayerStats | null>(null);
 
+	roomCheck = $state<{ code: string; exists: boolean } | null>(null);
+
 	#ws: WebSocket | null = null;
 	#openPromise: Promise<void> | null = null;
 	#pendingAck: ((code: string) => void) | null = null;
@@ -165,6 +167,9 @@ class GameSocket {
 					{ id: ++chatSeq, kind: msg.kind, name: msg.name, text: msg.text }
 				];
 				break;
+			case ServerMsg.ROOM_EXISTS:
+				this.roomCheck = { code: msg.code, exists: !!msg.exists };
+				break;
 			case ServerMsg.LEADERBOARD:
 				this.leaderboard = msg.players ?? [];
 				break;
@@ -215,6 +220,11 @@ class GameSocket {
 
 	guess(text: string): void {
 		this.#send({ type: ClientMsg.GUESS, text });
+	}
+
+	async checkRoom(code: string): Promise<void> {
+		await this.connect();
+		this.#send({ type: ClientMsg.CHECK_ROOM, code });
 	}
 
 	async requestLeaderboard(): Promise<void> {
