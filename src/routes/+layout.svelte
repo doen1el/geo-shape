@@ -26,7 +26,7 @@
 	<header class="mb-4 flex shrink-0 items-center justify-between">
 		<a href="/" class="flex items-center gap-2">
 			<span
-				class="rounded-base border-2 border-border bg-main px-3 py-1 text-2xl font-extrabold shadow-shadow"
+				class="flex h-11 items-center rounded-base border-2 border-border bg-main px-3 text-2xl font-extrabold shadow-shadow"
 			>
 				GeoShape
 			</span>
@@ -36,14 +36,14 @@
 			<button
 				onclick={copyCode}
 				title={roomCode}
-				class="rounded-base border-2 border-border bg-surface px-3 py-1.5 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+				class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
 			>
 				<span class="mr-1 text-ink/40">{copied ? '✓' : '#'}</span>{roomCode}
 			</button>
 		{:else}
 			<a
 				href="/leaderboard"
-				class="rounded-base border-2 border-border bg-surface px-3 py-1.5 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+				class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
 			>
 				{t('nav.leaderboard')}
 			</a>

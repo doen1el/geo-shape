@@ -84,18 +84,25 @@
 	}
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col justify-center gap-3">
+<div class="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col justify-center gap-3">
 	<!-- Identity -->
 	<Card class="p-4">
 		<div class="flex items-center gap-4">
-			<button
-				type="button"
-				onclick={() => profile.cycleAvatar()}
-				title={t('identity.tapAvatar')}
-				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
-			>
-				<img src={avatarUrl(profile.avatar, name)} alt="avatar" width="64" height="64" />
-			</button>
+			<div class="group relative shrink-0">
+				<button
+					type="button"
+					onclick={() => profile.cycleAvatar()}
+					aria-label={t('identity.tapAvatar')}
+					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+				>
+					<img src={avatarUrl(profile.avatar, name)} alt="avatar" width="64" height="64" />
+				</button>
+				<div
+					class="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap text-ink opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"
+				>
+					{t('identity.tapAvatar')}
+				</div>
+			</div>
 			<div class="flex min-w-0 flex-1 flex-col gap-1">
 				<Input
 					bind:value={name}
@@ -104,7 +111,6 @@
 					oninput={saveName}
 					aria-label={t('identity.namePlaceholder')}
 				/>
-				<p class="text-xs font-medium text-ink/50">{t('identity.tapAvatar')}</p>
 			</div>
 		</div>
 	</Card>

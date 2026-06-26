@@ -16,7 +16,7 @@
 	const slots = $derived<Slot[]>([
 		{ place: 2, player: ranked[1], block: 'h-16', avatar: 52, bg: 'bg-secondary' },
 		{ place: 1, player: ranked[0], block: 'h-24', avatar: 72, bg: 'bg-main' },
-		{ place: 3, player: ranked[2], block: 'h-12', avatar: 44, bg: 'bg-bg' }
+		{ place: 3, player: ranked[2], block: 'h-12', avatar: 44, bg: 'bg-sand' }
 	]);
 </script>
 

@@ -1,14 +1,16 @@
 @import 'tailwindcss';
 
 @theme {
-	--color-bg: #fef3e2;
+	--color-bg: #f4e3bf;
 	--color-surface: #ffffff;
-	--color-main: #a3e636;
-	--color-main-accent: #8fce25;
-	--color-secondary: #88aaee;
-	--color-danger: #ff6b6b;
-	--color-border: #000000;
-	--color-ink: #000000;
+	--color-main: #ffcd00;
+	--color-main-accent: #00b2a9;
+	--color-secondary: #00b2a9;
+	--color-danger: #ff4f00;
+	--color-border: #3b2c45;
+	--color-ink: #3b2c45;
+	--color-muted: #7d7f7d;
+	--color-sand: #ebcb8b;
 
 	--radius-base: 8px;
 
@@ -52,9 +54,9 @@
 		position: fixed;
 		inset: 0;
 		z-index: -1;
-		background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
-		background-size: 22px 22px;
-		opacity: 0.08;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%233b2c45' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M16 8 V24 M8 16 H24'/%3E%3Cpath d='M40 40 L56 56 M56 40 L40 56'/%3E%3C/g%3E%3C/svg%3E");
+		background-size: 58px 58px;
+		opacity: 0.06;
 		pointer-events: none;
 	}
 }
@@ -85,8 +87,8 @@
 		border-color: var(--color-border);
 	}
 	50% {
-		background-color: #ededed;
-		border-color: #9ca3af;
+		background-color: color-mix(in srgb, var(--color-muted) 16%, white);
+		border-color: var(--color-muted);
 	}
 }
 
