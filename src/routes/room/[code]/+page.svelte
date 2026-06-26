@@ -11,6 +11,7 @@
 	import GuessChat from '$lib/components/game/GuessChat.svelte';
 	import LobbyChat from '$lib/components/game/LobbyChat.svelte';
 	import Scoreboard from '$lib/components/game/Scoreboard.svelte';
+	import Podium from '$lib/components/game/Podium.svelte';
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
@@ -32,6 +33,7 @@
 	let needsName = $state(!profile.isComplete);
 
 	let confirmLeave = $state(false);
+	let confirmEnd = $state(false);
 	let pendingUrl: string | null = null;
 	let leaving = false;
 
@@ -39,6 +41,16 @@
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
 	const isHost = $derived(me?.isHost ?? false);
 	const canStart = $derived((room?.players.length ?? 0) >= 2);
+
+	const revealInfo = $derived(
+		game.roundResult
+			? {
+					nextRoundAt: game.roundResult.nextRoundAt,
+					totalMs: game.roundResult.nextInMs,
+					isLast: game.roundResult.isLast
+				}
+			: null
+	);
 
 	onMount(() => {
 		if (!needsName) ensureJoined();
@@ -76,6 +88,15 @@
 	}
 	function requestLeave() {
 		goto('/');
+	}
+
+	function togglePause() {
+		if (game.paused) game.resume();
+		else game.pause();
+	}
+	function doEndGame() {
+		confirmEnd = false;
+		game.abort();
 	}
 
 	function playAgain() {
@@ -174,18 +195,26 @@
 	<!-- Game Over -->
 	{#if game.gameOver}
 		<div class="flex flex-1 items-center justify-center">
-			<Card class="flex w-full max-w-md flex-col items-center gap-4 p-8 text-center">
-				<h2 class="text-2xl font-extrabold">{t('game.gameOver')}</h2>
-				<p class="text-xl font-bold">
-					{#if game.gameOver.isTie}
-						{t('game.tie')}
-					{:else if game.gameOver.winnerName}
-						{t('game.winner', { name: game.gameOver.winnerName })}
-					{/if}
-				</p>
+			<Card
+				class="flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-y-auto p-6 text-center"
+			>
+				<div>
+					<h2 class="text-2xl font-extrabold">{t('game.gameOver')}</h2>
+					<p class="mt-1 text-lg font-bold">
+						{#if game.gameOver.isTie}
+							{t('game.tie')}
+						{:else if game.gameOver.winnerName}
+							{t('game.winner', { name: game.gameOver.winnerName })}
+						{/if}
+					</p>
+				</div>
+
+				<Podium players={game.gameOver.players} playerId={game.playerId} />
+
 				<div class="w-full">
 					<Scoreboard players={game.gameOver.players} playerId={game.playerId} />
 				</div>
+
 				<div class="flex gap-3">
 					<Button variant="neutral" onclick={requestLeave}>{t('lobby.leave')}</Button>
 					<Button onclick={playAgain}>{solo ? t('solo.again') : t('game.playAgain')}</Button>
@@ -198,26 +227,57 @@
 		{#if game.countdown && !game.round}
 			<Countdown until={game.countdown.until} />
 		{:else if game.round}
-			<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-[1fr_260px]">
-				<div class="flex min-h-0 flex-col gap-3">
-					<ShapeCanvas round={game.round} revealed={!!game.roundResult} />
-					{#if game.roundResult}
-						<p
-							class="rounded-base border-2 border-border bg-main px-4 py-2 text-center text-lg font-extrabold shadow-shadow"
-						>
-							{t('game.theAnswerWas', { answer: game.roundResult.answer })}
-						</p>
-						{#if game.roundResult.info}
-							<StateInfo info={game.roundResult.info} name={game.roundResult.answer} />
+			{@const revealing = !!game.roundResult}
+			<div class="flex min-h-0 flex-1 flex-col gap-3">
+				<!-- Control bar: host pause / end + everyone can leave -->
+				<div class="flex shrink-0 items-center gap-2">
+					<div class="ml-auto flex items-center gap-2">
+						{#if isHost && !revealing}
+							<Button size="sm" variant="neutral" onclick={togglePause}>
+								{game.paused ? t('game.resume') : t('game.pause')}
+							</Button>
 						{/if}
-					{/if}
-					<div class="min-h-0 flex-1">
-						<GuessChat />
+						{#if isHost}
+							<Button size="sm" variant="neutral" onclick={() => (confirmEnd = true)}>
+								{t('game.endGame')}
+							</Button>
+						{/if}
+						<Button size="sm" variant="danger" onclick={requestLeave}>{t('lobby.leave')}</Button>
 					</div>
 				</div>
-				<div class="flex min-h-0 flex-col gap-3 overflow-y-auto">
-					<h3 class="font-extrabold">{t('game.scores')}</h3>
-					<Scoreboard players={room.players} playerId={game.playerId} showSolved={true} />
+
+				<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-[1fr_300px]">
+					<div class="flex min-h-0 flex-col gap-3">
+						{#if revealing}
+							<!-- Reveal: shape shrinks to make room for the answer + info -->
+							<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+								<div class="min-h-[16svh] flex-1">
+									<ShapeCanvas round={game.round} revealed reveal={revealInfo} />
+								</div>
+								<p
+									class="shrink-0 rounded-base border-2 border-border bg-main px-4 py-2 text-center text-lg font-extrabold shadow-shadow"
+								>
+									{t('game.theAnswerWas', { answer: game.roundResult?.answer ?? '' })}
+								</p>
+								{#if game.roundResult?.info}
+									<div class="shrink-0">
+										<StateInfo info={game.roundResult.info} name={game.roundResult.answer} />
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<div class="min-h-0 flex-[3]">
+								<ShapeCanvas round={game.round} paused={game.paused} />
+							</div>
+							<div class="min-h-0 flex-[2]">
+								<GuessChat />
+							</div>
+						{/if}
+					</div>
+					<div class="flex min-h-0 flex-col gap-3 overflow-y-auto">
+						<h3 class="font-extrabold">{t('game.scores')}</h3>
+						<Scoreboard players={room.players} playerId={game.playerId} showSolved={true} />
+					</div>
 				</div>
 			</div>
 		{:else}
@@ -286,24 +346,29 @@
 			</div>
 
 			<!-- Actions -->
-			<div class="flex shrink-0 flex-col gap-1">
-				{#if isHost && !canStart}
-					<span class="text-center text-xs font-bold text-ink/40">{t('lobby.needPlayers')}</span>
-				{/if}
-				<div class="flex items-stretch gap-3">
-					<Button variant="neutral" class="flex-1" onclick={requestLeave}>{t('lobby.leave')}</Button>
-					{#if isHost}
-						<Button class="flex-[2]" disabled={!canStart} onclick={() => game.start()}>
+			<div class="flex shrink-0 items-stretch gap-3">
+				<Button variant="neutral" class="flex-1" onclick={requestLeave}>{t('lobby.leave')}</Button>
+				{#if isHost}
+					<!-- Tooltip only shows while hovering the disabled Start button -->
+					<div class="group relative flex flex-[2]">
+						<Button class="w-full" disabled={!canStart} onclick={() => game.start()}>
 							{t('lobby.start')}
 						</Button>
-					{:else}
-						<div
-							class="flex flex-[2] items-center justify-center rounded-base border-2 border-dashed border-border/40 font-bold text-ink/50"
-						>
-							{t('lobby.waitingHost')}
-						</div>
-					{/if}
-				</div>
+						{#if !canStart}
+							<div
+								class="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"
+							>
+								{t('lobby.needPlayers')}
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<div
+						class="flex flex-[2] items-center justify-center rounded-base border-2 border-dashed border-border/40 font-bold text-ink/50"
+					>
+						{t('lobby.waitingHost')}
+					</div>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -356,5 +421,15 @@
 	<div class="flex justify-end gap-3">
 		<Button variant="neutral" onclick={cancelLeave}>{t('leave.cancel')}</Button>
 		<Button variant="danger" onclick={doLeave}>{t('leave.confirm')}</Button>
+	</div>
+</Dialog>
+
+<!-- End game confirmation (host) -->
+<Dialog open={confirmEnd} onclose={() => (confirmEnd = false)}>
+	<h2 class="mb-2 text-xl font-extrabold">{t('game.endTitle')}</h2>
+	<p class="mb-5 text-sm font-medium text-ink/60">{t('game.endText')}</p>
+	<div class="flex justify-end gap-3">
+		<Button variant="neutral" onclick={() => (confirmEnd = false)}>{t('common.cancel')}</Button>
+		<Button variant="danger" onclick={doEndGame}>{t('game.endGame')}</Button>
 	</div>
 </Dialog>

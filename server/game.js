@@ -82,7 +82,10 @@ export function startGame(room, player) {
 	room.round = 0;
 	room.status = 'playing';
 	room.roundActive = false;
+	room.paused = false;
+	room.pauseRemainingMs = 0;
 	room.currentShape = null;
+	room.countdownEndsAt = Date.now() + COUNTDOWN_MS;
 
 	roomManager.broadcastState(room);
 	roomManager.broadcast(room, {
@@ -95,6 +98,96 @@ export function startGame(room, player) {
 		if (!isAlive(room)) return cleanupRoom(room);
 		startRound(room);
 	}, COUNTDOWN_MS);
+}
+
+/**
+ * Host pauses the active round — freezes the timer and blocks guessing.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function pauseGame(room, player) {
+	if (room.hostId !== player.id) return;
+	if (room.status !== 'playing' || !room.roundActive || room.paused) return;
+	if (room.roundTimer) clearTimeout(room.roundTimer);
+	room.roundTimer = null;
+	room.paused = true;
+	room.pauseRemainingMs = Math.max(0, room.roundEndsAt - Date.now());
+	roomManager.broadcast(room, { type: ServerMsg.PAUSED, remainingMs: room.pauseRemainingMs });
+	console.log(`[game] ${room.code} paused (${Math.round(room.pauseRemainingMs / 1000)}s left)`);
+}
+
+/**
+ * Host resumes a paused round.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function resumeGame(room, player) {
+	if (room.hostId !== player.id || !room.paused) return;
+	room.paused = false;
+	room.roundEndsAt = Date.now() + room.pauseRemainingMs;
+	room.roundTimer = setTimeout(() => endRound(room), room.pauseRemainingMs);
+	roomManager.broadcast(room, { type: ServerMsg.RESUMED, endsAt: room.roundEndsAt });
+	console.log(`[game] ${room.code} resumed`);
+}
+
+/**
+ * Host aborts the running game and returns the room to its lobby.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function abortGame(room, player) {
+	if (room.hostId !== player.id || room.status !== 'playing') return;
+	clearTimers(room);
+	room.status = 'lobby';
+	room.round = 0;
+	room.roundActive = false;
+	room.paused = false;
+	room.pauseRemainingMs = 0;
+	room.countdownEndsAt = 0;
+	room.currentShape = null;
+	room.solved = new Set();
+	room.usedShapeIds.clear();
+	for (const p of room.players.values()) p.score = 0;
+	resetLobbyChat(room);
+	roomManager.broadcastState(room);
+	console.log(`[game] ${room.code} aborted by host — back to lobby`);
+}
+
+/**
+ * Brings a freshly (re)joined player up to speed with the room's current phase,
+ * so reloading mid-game doesn't strand them on a "waiting" screen.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function syncJoiner(room, player) {
+	if (room.status !== 'playing') return;
+	const now = Date.now();
+
+	if (room.countdownEndsAt > now && !room.roundActive) {
+		send(player, {
+			type: ServerMsg.COUNTDOWN,
+			durationMs: room.countdownEndsAt - now,
+			startsAt: now
+		});
+		return;
+	}
+
+	if (room.roundActive && room.currentShape) {
+		const category = getCategory(room.categoryId);
+		send(player, {
+			type: ServerMsg.ROUND_START,
+			round: room.round,
+			maxRounds: room.maxRounds,
+			categoryId: room.categoryId,
+			viewBox: category?.viewBox ?? '0 0 400 400',
+			path: room.currentShape.path,
+			durationSec: room.roundDurationSec,
+			endsAt: room.roundEndsAt
+		});
+		if (room.paused) {
+			send(player, { type: ServerMsg.PAUSED, remainingMs: room.pauseRemainingMs });
+		}
+	}
 }
 
 /**
@@ -112,6 +205,11 @@ function startRound(room) {
 	room.currentShape = shape;
 	room.solved = new Set();
 	room.roundActive = true;
+	room.paused = false;
+	room.pauseRemainingMs = 0;
+	room.countdownEndsAt = 0;
+	room.chatLog = [];
+	for (const p of room.players.values()) p.roundPoints = 0;
 	room.roundEndsAt = Date.now() + room.roundDurationSec * 1000;
 
 	const category = getCategory(room.categoryId);
@@ -140,7 +238,7 @@ function startRound(room) {
 export function handleGuess(room, player, text) {
 	const guess = String(text ?? '').trim();
 	if (!guess) return;
-	if (room.status !== 'playing' || !room.roundActive || !room.currentShape) return;
+	if (room.status !== 'playing' || !room.roundActive || room.paused || !room.currentShape) return;
 	if (room.solved.has(player.id)) return;
 
 	const verdict = judgeGuess(guess, room.currentShape.answers);
@@ -154,9 +252,15 @@ export function handleGuess(room, player, text) {
 		const orderBonus = Math.max(0, FIRST_SOLVE_BONUS - order * ORDER_BONUS_STEP);
 		const points = timePoints + orderBonus;
 		player.score += points;
+		player.roundPoints = points;
 
 		send(player, { type: ServerMsg.GUESS_RESULT, verdict });
-		roomManager.chat(room, { kind: 'solved', name: player.profile.name, playerId: player.id });
+		roomManager.chat(room, {
+			kind: 'solved',
+			name: player.profile.name,
+			playerId: player.id,
+			points
+		});
 		roomManager.broadcastState(room);
 		console.log(`[game] ${room.code} ${player.profile.name} solved (+${points})`);
 
@@ -194,7 +298,8 @@ function endRound(room) {
 		answer,
 		info,
 		players: roomManager.toPublic(room).players,
-		nextInMs: isLast ? 0 : ROUND_END_PAUSE_MS
+		nextInMs: ROUND_END_PAUSE_MS,
+		isLast
 	});
 	console.log(`[game] ${room.code} round ${room.round} ended — answer was ${answer}`);
 
@@ -244,7 +349,18 @@ export function endGame(room) {
 	room.solved = new Set();
 	room.usedShapeIds.clear();
 	for (const p of room.players.values()) p.score = 0;
+	resetLobbyChat(room);
 	roomManager.broadcastState(room);
+}
+
+/**
+ * Clears the room's chat backlog and tells clients to drop it, so a returning
+ * lobby doesn't show leftover round chatter.
+ * @param {Room} room
+ */
+function resetLobbyChat(room) {
+	room.chatLog = [];
+	roomManager.broadcast(room, { type: ServerMsg.CHAT_HISTORY, entries: [] });
 }
 
 /**

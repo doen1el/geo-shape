@@ -5,7 +5,17 @@
 	import type { RoundInfo } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
-	let { round, revealed = false }: { round: RoundInfo; revealed?: boolean } = $props();
+	let {
+		round,
+		revealed = false,
+		paused = null,
+		reveal = null
+	}: {
+		round: RoundInfo;
+		revealed?: boolean;
+		paused?: { remainingMs: number } | null;
+		reveal?: { nextRoundAt: number; totalMs: number; isLast: boolean } | null;
+	} = $props();
 
 	let now = $state(Date.now());
 
@@ -14,38 +24,57 @@
 		return () => clearInterval(id);
 	});
 
-	const remainingMs = $derived(Math.max(0, round.endsAt - now));
+	const remainingMs = $derived(paused ? paused.remainingMs : Math.max(0, round.endsAt - now));
 	const secondsLeft = $derived(Math.ceil(remainingMs / 1000));
 	const progress = $derived(Math.min(100, (remainingMs / (round.durationSec * 1000)) * 100));
 	const revealMs = $derived(Math.max(1000, round.endsAt - now));
+
+	const showNext = $derived(revealed && !!reveal && reveal.totalMs > 0);
+	const nextRemainingMs = $derived(reveal ? Math.max(0, reveal.nextRoundAt - now) : 0);
+	const nextSeconds = $derived(Math.ceil(nextRemainingMs / 1000));
+	const nextProgress = $derived(
+		reveal && reveal.totalMs > 0 ? Math.min(100, (nextRemainingMs / reveal.totalMs) * 100) : 0
+	);
 </script>
 
-<div class="flex flex-col gap-3">
-	<div class="flex items-center justify-between text-sm font-bold">
+<div class="flex h-full min-h-0 flex-col gap-2">
+	<div class="flex shrink-0 items-center justify-between text-sm font-bold">
 		<span>{t('game.round', { round: round.round, max: round.maxRounds })}</span>
 		<span class="text-ink/60">{t(`category.${round.categoryId}` as 'category.0')}</span>
-		<span class="tabular-nums">{secondsLeft}s</span>
+		{#if showNext}
+			<span class="tabular-nums">
+				{reveal?.isLast
+					? t('game.resultsIn', { seconds: nextSeconds })
+					: t('game.nextRoundIn', { seconds: nextSeconds })}
+			</span>
+		{:else if paused}
+			<span class="rounded border-2 border-border bg-secondary px-1.5 text-xs font-extrabold">
+				⏸ {t('game.paused')}
+			</span>
+		{:else}
+			<span class="tabular-nums">{secondsLeft}s</span>
+		{/if}
 	</div>
 
-	<!-- Timer bar -->
-	<div class="h-3 w-full overflow-hidden rounded-base border-2 border-border bg-surface">
+	<!-- Round timer / next-round wait bar -->
+	<div class="h-3 w-full shrink-0 overflow-hidden rounded-base border-2 border-border bg-surface">
 		<div
-			class="h-full bg-main transition-[width] duration-200 ease-linear"
-			style="width: {progress}%"
+			class="h-full transition-[width] duration-200 ease-linear {showNext || paused
+				? 'bg-secondary'
+				: 'bg-main'}"
+			style="width: {showNext ? nextProgress : progress}%"
 		></div>
 	</div>
 
-	<!-- Outline -->
+	<!-- Outline (fills remaining height, never forces overflow) -->
 	<div
-		class="flex aspect-square w-full items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow"
+		class="flex min-h-0 flex-1 items-center justify-center rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
 	>
 		{#key round.round}
 			<svg
 				viewBox={round.viewBox}
 				preserveAspectRatio="xMidYMid meet"
-				width="100%"
-				height="100%"
-				class="max-h-[55svh] p-4"
+				class="h-full max-h-full w-full"
 			>
 				<path
 					in:draw={{ duration: revealMs, easing: linear }}

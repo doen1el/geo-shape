@@ -7,6 +7,7 @@ export type PublicPlayer = {
 	name: string;
 	avatar: string;
 	score: number;
+	roundPoints: number;
 	wins: number;
 	isHost: boolean;
 	connected: boolean;
@@ -45,6 +46,8 @@ export type RoundResult = {
 	info: StateInfo | null;
 	players: PublicPlayer[];
 	nextInMs: number;
+	nextRoundAt: number;
+	isLast: boolean;
 };
 export type GameOver = { winnerName: string | null; isTie: boolean; players: PublicPlayer[] };
 export type Verdict = 'correct' | 'close' | 'wrong';
@@ -54,6 +57,7 @@ export type ChatEntry = {
 	name: string;
 	text?: string;
 	playerId?: string;
+	points?: number;
 };
 
 export type LeaderboardEntry = {
@@ -86,6 +90,7 @@ class GameSocket {
 	verdict = $state<{ value: Verdict; at: number } | null>(null);
 	chat = $state<ChatEntry[]>([]);
 	countdown = $state<{ until: number } | null>(null);
+	paused = $state<{ remainingMs: number } | null>(null);
 
 	// --- persistence-backed views ---
 	leaderboard = $state<LeaderboardEntry[]>([]);
@@ -137,18 +142,27 @@ class GameSocket {
 				break;
 			case ServerMsg.ROOM_STATE:
 				this.room = msg.room;
+
+				if (msg.room?.status === 'lobby') {
+					this.round = null;
+					this.roundResult = null;
+					this.countdown = null;
+					this.paused = null;
+				}
 				break;
 			case ServerMsg.COUNTDOWN:
 				this.gameOver = null;
 				this.roundResult = null;
+				this.paused = null;
 				this.countdown = { until: msg.startsAt + msg.durationMs };
 				break;
 			case ServerMsg.ROUND_START:
-				if (msg.round === 1) this.chat = [];
+				this.chat = [];
 				this.roundResult = null;
 				this.gameOver = null;
 				this.verdict = null;
 				this.countdown = null;
+				this.paused = null;
 				this.round = {
 					round: msg.round,
 					maxRounds: msg.maxRounds,
@@ -164,13 +178,23 @@ class GameSocket {
 					answer: msg.answer,
 					info: msg.info ?? null,
 					players: msg.players,
-					nextInMs: msg.nextInMs
+					nextInMs: msg.nextInMs,
+					nextRoundAt: Date.now() + (msg.nextInMs ?? 0),
+					isLast: !!msg.isLast
 				};
+				break;
+			case ServerMsg.PAUSED:
+				this.paused = { remainingMs: msg.remainingMs };
+				break;
+			case ServerMsg.RESUMED:
+				this.paused = null;
+				if (this.round) this.round = { ...this.round, endsAt: msg.endsAt };
 				break;
 			case ServerMsg.GAME_OVER:
 				this.gameOver = { winnerName: msg.winnerName, isTie: msg.isTie, players: msg.players };
 				this.round = null;
 				this.roundResult = null;
+				this.paused = null;
 				break;
 			case ServerMsg.GUESS_RESULT:
 				this.verdict = { value: msg.verdict, at: Date.now() };
@@ -178,7 +202,14 @@ class GameSocket {
 			case ServerMsg.CHAT:
 				this.chat = [
 					...this.chat.slice(-49),
-					{ id: ++chatSeq, kind: msg.kind, name: msg.name, text: msg.text, playerId: msg.playerId }
+					{
+						id: ++chatSeq,
+						kind: msg.kind,
+						name: msg.name,
+						text: msg.text,
+						playerId: msg.playerId,
+						points: msg.points
+					}
 				];
 				break;
 			case ServerMsg.CHAT_HISTORY:
@@ -187,7 +218,8 @@ class GameSocket {
 					kind: e.kind,
 					name: e.name,
 					text: e.text,
-					playerId: e.playerId
+					playerId: e.playerId,
+					points: e.points
 				}));
 				break;
 			case ServerMsg.ROOM_EXISTS:
@@ -212,6 +244,7 @@ class GameSocket {
 		this.verdict = null;
 		this.chat = [];
 		this.countdown = null;
+		this.paused = null;
 	}
 
 	#send(data: object): void {
@@ -244,6 +277,18 @@ class GameSocket {
 
 	start(): void {
 		this.#send({ type: ClientMsg.START });
+	}
+
+	pause(): void {
+		this.#send({ type: ClientMsg.PAUSE });
+	}
+
+	resume(): void {
+		this.#send({ type: ClientMsg.RESUME });
+	}
+
+	abort(): void {
+		this.#send({ type: ClientMsg.ABORT });
 	}
 
 	guess(text: string): void {

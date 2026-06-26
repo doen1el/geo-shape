@@ -38,16 +38,28 @@
 <div class="flex h-full flex-col gap-3">
 	<div
 		bind:this={listEl}
-		class="flex-1 space-y-1 overflow-y-auto rounded-base border-2 border-border bg-surface p-3 text-sm shadow-shadow"
+		class="min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-base border-2 border-border bg-surface p-3 text-sm shadow-shadow"
 	>
 		{#each game.chat as entry (entry.id)}
 			{#if entry.kind === 'solved'}
-				<p class="font-bold text-main-accent">✓ {t('game.solvedBy', { name: entry.name })}</p>
+				<p class="text-center font-bold text-main-accent">
+					✓ {t('game.solvedBy', { name: entry.name })}
+				</p>
 			{:else}
-				<p><span class="font-bold">{entry.name}:</span> {entry.text}</p>
+				{@const mine = entry.playerId != null && entry.playerId === game.playerId}
+				<div class="flex {mine ? 'justify-end' : 'justify-start'}">
+					<div
+						class="max-w-[85%] rounded-base border-2 border-border px-2.5 py-1 {mine
+							? 'bg-main'
+							: 'bg-bg'}"
+					>
+						{#if !mine}
+							<span class="text-[10px] font-bold text-ink/50">{entry.name}</span>
+						{/if}
+						<p class="leading-snug break-words">{entry.text}</p>
+					</div>
+				</div>
 			{/if}
-		{:else}
-			<p class="text-ink/40">…</p>
 		{/each}
 	</div>
 
@@ -62,15 +74,17 @@
 		</p>
 	{/if}
 
-	<form class="flex gap-2" onsubmit={(e) => (e.preventDefault(), submit())}>
-		<Input
-			bind:value={text}
-			placeholder={mySolved ? t('game.alreadySolved') : t('game.guessPlaceholder')}
-			disabled={!canGuess}
-			maxlength={40}
-			aria-label={t('game.guessPlaceholder')}
-		/>
-		<Button type="submit" size="sm" disabled={!canGuess || text.trim().length === 0}>
+	<form class="flex items-stretch gap-2" onsubmit={(e) => (e.preventDefault(), submit())}>
+		<div class="min-w-0 flex-1">
+			<Input
+				bind:value={text}
+				placeholder={mySolved ? t('game.alreadySolved') : t('game.guessPlaceholder')}
+				disabled={!canGuess}
+				maxlength={40}
+				aria-label={t('game.guessPlaceholder')}
+			/>
+		</div>
+		<Button type="submit" disabled={!canGuess || text.trim().length === 0}>
 			{t('game.send')}
 		</Button>
 	</form>

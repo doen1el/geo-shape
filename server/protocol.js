@@ -5,6 +5,9 @@ export const ClientMsg = /** @type {const} */ ({
 	LEAVE: 'leave',
 	SETTINGS: 'settings',
 	START: 'start',
+	PAUSE: 'pause',
+	RESUME: 'resume',
+	ABORT: 'abort',
 	GUESS: 'guess',
 	SAY: 'say',
 	CHECK_ROOM: 'check_room',
@@ -19,6 +22,8 @@ export const ServerMsg = /** @type {const} */ ({
 	COUNTDOWN: 'countdown',
 	ROUND_START: 'round_start',
 	ROUND_END: 'round_end',
+	PAUSED: 'paused',
+	RESUMED: 'resumed',
 	GAME_OVER: 'game_over',
 	GUESS_RESULT: 'guess_result',
 	CHAT: 'chat',
@@ -49,6 +54,7 @@ export const Verdict = /** @type {const} */ ({
  * @property {string} name
  * @property {string} avatar
  * @property {number} score
+ * @property {number} roundPoints
  * @property {number} wins
  * @property {boolean} isHost
  * @property {boolean} connected

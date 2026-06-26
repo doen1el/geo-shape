@@ -137,6 +137,12 @@
 			</Button>
 		</form>
 
+		<div class="flex items-center gap-2 text-xs font-bold text-ink/30">
+			<div class="h-0.5 flex-1 bg-ink/10"></div>
+			{t('common.or')}
+			<div class="h-0.5 flex-1 bg-ink/10"></div>
+		</div>
+
 		<Button variant="neutral" class="w-full" disabled={!canPlay || busy} onclick={playSolo}>
 			{t('solo.button')}
 		</Button>

@@ -1,7 +1,7 @@
 import { ServerMsg } from './protocol.js';
 import { DEFAULT_MAX_ROUNDS, ROUND_DURATION_SEC } from './config.js';
 import { PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
-import { getPlayerStats } from './db.js';
+import { getPlayerStats, touchPlayer } from './db.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 4;
@@ -19,6 +19,7 @@ let playerSeq = 0;
  * @property {string} id
  * @property {Profile} profile
  * @property {number} score
+ * @property {number} roundPoints
  * @property {number} wins
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
@@ -41,8 +42,11 @@ let playerSeq = 0;
  * @property {Shape | null} currentShape
  * @property {boolean} roundActive
  * @property {number} roundEndsAt
+ * @property {boolean} paused
+ * @property {number} pauseRemainingMs
+ * @property {number} countdownEndsAt
  * @property {Set<string>} solved
- * @property {Array<{kind: string, name: string, text?: string, playerId?: string}>} chatLog
+ * @property {Array<{kind: string, name: string, text?: string, playerId?: string, points?: number}>} chatLog
  * @property {ReturnType<typeof setTimeout> | null} roundTimer
  * @property {ReturnType<typeof setTimeout> | null} pauseTimer
  */
@@ -85,6 +89,9 @@ export class RoomManager {
 			currentShape: null,
 			roundActive: false,
 			roundEndsAt: 0,
+			paused: false,
+			pauseRemainingMs: 0,
+			countdownEndsAt: 0,
 			solved: new Set(),
 			chatLog: [],
 			roundTimer: null,
@@ -114,8 +121,10 @@ export class RoomManager {
 	addPlayer(room, profile, socket) {
 		const id = `p${++playerSeq}`;
 		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
+		// Keep the leaderboard's name/avatar in sync with the latest profile.
+		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
 		/** @type {Player} */
-		const player = { id, profile, score: 0, wins, connected: true, socket };
+		const player = { id, profile, score: 0, roundPoints: 0, wins, connected: true, socket };
 		room.players.set(id, player);
 		if (!room.hostId) room.hostId = id;
 		return player;
@@ -157,6 +166,7 @@ export class RoomManager {
 				name: p.profile.name,
 				avatar: p.profile.avatar,
 				score: p.score,
+				roundPoints: p.roundPoints,
 				wins: p.wins,
 				isHost: p.id === room.hostId,
 				connected: p.connected,
@@ -191,7 +201,7 @@ export class RoomManager {
 	 * Records a chat entry in the room's history (capped) and broadcasts it, so
 	 * players who join later can be sent the backlog.
 	 * @param {Room} room
-	 * @param {{kind: string, name: string, text?: string, playerId?: string}} entry
+	 * @param {{kind: string, name: string, text?: string, playerId?: string, points?: number}} entry
 	 */
 	chat(room, entry) {
 		room.chatLog.push(entry);

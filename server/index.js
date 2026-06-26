@@ -6,7 +6,11 @@ import {
 	handleGuess,
 	updateSettings,
 	notifyPlayerLeft,
-	cleanupRoom
+	cleanupRoom,
+	pauseGame,
+	resumeGame,
+	abortGame,
+	syncJoiner
 } from './game.js';
 import { getLeaderboard, getPlayerStats } from './db.js';
 
@@ -88,6 +92,8 @@ function handleConnection(ws) {
 				console.log(`[ws] ${profile.name} joined room ${room.code} (${room.players.size} total)`);
 				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
 				roomManager.broadcastState(room);
+
+				syncJoiner(room, player);
 				if (room.chatLog.length) send({ type: ServerMsg.CHAT_HISTORY, entries: room.chatLog });
 				break;
 			}
@@ -108,6 +114,27 @@ function handleConnection(ws) {
 				if (!session) break;
 				const player = session.room.players.get(session.playerId);
 				if (player) startGame(session.room, player);
+				break;
+			}
+
+			case ClientMsg.PAUSE: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				if (player) pauseGame(session.room, player);
+				break;
+			}
+
+			case ClientMsg.RESUME: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				if (player) resumeGame(session.room, player);
+				break;
+			}
+
+			case ClientMsg.ABORT: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				if (player) abortGame(session.room, player);
 				break;
 			}
 

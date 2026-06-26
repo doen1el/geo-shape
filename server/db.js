@@ -72,6 +72,24 @@ export function recordGameResult(player, result) {
 }
 
 /**
+ * Refreshes the display name/avatar of an existing leaderboard record so the
+ * board reflects the player's current profile.
+ * @param {{ clientId: string, name: string, avatar: string }} player
+ */
+export function touchPlayer(player) {
+	if (!player.clientId) return;
+	const conn = getDb();
+	if (!conn) return;
+	try {
+		conn
+			.prepare(`UPDATE players SET name = ?, avatar = ?, last_seen = ? WHERE client_id = ?`)
+			.run(player.name, player.avatar, Date.now(), player.clientId);
+	} catch (e) {
+		console.error('[db] touchPlayer failed:', e instanceof Error ? e.message : e);
+	}
+}
+
+/**
  * Top players for the leaderboard. Never exposes the clientId.
  * @param {number} [limit]
  * @returns {Array<{ name: string, avatar: string, gamesWon: number, gamesPlayed: number, totalScore: number, bestScore: number }>}
