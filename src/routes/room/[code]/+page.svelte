@@ -33,6 +33,7 @@
 	let needsName = $state(!profile.isComplete);
 	let checkedExists = $state<boolean | null>(null);
 	let joinStarted = false;
+	let soloStartRequested = false;
 
 	let confirmLeave = $state(false);
 	let confirmEnd = $state(false);
@@ -73,6 +74,21 @@
 		if (rc.exists && !needsName && !joinStarted) {
 			joinStarted = true;
 			ensureJoined();
+		}
+	});
+
+	$effect(() => {
+		if (
+			solo &&
+			isHost &&
+			room?.status === 'lobby' &&
+			!game.countdown &&
+			!game.round &&
+			!game.gameOver &&
+			!soloStartRequested
+		) {
+			soloStartRequested = true;
+			game.start();
 		}
 	});
 
@@ -255,7 +271,7 @@
 								{game.paused ? t('game.resume') : t('game.pause')}
 							</Button>
 						{/if}
-						{#if isHost}
+						{#if isHost && !solo}
 							<Button size="sm" variant="neutral" onclick={() => (confirmEnd = true)}>
 								{t('game.endGame')}
 							</Button>
@@ -307,7 +323,13 @@
 			</p>
 		{/if}
 
-		<!-- Lobby -->
+		<!-- Solo: no lobby, just a brief "starting" screen while it auto-starts -->
+	{:else if solo}
+		<p class="flex flex-1 items-center justify-center font-bold text-ink/60">
+			{t('common.connecting')}
+		</p>
+
+		<!-- Lobby (multiplayer) -->
 	{:else}
 		<div class="flex min-h-0 flex-1 flex-col gap-4">
 			<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-2">

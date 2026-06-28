@@ -38,6 +38,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'identity.tapAvatar': 'Avatar antippen zum Umstylen',
 
+	'solo.badge': 'Solo',
 	'solo.title': 'Solo üben',
 	'solo.subtitle': 'Trainiere gegen die Uhr — ganz ohne Mitspieler.',
 	'solo.button': 'Solo spielen',

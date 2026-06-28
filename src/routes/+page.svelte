@@ -73,7 +73,7 @@
 		errorMsg = '';
 		saveName();
 		try {
-			const newCode = await game.create(profile.toJSON());
+			const newCode = await game.create(profile.toJSON(), true);
 			game.start();
 			await goto(`/room/${newCode}?solo=1`);
 		} catch {

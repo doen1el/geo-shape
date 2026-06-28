@@ -36,6 +36,7 @@ export const en = {
 
 	'identity.tapAvatar': 'Tap avatar to restyle',
 
+	'solo.badge': 'Solo',
 	'solo.title': 'Practice solo',
 	'solo.subtitle': 'Sharpen your skills against the clock — no friends needed.',
 	'solo.button': 'Play solo',

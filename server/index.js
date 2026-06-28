@@ -116,7 +116,7 @@ function handleConnection(ws) {
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				if (roomManager.rooms.size >= MAX_ROOMS)
 					return send({ type: ServerMsg.ERROR, message: 'Server is at capacity, try again later.' });
-				const room = roomManager.createRoom();
+				const room = roomManager.createRoom({ solo: !!msg.solo });
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
 				console.log(`[ws] ${profile.name} created room ${room.code}`);
@@ -131,7 +131,9 @@ function handleConnection(ws) {
 				const profile = sanitizeProfile(msg.profile);
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				const room = roomManager.getRoom(msg.code);
-				if (!room) return send({ type: ServerMsg.ERROR, message: 'Room not found', code: 'not_found' });
+
+				if (!room || room.solo)
+					return send({ type: ServerMsg.ERROR, message: 'Room not found', code: 'not_found' });
 
 				if (session) leaveCurrent();
 
@@ -212,7 +214,8 @@ function handleConnection(ws) {
 			case ClientMsg.CHECK_ROOM: {
 				if (limited('check_room')) break;
 				const code = typeof msg.code === 'string' ? msg.code.toUpperCase().slice(0, 8) : '';
-				send({ type: ServerMsg.ROOM_EXISTS, code, exists: !!roomManager.getRoom(code) });
+				const r = roomManager.getRoom(code);
+				send({ type: ServerMsg.ROOM_EXISTS, code, exists: !!r && !r.solo });
 				break;
 			}
 

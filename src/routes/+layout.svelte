@@ -9,6 +9,7 @@
 	let { children }: { children: Snippet } = $props();
 
 	const inRoom = $derived(page.url.pathname.startsWith('/room/'));
+	const isSolo = $derived(page.url.searchParams.get('solo') === '1');
 	const roomCode = $derived((page.params.code ?? '').toUpperCase());
 
 	let copied = $state(false);
@@ -32,7 +33,13 @@
 			</span>
 		</a>
 
-		{#if inRoom}
+		{#if inRoom && isSolo}
+			<span
+				class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-extrabold tracking-wide uppercase shadow-shadow"
+			>
+				{t('solo.badge')}
+			</span>
+		{:else if inRoom}
 			<button
 				onclick={copyCode}
 				title={roomCode}

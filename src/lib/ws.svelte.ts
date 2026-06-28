@@ -255,11 +255,11 @@ class GameSocket {
 		this.#ws?.send(JSON.stringify(data));
 	}
 
-	async create(profile: Profile): Promise<string> {
+	async create(profile: Profile, solo = false): Promise<string> {
 		await this.connect();
 		return new Promise((resolve, reject) => {
 			this.#pendingAck = { resolve, reject };
-			this.#send({ type: ClientMsg.CREATE, profile });
+			this.#send({ type: ClientMsg.CREATE, profile, solo });
 		});
 	}
 
