@@ -67,6 +67,7 @@ export const Verdict = /** @type {const} */ ({
  * @typedef {Object} PublicRoom
  * @property {string} code
  * @property {'lobby' | 'playing' | 'finished'} status
+ * @property {'easy' | 'hard'} difficulty
  * @property {PublicPlayer[]} players
  * @property {number} round
  * @property {number} maxRounds

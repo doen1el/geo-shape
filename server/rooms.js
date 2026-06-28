@@ -31,6 +31,7 @@ let playerSeq = 0;
  * @typedef {Object} Room
  * @property {string} code
  * @property {boolean} solo
+ * @property {'easy' | 'hard'} difficulty
  * @property {'lobby' | 'playing' | 'finished'} status
  * @property {Map<string, Player>} players
  * @property {string | null} hostId
@@ -72,14 +73,15 @@ export class RoomManager {
 
 	/**
 	 * Creates an empty room and returns it.
-	 * @param {{ solo?: boolean }} [options]
+	 * @param {{ solo?: boolean, difficulty?: string }} [options]
 	 * @returns {Room}
 	 */
-	createRoom({ solo = false } = {}) {
+	createRoom({ solo = false, difficulty } = {}) {
 		/** @type {Room} */
 		const room = {
 			code: this.generateCode(),
 			solo,
+			difficulty: difficulty === 'hard' ? 'hard' : 'easy',
 			status: 'lobby',
 			players: new Map(),
 			hostId: null,
@@ -160,6 +162,7 @@ export class RoomManager {
 		return {
 			code: room.code,
 			status: room.status,
+			difficulty: room.difficulty,
 			round: room.round,
 			maxRounds: room.maxRounds,
 			categoryId: room.categoryId,

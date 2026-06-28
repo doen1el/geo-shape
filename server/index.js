@@ -116,7 +116,7 @@ function handleConnection(ws) {
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				if (roomManager.rooms.size >= MAX_ROOMS)
 					return send({ type: ServerMsg.ERROR, message: 'Server is at capacity, try again later.' });
-				const room = roomManager.createRoom({ solo: !!msg.solo });
+				const room = roomManager.createRoom({ solo: !!msg.solo, difficulty: msg.difficulty });
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
 				console.log(`[ws] ${profile.name} created room ${room.code}`);

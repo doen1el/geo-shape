@@ -14,9 +14,12 @@ export type PublicPlayer = {
 	solved: boolean;
 };
 
+export type Difficulty = 'easy' | 'hard';
+
 export type PublicRoom = {
 	code: string;
 	status: 'lobby' | 'playing' | 'finished';
+	difficulty: Difficulty;
 	players: PublicPlayer[];
 	round: number;
 	maxRounds: number;
@@ -28,6 +31,7 @@ export type RoundInfo = {
 	round: number;
 	maxRounds: number;
 	categoryId: number;
+	difficulty: Difficulty;
 	viewBox: string;
 	path: string;
 	durationSec: number;
@@ -167,6 +171,7 @@ class GameSocket {
 					round: msg.round,
 					maxRounds: msg.maxRounds,
 					categoryId: msg.categoryId,
+					difficulty: msg.difficulty === 'hard' ? 'hard' : 'easy',
 					viewBox: msg.viewBox,
 					path: msg.path,
 					durationSec: msg.durationSec,
@@ -255,11 +260,11 @@ class GameSocket {
 		this.#ws?.send(JSON.stringify(data));
 	}
 
-	async create(profile: Profile, solo = false): Promise<string> {
+	async create(profile: Profile, solo = false, difficulty?: Difficulty): Promise<string> {
 		await this.connect();
 		return new Promise((resolve, reject) => {
 			this.#pendingAck = { resolve, reject };
-			this.#send({ type: ClientMsg.CREATE, profile, solo });
+			this.#send({ type: ClientMsg.CREATE, profile, solo, difficulty });
 		});
 	}
 
@@ -275,6 +280,7 @@ class GameSocket {
 		categoryId?: number;
 		maxRounds?: number;
 		roundDurationSec?: number;
+		difficulty?: Difficulty;
 	}): void {
 		this.#send({ type: ClientMsg.SETTINGS, ...settings });
 	}

@@ -195,6 +195,30 @@
 
 		<div class="flex flex-col gap-1.5">
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+				{t('settings.difficulty')}
+			</span>
+			<div class="flex flex-wrap gap-2">
+				{#each ['easy', 'hard'] as const as diff (diff)}
+					{@const active = (room?.difficulty ?? 'easy') === diff}
+					<button
+						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+							{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+							{!isHost && !active ? 'opacity-40' : ''}"
+						disabled={!isHost}
+						onclick={() => game.setSettings({ difficulty: diff })}
+					>
+						{t(`difficulty.${diff}`)}
+					</button>
+				{/each}
+			</div>
+			<p class="text-[11px] font-medium text-ink/50">
+				{t(`difficulty.${room?.difficulty ?? 'easy'}.desc` as 'difficulty.easy.desc')}
+			</p>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 				{t('settings.category')}
 			</span>
 			<div class="grid grid-cols-2 gap-2">

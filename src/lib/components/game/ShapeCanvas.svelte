@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { draw } from 'svelte/transition';
-	import { linear } from 'svelte/easing';
 	import type { RoundInfo } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
+
+	// Hard mode: the outline finishes drawing this many seconds before the round ends.
+	const REVEAL_TAIL_MS = 10000;
 
 	let {
 		round,
@@ -20,14 +21,23 @@
 	let now = $state(Date.now());
 
 	onMount(() => {
-		const id = setInterval(() => (now = Date.now()), 200);
+		const id = setInterval(() => (now = Date.now()), 120);
 		return () => clearInterval(id);
 	});
 
 	const remainingMs = $derived(paused ? paused.remainingMs : Math.max(0, round.endsAt - now));
 	const secondsLeft = $derived(Math.ceil(remainingMs / 1000));
 	const progress = $derived(Math.min(100, (remainingMs / (round.durationSec * 1000)) * 100));
-	const revealMs = $derived(Math.max(1000, round.endsAt - now));
+
+	// Outline build: 0 = hidden … 1 = fully drawn. Easy mode is always full; hard
+	// mode grows from 0 to full, reaching 1 with REVEAL_TAIL_MS left on the clock.
+	const buildMs = $derived(Math.max(0, round.durationSec * 1000 - REVEAL_TAIL_MS));
+	const elapsedMs = $derived(round.durationSec * 1000 - remainingMs);
+	const drawProgress = $derived(
+		revealed || round.difficulty !== 'hard' || buildMs <= 0
+			? 1
+			: Math.min(1, Math.max(0, elapsedMs / buildMs))
+	);
 
 	const showNext = $derived(revealed && !!reveal && reveal.totalMs > 0);
 	const nextRemainingMs = $derived(reveal ? Math.max(0, reveal.nextRoundAt - now) : 0);
@@ -77,14 +87,16 @@
 				class="h-full max-h-full w-full"
 			>
 				<path
-					in:draw={{ duration: revealMs, easing: linear }}
 					d={round.path}
+					pathLength="1"
+					stroke-dasharray="1"
+					stroke-dashoffset={1 - drawProgress}
 					fill={revealed ? 'var(--color-main)' : 'none'}
 					stroke="var(--color-border)"
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					class="transition-[fill] duration-500"
+					style="transition: stroke-dashoffset 160ms linear, fill 500ms ease;"
 				/>
 			</svg>
 		{/key}

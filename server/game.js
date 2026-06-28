@@ -48,7 +48,7 @@ function allConnectedSolved(room) {
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
  * @param {Player} player
- * @param {{ categoryId?: number, maxRounds?: number, roundDurationSec?: number }} settings
+ * @param {{ categoryId?: number, maxRounds?: number, roundDurationSec?: number, difficulty?: string }} settings
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
@@ -63,6 +63,9 @@ export function updateSettings(room, player, settings) {
 			MIN_ROUND_DURATION_SEC,
 			Math.min(MAX_ROUND_DURATION_SEC, Math.round(settings.roundDurationSec))
 		);
+	}
+	if (settings.difficulty === 'easy' || settings.difficulty === 'hard') {
+		room.difficulty = settings.difficulty;
 	}
 	roomManager.broadcastState(room);
 }
@@ -180,6 +183,7 @@ export function syncJoiner(room, player) {
 			round: room.round,
 			maxRounds: room.maxRounds,
 			categoryId: room.categoryId,
+			difficulty: room.difficulty,
 			viewBox: category?.viewBox ?? '0 0 400 400',
 			path: room.currentShape.path,
 			durationSec: room.roundDurationSec,
@@ -219,6 +223,7 @@ function startRound(room) {
 		round: room.round,
 		maxRounds: room.maxRounds,
 		categoryId: room.categoryId,
+		difficulty: room.difficulty,
 		viewBox: category?.viewBox ?? '0 0 400 400',
 		path: shape.path,
 		durationSec: room.roundDurationSec,

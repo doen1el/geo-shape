@@ -12,6 +12,7 @@
 	let joinCode = $state('');
 	let busy = $state(false);
 	let errorMsg = $state('');
+	let soloDifficulty = $state<'easy' | 'hard'>('easy');
 
 	const canPlay = $derived(name.trim().length > 0);
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
@@ -73,7 +74,7 @@
 		errorMsg = '';
 		saveName();
 		try {
-			const newCode = await game.create(profile.toJSON(), true);
+			const newCode = await game.create(profile.toJSON(), true, soloDifficulty);
 			game.start();
 			await goto(`/room/${newCode}?solo=1`);
 		} catch {
@@ -149,9 +150,27 @@
 			<div class="h-0.5 flex-1 bg-ink/10"></div>
 		</div>
 
-		<Button variant="neutral" class="w-full" disabled={!canPlay || busy} onclick={playSolo}>
-			{t('solo.button')}
-		</Button>
+		<div class="flex items-stretch gap-2">
+			<Button variant="neutral" class="flex-1" disabled={!canPlay || busy} onclick={playSolo}>
+				{t('solo.button')}
+			</Button>
+			<div
+				class="flex shrink-0 items-center rounded-base border-2 border-border bg-surface p-1 text-xs font-extrabold shadow-shadow"
+				title={t('settings.difficulty')}
+			>
+				{#each ['easy', 'hard'] as const as d (d)}
+					<button
+						type="button"
+						class="rounded-[5px] px-2.5 py-1.5 transition-colors {soloDifficulty === d
+							? 'bg-main'
+							: 'text-ink/50 hover:text-ink'}"
+						onclick={() => (soloDifficulty = d)}
+					>
+						{t(`difficulty.${d}`)}
+					</button>
+				{/each}
+			</div>
+		</div>
 	</Card>
 
 	{#if errorMsg}
