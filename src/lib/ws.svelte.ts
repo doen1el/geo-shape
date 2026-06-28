@@ -100,7 +100,7 @@ class GameSocket {
 
 	#ws: WebSocket | null = null;
 	#openPromise: Promise<void> | null = null;
-	#pendingAck: ((code: string) => void) | null = null;
+	#pendingAck: { resolve: (code: string) => void; reject: (err: Error) => void } | null = null;
 
 	connect(): Promise<void> {
 		if (!browser) return Promise.resolve();
@@ -137,7 +137,7 @@ class GameSocket {
 				this.playerId = msg.playerId;
 				this.error = null;
 				this.#resetGame();
-				this.#pendingAck?.(msg.code);
+				this.#pendingAck?.resolve(msg.code);
 				this.#pendingAck = null;
 				break;
 			case ServerMsg.ROOM_STATE:
@@ -231,9 +231,13 @@ class GameSocket {
 			case ServerMsg.STATS:
 				this.stats = msg.stats ?? null;
 				break;
-			case ServerMsg.ERROR:
-				this.error = msg.message ?? 'Unknown error';
+			case ServerMsg.ERROR: {
+				const message = typeof msg.message === 'string' ? msg.message : 'Unknown error';
+				this.error = message;
+				this.#pendingAck?.reject(new Error(message));
+				this.#pendingAck = null;
 				break;
+			}
 		}
 	}
 
@@ -253,16 +257,16 @@ class GameSocket {
 
 	async create(profile: Profile): Promise<string> {
 		await this.connect();
-		return new Promise((resolve) => {
-			this.#pendingAck = resolve;
+		return new Promise((resolve, reject) => {
+			this.#pendingAck = { resolve, reject };
 			this.#send({ type: ClientMsg.CREATE, profile });
 		});
 	}
 
 	async join(code: string, profile: Profile): Promise<string> {
 		await this.connect();
-		return new Promise((resolve) => {
-			this.#pendingAck = resolve;
+		return new Promise((resolve, reject) => {
+			this.#pendingAck = { resolve, reject };
 			this.#send({ type: ClientMsg.JOIN, code, profile });
 		});
 	}

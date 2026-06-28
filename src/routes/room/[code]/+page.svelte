@@ -31,6 +31,8 @@
 
 	let nameInput = $state(profile.name);
 	let needsName = $state(!profile.isComplete);
+	let checkedExists = $state<boolean | null>(null);
+	let joinStarted = false;
 
 	let confirmLeave = $state(false);
 	let confirmEnd = $state(false);
@@ -41,6 +43,9 @@
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
 	const isHost = $derived(me?.isHost ?? false);
 	const canStart = $derived((room?.players.length ?? 0) >= 2);
+
+	const checking = $derived(!room && checkedExists === null);
+	const notFound = $derived(!room && checkedExists === false);
 
 	const revealInfo = $derived(
 		game.roundResult
@@ -53,18 +58,38 @@
 	);
 
 	onMount(() => {
-		if (!needsName) ensureJoined();
+		if (game.room?.code === code) checkedExists = true;
+		else game.checkRoom(code);
+	});
+
+	$effect(() => {
+		if (game.room?.code === code) {
+			checkedExists = true;
+			return;
+		}
+		const rc = game.roomCheck;
+		if (!rc || rc.code !== code) return;
+		checkedExists = rc.exists;
+		if (rc.exists && !needsName && !joinStarted) {
+			joinStarted = true;
+			ensureJoined();
+		}
 	});
 
 	async function ensureJoined() {
 		if (game.room?.code === code) return;
-		await game.join(code, profile.toJSON());
+		try {
+			await game.join(code, profile.toJSON());
+		} catch {
+			checkedExists = false;
+		}
 	}
 
 	function confirmName() {
 		if (nameInput.trim().length === 0) return;
 		profile.set(nameInput);
 		needsName = false;
+		joinStarted = true;
 		ensureJoined();
 	}
 
@@ -184,14 +209,7 @@
 	</Card>
 {/snippet}
 
-{#if game.error && !room && !needsName}
-	<div class="flex flex-1 items-center justify-center">
-		<Card class="p-8 text-center">
-			<p class="mb-4 text-lg font-extrabold">{t('room.notFound', { code })}</p>
-			<Button href="/" variant="neutral">{t('common.back')}</Button>
-		</Card>
-	</div>
-{:else if room}
+{#if room}
 	<!-- Game Over -->
 	{#if game.gameOver}
 		<div class="flex flex-1 items-center justify-center">
@@ -269,8 +287,11 @@
 							<div class="min-h-0 flex-[3]">
 								<ShapeCanvas round={game.round} paused={game.paused} />
 							</div>
-							<div class="min-h-0 flex-[2]">
-								<GuessChat />
+							<div class="flex min-h-0 flex-[2] flex-col gap-1.5">
+								<h3 class="shrink-0 font-extrabold">{t('lobby.chat')}</h3>
+								<div class="min-h-0 flex-1">
+									<GuessChat />
+								</div>
 							</div>
 						{/if}
 					</div>
@@ -331,10 +352,8 @@
 						</ul>
 					</Card>
 
-					<Card class="flex min-h-0 flex-1 flex-col p-3">
-						<h2 class="mb-2 text-sm font-extrabold tracking-wide text-ink/50 uppercase">
-							{t('lobby.chat')}
-						</h2>
+					<Card class="flex min-h-0 flex-1 flex-col p-4">
+						<h2 class="mb-3 text-lg font-extrabold">{t('lobby.chat')}</h2>
 						<div class="min-h-0 flex-1">
 							<LobbyChat />
 						</div>
@@ -372,6 +391,15 @@
 			</div>
 		</div>
 	{/if}
+{:else if notFound}
+	<div class="flex flex-1 items-center justify-center">
+		<Card class="p-8 text-center">
+			<p class="mb-4 text-lg font-extrabold">{t('room.notFound', { code })}</p>
+			<Button href="/" variant="neutral">{t('common.back')}</Button>
+		</Card>
+	</div>
+{:else if checking}
+	<p class="flex flex-1 items-center justify-center font-bold text-ink/60">{t('common.connecting')}</p>
 {:else if needsName}
 	<!-- Skeleton lobby behind the name dialog -->
 	<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-2" aria-hidden="true">
@@ -395,8 +423,8 @@
 	<p class="flex flex-1 items-center justify-center font-bold text-ink/60">{t('common.connecting')}</p>
 {/if}
 
-<!-- Name dialog for players opening a room link directly -->
-<Dialog open={needsName} dismissable={false}>
+<!-- Name dialog for players opening a room link directly (only once the room is confirmed to exist) -->
+<Dialog open={needsName && checkedExists === true} dismissable={false}>
 	<h2 class="mb-1 text-xl font-extrabold">{t('lobby.nameTitle')}</h2>
 	<p class="mb-4 text-sm font-medium text-ink/50">{code}</p>
 	<form class="flex items-center gap-3" onsubmit={(e) => (e.preventDefault(), confirmName())}>

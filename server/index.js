@@ -13,20 +13,25 @@ import {
 	syncJoiner
 } from './game.js';
 import { getLeaderboard, getPlayerStats } from './db.js';
+import { cleanText } from './moderation.js';
+import { isAvatarStyle, DEFAULT_AVATAR } from './avatars.js';
+import { createRateLimiter } from './ratelimit.js';
+import { RATE_LIMITS, MAX_ROOMS, MAX_MESSAGE_BYTES } from './config.js';
 
 const WS_PATH = '/ws';
 const ATTACHED = Symbol.for('geoshape.wss.attached');
 
 /**
  * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
+ * @param {{ dev?: boolean }} [options] `dev` disables the Origin check (local dev).
  * @returns {WebSocketServer}
  */
-export function attachWebSocketServer(httpServer) {
+export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 	if (/** @type {any} */ (httpServer)[ATTACHED]) {
 		return /** @type {any} */ (httpServer)[ATTACHED];
 	}
 
-	const wss = new WebSocketServer({ noServer: true });
+	const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
 
 	httpServer.on('upgrade', (req, socket, head) => {
 		let pathname;
@@ -36,6 +41,10 @@ export function attachWebSocketServer(httpServer) {
 			return;
 		}
 		if (pathname !== WS_PATH) return;
+		if (!isAllowedOrigin(req, dev)) {
+			socket.destroy();
+			return;
+		}
 		wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 	});
 
@@ -47,6 +56,30 @@ export function attachWebSocketServer(httpServer) {
 }
 
 /**
+ * Cross-site WebSocket (CSWSH) protection.
+ * @param {import('http').IncomingMessage} req
+ * @param {boolean} dev
+ * @returns {boolean}
+ */
+function isAllowedOrigin(req, dev) {
+	if (dev) return true;
+	const origin = req.headers.origin;
+	if (!origin) return true;
+	let originHost;
+	try {
+		originHost = new URL(origin).host;
+	} catch {
+		return false;
+	}
+	if (req.headers.host && originHost === req.headers.host) return true;
+	const allowed = (process.env.GEOSHAPE_ALLOWED_ORIGINS || '')
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+	return allowed.includes(origin);
+}
+
+/**
  * Per-connection state and message dispatch.
  * @param {import('ws').WebSocket} ws
  */
@@ -54,11 +87,20 @@ function handleConnection(ws) {
 	/** @type {{ room: import('./rooms.js').Room, playerId: string } | null} */
 	let session = null;
 
+	const limiter = createRateLimiter();
+	/** @param {string} key @returns {boolean} true when the action is rate-limited */
+	const limited = (key) => {
+		const l = RATE_LIMITS[key] ?? RATE_LIMITS.default;
+		return !limiter.allow(key, l.max, l.windowMs);
+	};
+
 	const send = (/** @type {object} */ msg) => {
 		if (ws.readyState === 1) ws.send(JSON.stringify(msg));
 	};
 
 	ws.on('message', (data) => {
+		if (!limiter.allow('__global', RATE_LIMITS.default.max, RATE_LIMITS.default.windowMs)) return;
+
 		let msg;
 		try {
 			msg = JSON.parse(data.toString());
@@ -68,8 +110,12 @@ function handleConnection(ws) {
 
 		switch (msg.type) {
 			case ClientMsg.CREATE: {
+				if (limited('create'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many rooms — slow down.' });
 				const profile = sanitizeProfile(msg.profile);
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				if (roomManager.rooms.size >= MAX_ROOMS)
+					return send({ type: ServerMsg.ERROR, message: 'Server is at capacity, try again later.' });
 				const room = roomManager.createRoom();
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
@@ -80,6 +126,8 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.JOIN: {
+				if (limited('join'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
 				const profile = sanitizeProfile(msg.profile);
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				const room = roomManager.getRoom(msg.code);
@@ -139,16 +187,17 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.GUESS: {
-				if (!session) break;
+				if (!session || limited('guess')) break;
 				const player = session.room.players.get(session.playerId);
 				if (player) handleGuess(session.room, player, msg.text);
 				break;
 			}
 
 			case ClientMsg.SAY: {
-				if (!session) break;
+				if (!session || limited('say')) break;
 				const player = session.room.players.get(session.playerId);
-				const text = typeof msg.text === 'string' ? msg.text.trim().slice(0, 120) : '';
+				const text =
+					typeof msg.text === 'string' ? cleanText(msg.text.trim().slice(0, 120)).trim() : '';
 				if (player && text) {
 					roomManager.chat(session.room, {
 						kind: 'msg',
@@ -161,7 +210,8 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.CHECK_ROOM: {
-				const code = typeof msg.code === 'string' ? msg.code.toUpperCase() : '';
+				if (limited('check_room')) break;
+				const code = typeof msg.code === 'string' ? msg.code.toUpperCase().slice(0, 8) : '';
 				send({ type: ServerMsg.ROOM_EXISTS, code, exists: !!roomManager.getRoom(code) });
 				break;
 			}
@@ -172,7 +222,10 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.GET_STATS: {
-				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				const clientId =
+					typeof msg.clientId === 'string'
+						? msg.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+						: '';
 				send({ type: ServerMsg.STATS, stats: getPlayerStats(clientId) });
 				break;
 			}
@@ -203,15 +256,22 @@ function handleConnection(ws) {
 }
 
 /**
- * Validates and trims an incoming profile.
+ * Validates, normalizes and moderates an incoming profile.
  * @param {any} raw
  * @returns {import('./protocol.js').Profile | null}
  */
 function sanitizeProfile(raw) {
 	if (!raw || typeof raw.name !== 'string') return null;
-	const name = raw.name.trim().slice(0, 20);
+	const name = cleanText(
+		raw.name
+			.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '')
+			.replace(/\s+/g, ' ')
+			.trim()
+			.slice(0, 20)
+	).trim();
 	if (name.length === 0) return null;
-	const avatar = typeof raw.avatar === 'string' && raw.avatar ? raw.avatar.slice(0, 40) : name;
-	const clientId = typeof raw.clientId === 'string' ? raw.clientId.slice(0, 64) : '';
+	const avatar = isAvatarStyle(raw.avatar) ? raw.avatar : DEFAULT_AVATAR;
+	const clientId =
+		typeof raw.clientId === 'string' ? raw.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) : '';
 	return { name, avatar, clientId };
 }

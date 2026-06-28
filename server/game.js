@@ -3,6 +3,7 @@ import { roomManager } from './rooms.js';
 import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
 import { judgeGuess } from './match.js';
 import { recordGameResult } from './db.js';
+import { cleanText } from './moderation.js';
 import {
 	ROUND_END_PAUSE_MS,
 	COUNTDOWN_MS,
@@ -277,7 +278,7 @@ export function handleGuess(room, player, text) {
 	roomManager.chat(room, {
 		kind: 'guess',
 		name: player.profile.name,
-		text: guess.slice(0, 60),
+		text: cleanText(guess.slice(0, 60)),
 		playerId: player.id
 	});
 }

@@ -14,3 +14,20 @@ export const MIN_ROUND_POINTS = 20;
 
 export const FIRST_SOLVE_BONUS = 30;
 export const ORDER_BONUS_STEP = 10;
+
+export const MAX_ROOMS = 500;
+
+export const MAX_MESSAGE_BYTES = 16 * 1024;
+
+/**
+ * Per-connection sliding-window rate limits: `max` actions per `windowMs`.
+ * @type {Record<string, { max: number, windowMs: number }>}
+ */
+export const RATE_LIMITS = {
+	default: { max: 40, windowMs: 5000 },
+	create: { max: 6, windowMs: 60000 },
+	join: { max: 12, windowMs: 60000 },
+	say: { max: 6, windowMs: 4000 },
+	guess: { max: 15, windowMs: 4000 },
+	check_room: { max: 30, windowMs: 10000 }
+};

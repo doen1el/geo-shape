@@ -6,7 +6,7 @@ import { attachWebSocketServer } from './server/index.js';
 const webSocketServer: PluginOption = {
 	name: 'geo-shape-websocket',
 	configureServer(server: ViteDevServer) {
-		if (server.httpServer) attachWebSocketServer(server.httpServer);
+		if (server.httpServer) attachWebSocketServer(server.httpServer, { dev: true });
 	},
 	configurePreviewServer(server) {
 		if (server.httpServer) attachWebSocketServer(server.httpServer);
