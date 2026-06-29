@@ -1,0 +1,18 @@
+# Build artifacts & deps — rebuilt inside the image
+node_modules
+build
+.svelte-kit
+package
+
+# Runtime / local data — never bake into the image
+data
+.cache
+.env
+.env.*
+!.env.example
+
+# VCS & editor cruft
+.git
+.gitignore
+.DS_Store
+**/*.timestamp-*
