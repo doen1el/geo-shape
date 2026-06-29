@@ -53,6 +53,7 @@ You can of course open issues for bugs, feedback, and feature ideas. All suggest
 ## 📜 Credits
 
 - [NaturalEarth](https://www.naturalearthdata.com/)
+- [DiceBear](https://www.dicebear.com/)
 - [Svelte](https://svelte.dev/)
 - [NodeJS](https://nodejs.org/)
 - [SQLite](https://www.sqlite.org/index.html)
