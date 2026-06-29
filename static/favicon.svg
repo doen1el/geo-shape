@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+	<style>
+		.icon { stroke: #000000; }
+		@media (prefers-color-scheme: dark) {
+			.icon { stroke: #ffffff; }
+		}
+	</style>
+	<circle class="icon" cx="12" cy="12" r="10" />
+	<path class="icon" d="M12 2a7 7 0 1 0 10 10" />
+</svg>
