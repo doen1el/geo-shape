@@ -53,6 +53,14 @@ export function judgeGuess(guess, answers) {
 		const target = normalized[i];
 		if (g.length >= 4 && target.startsWith(g)) return Verdict.CLOSE;
 		if (levenshtein(g, target) <= threshold) return Verdict.CLOSE;
+
+		if (g.length >= 4 && answers[i].includes(' ')) {
+			for (const word of answers[i].split(/[\s-]+/)) {
+				if (normalize(word) === g) return Verdict.CLOSE;
+			}
+		}
+
+		if (g.length >= 5 && target.includes(g)) return Verdict.CLOSE;
 	}
 	return Verdict.WRONG;
 }

@@ -1,2 +1,4 @@
 allowBuilds:
+  better-sqlite3: set this to true or false
   esbuild: true
+  msgpackr-extract: set this to true or false

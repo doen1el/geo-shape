@@ -40,6 +40,8 @@ export const en = {
 	'solo.title': 'Practice solo',
 	'solo.subtitle': 'Sharpen your skills against the clock — no friends needed.',
 	'solo.button': 'Play solo',
+	'solo.setup': 'Solo setup',
+	'solo.start': 'Start solo game',
 	'solo.again': 'Play again',
 
 	'error.connect': 'Could not connect to the server.',
@@ -71,11 +73,9 @@ export const en = {
 	'common.soon': 'Soon',
 	'common.or': 'or',
 	'category.0': 'German states',
-	'category.1': 'Europe',
-	'category.2': 'World',
-	'category.world': 'Countries (World)',
-	'category.europe': 'Countries (Europe)',
-	'category.continent': 'By continent',
+	'category.1': 'Continents',
+	'category.2': 'Europe',
+	'category.3': 'US states',
 
 	'leave.title': 'Leave the room?',
 	'leave.text': 'You will lose your spot in this game.',

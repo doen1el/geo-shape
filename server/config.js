@@ -1,7 +1,7 @@
 export const ROUND_DURATION_SEC = 90;
 export const MIN_ROUND_DURATION_SEC = 30;
 export const MAX_ROUND_DURATION_SEC = 180;
-export const ROUND_END_PAUSE_MS = 20000;
+export const ROUND_END_PAUSE_MS = 15000;
 
 export const COUNTDOWN_MS = 3000;
 

@@ -340,13 +340,15 @@ export function endGame(room) {
 	});
 	console.log(`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`);
 
-	const winnerIds = new Set(winners.map((w) => w.id));
-	const isContest = room.players.size > 1;
-	for (const p of room.players.values()) {
-		recordGameResult(
-			{ clientId: p.profile.clientId, name: p.profile.name, avatar: p.profile.avatar },
-			{ won: isContest && winnerIds.has(p.id), score: p.score }
-		);
+	if (!room.solo) {
+		const winnerIds = new Set(winners.map((w) => w.id));
+		const isContest = room.players.size > 1;
+		for (const p of room.players.values()) {
+			recordGameResult(
+				{ clientId: p.profile.clientId, name: p.profile.name, avatar: p.profile.avatar },
+				{ won: isContest && winnerIds.has(p.id), score: p.score }
+			);
+		}
 	}
 
 	room.status = 'lobby';

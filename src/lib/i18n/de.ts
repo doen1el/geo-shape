@@ -42,6 +42,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'solo.title': 'Solo üben',
 	'solo.subtitle': 'Trainiere gegen die Uhr — ganz ohne Mitspieler.',
 	'solo.button': 'Solo spielen',
+	'solo.setup': 'Solo-Einstellungen',
+	'solo.start': 'Solo-Spiel starten',
 	'solo.again': 'Nochmal',
 
 	'error.connect': 'Verbindung zum Server fehlgeschlagen.',
@@ -73,11 +75,9 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'common.soon': 'Bald',
 	'common.or': 'oder',
 	'category.0': 'Bundesländer',
-	'category.1': 'Europa',
-	'category.2': 'Welt',
-	'category.world': 'Länder (Welt)',
-	'category.europe': 'Länder (Europa)',
-	'category.continent': 'Nach Kontinent',
+	'category.1': 'Kontinente',
+	'category.2': 'Europa',
+	'category.3': 'US-Bundesstaaten',
 
 	'leave.title': 'Raum verlassen?',
 	'leave.text': 'Du verlierst deinen Platz in diesem Spiel.',

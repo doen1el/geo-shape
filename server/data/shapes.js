@@ -1,43 +1,30 @@
-import { paths as germanStatePaths } from './german_states_paths.js';
-import { correctAnswers } from './correct_answers.js';
-import { germanStateInfo } from './german_states_info.js';
+import * as germanStates from './german_states_paths.js';
+import * as continents from './continents_paths.js';
+import * as europe from './europe_paths.js';
+import * as usStates from './us_states_paths.js';
 
 /**
- * @typedef {import('./german_states_info.js').StateInfo} StateInfo
+ * @typedef {{ key?: string, capital?: string, population?: number, areaKm2: number, funFact?: { en: string, de: string } }} StateInfo
  * @typedef {{ id: number, name: string, path: string, answers: string[], info: StateInfo | null }} Shape
+ * @typedef {{ paths: Record<number, string>, names: Record<number, string>, answers: Record<number, string[]>, info?: Record<number, StateInfo> }} CategoryData
  */
 
 /**
- * Title-cases a canonical answer like `baden-württemberg` -> `Baden-Württemberg`.
- * @param {string} canonical
- */
-function toDisplayName(canonical) {
-	return canonical
-		.split(/([\s-])/)
-		.map((part) => (part.length > 1 ? part[0].toUpperCase() + part.slice(1) : part))
-		.join('');
-}
-
-/**
- * @param {Record<number, string>} pathMap
- * @param {Record<number, string[]>} answerMap
- * @param {Record<number, StateInfo>} [infoMap]
+ * Turn a generated category module (`<key>_paths.js`) into Shape[].
+ * @param {CategoryData} data
  * @returns {Shape[]}
  */
-function buildShapes(pathMap, answerMap, infoMap = {}) {
-	return Object.keys(pathMap)
+function buildShapes(data) {
+	return Object.keys(data.paths)
 		.map(Number)
 		.sort((a, b) => a - b)
-		.map((id) => {
-			const answers = answerMap[id] ?? [];
-			return {
-				id,
-				name: answers.length ? toDisplayName(answers[0]) : `#${id}`,
-				path: pathMap[id],
-				answers,
-				info: infoMap[id] ?? null
-			};
-		});
+		.map((id) => ({
+			id,
+			name: data.names[id] ?? `#${id}`,
+			path: data.paths[id],
+			answers: data.answers[id] ?? [],
+			info: data.info?.[id] ?? null
+		}));
 }
 
 /**
@@ -53,8 +40,26 @@ export const CATEGORIES = {
 	0: {
 		id: 0,
 		key: 'german_states',
-		viewBox: '0 0 400 400',
-		shapes: buildShapes(germanStatePaths, correctAnswers[0] ?? {}, germanStateInfo)
+		viewBox: '0 0 1000 1000',
+		shapes: buildShapes(germanStates)
+	},
+	1: {
+		id: 1,
+		key: 'continents',
+		viewBox: '0 0 1000 1000',
+		shapes: buildShapes(continents)
+	},
+	2: {
+		id: 2,
+		key: 'europe',
+		viewBox: '0 0 1000 1000',
+		shapes: buildShapes(europe)
+	},
+	3: {
+		id: 3,
+		key: 'us_states',
+		viewBox: '0 0 1000 1000',
+		shapes: buildShapes(usStates)
 	}
 };
 

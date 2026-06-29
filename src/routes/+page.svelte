@@ -4,6 +4,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
@@ -12,7 +13,11 @@
 	let joinCode = $state('');
 	let busy = $state(false);
 	let errorMsg = $state('');
+	let soloOpen = $state(false);
 	let soloDifficulty = $state<'easy' | 'hard'>('easy');
+	let soloCategory = $state(0);
+
+	const SOLO_CATEGORIES = [0, 1, 2, 3] as const;
 
 	const canPlay = $derived(name.trim().length > 0);
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
@@ -75,7 +80,9 @@
 		saveName();
 		try {
 			const newCode = await game.create(profile.toJSON(), true, soloDifficulty);
+			game.setSettings({ categoryId: soloCategory });
 			game.start();
+			soloOpen = false;
 			await goto(`/room/${newCode}?solo=1`);
 		} catch {
 			errorMsg = t('error.connect');
@@ -150,32 +157,73 @@
 			<div class="h-0.5 flex-1 bg-ink/10"></div>
 		</div>
 
-		<div class="flex items-stretch gap-2">
-			<Button variant="neutral" class="flex-1" disabled={!canPlay || busy} onclick={playSolo}>
-				{t('solo.button')}
-			</Button>
-			<div
-				class="flex shrink-0 items-center rounded-base border-2 border-border bg-surface p-1 text-xs font-extrabold shadow-shadow"
-				title={t('settings.difficulty')}
-			>
-				{#each ['easy', 'hard'] as const as d (d)}
-					<button
-						type="button"
-						class="rounded-[5px] px-2.5 py-1.5 transition-colors {soloDifficulty === d
-							? 'bg-main'
-							: 'text-ink/50 hover:text-ink'}"
-						onclick={() => (soloDifficulty = d)}
-					>
-						{t(`difficulty.${d}`)}
-					</button>
-				{/each}
-			</div>
-		</div>
+		<Button
+			variant="neutral"
+			class="w-full"
+			disabled={!canPlay || busy}
+			onclick={() => (soloOpen = true)}
+		>
+			{t('solo.button')}
+		</Button>
 	</Card>
 
 	{#if errorMsg}
 		<p class="text-center font-bold text-danger">{errorMsg}</p>
 	{/if}
+
+	<!-- Solo setup: pick difficulty + category before starting -->
+	<Dialog open={soloOpen} onclose={() => (soloOpen = false)}>
+		<div class="flex flex-col gap-4">
+			<h2 class="text-xl font-extrabold">{t('solo.setup')}</h2>
+
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.difficulty')}
+				</span>
+				<div class="flex gap-2">
+					{#each ['easy', 'hard'] as const as d (d)}
+						<button
+							type="button"
+							class="flex-1 rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {soloDifficulty ===
+							d
+								? 'bg-main shadow-shadow'
+								: 'bg-surface'}"
+							onclick={() => (soloDifficulty = d)}
+						>
+							{t(`difficulty.${d}`)}
+						</button>
+					{/each}
+				</div>
+				<p class="text-[11px] font-medium text-ink/50">
+					{t(`difficulty.${soloDifficulty}.desc` as 'difficulty.easy.desc')}
+				</p>
+			</div>
+
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.category')}
+				</span>
+				<div class="grid grid-cols-2 gap-2">
+					{#each SOLO_CATEGORIES as id (id)}
+						<button
+							type="button"
+							class="rounded-base border-2 border-border px-2 py-2.5 text-sm font-bold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {soloCategory ===
+							id
+								? 'bg-main shadow-shadow'
+								: 'bg-surface'}"
+							onclick={() => (soloCategory = id)}
+						>
+							{t(`category.${id}` as 'category.0')}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<Button class="w-full" disabled={busy} onclick={playSolo}>
+				{busy ? t('create.creating') : t('solo.start')}
+			</Button>
+		</div>
+	</Dialog>
 
 	<!-- Your stats -->
 	{#if game.stats && game.stats.gamesPlayed > 0}

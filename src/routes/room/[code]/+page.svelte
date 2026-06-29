@@ -24,9 +24,9 @@
 	const TIME_OPTIONS = [45, 60, 90, 120];
 	const CATEGORY_CARDS = [
 		{ id: 0, key: 'category.0', available: true },
-		{ id: -1, key: 'category.world', available: false },
-		{ id: -2, key: 'category.europe', available: false },
-		{ id: -3, key: 'category.continent', available: false }
+		{ id: 1, key: 'category.1', available: true },
+		{ id: 2, key: 'category.2', available: true },
+		{ id: 3, key: 'category.3', available: true }
 	] as const;
 
 	let nameInput = $state(profile.name);

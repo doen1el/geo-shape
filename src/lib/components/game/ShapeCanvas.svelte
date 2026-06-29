@@ -3,7 +3,6 @@
 	import type { RoundInfo } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
-	// Hard mode: the outline finishes drawing this many seconds before the round ends.
 	const REVEAL_TAIL_MS = 10000;
 
 	let {
@@ -29,8 +28,6 @@
 	const secondsLeft = $derived(Math.ceil(remainingMs / 1000));
 	const progress = $derived(Math.min(100, (remainingMs / (round.durationSec * 1000)) * 100));
 
-	// Outline build: 0 = hidden … 1 = fully drawn. Easy mode is always full; hard
-	// mode grows from 0 to full, reaching 1 with REVEAL_TAIL_MS left on the clock.
 	const buildMs = $derived(Math.max(0, round.durationSec * 1000 - REVEAL_TAIL_MS));
 	const elapsedMs = $derived(round.durationSec * 1000 - remainingMs);
 	const drawProgress = $derived(
@@ -45,6 +42,8 @@
 	const nextProgress = $derived(
 		reveal && reveal.totalMs > 0 ? Math.min(100, (nextRemainingMs / reveal.totalMs) * 100) : 0
 	);
+
+	const viewBox = $derived(round.viewBox);
 </script>
 
 <div class="flex h-full min-h-0 flex-col gap-2">
@@ -76,16 +75,12 @@
 		></div>
 	</div>
 
-	<!-- Outline (fills remaining height, never forces overflow) -->
+	<!-- Outline: fixed box. -->
 	<div
-		class="flex min-h-0 flex-1 items-center justify-center rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
+		class="min-h-0 flex-1 overflow-hidden rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
 	>
 		{#key round.round}
-			<svg
-				viewBox={round.viewBox}
-				preserveAspectRatio="xMidYMid meet"
-				class="h-full max-h-full w-full"
-			>
+			<svg {viewBox} preserveAspectRatio="xMidYMid meet" class="h-full w-full">
 				<path
 					d={round.path}
 					pathLength="1"

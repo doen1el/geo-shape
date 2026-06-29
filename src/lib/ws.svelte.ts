@@ -39,11 +39,11 @@ export type RoundInfo = {
 };
 
 export type StateInfo = {
-	key: string;
-	capital: string;
-	population: number;
+	key?: string;
+	capital?: string;
+	population?: number;
 	areaKm2: number;
-	funFact: { en: string; de: string };
+	funFact?: { en: string; de: string };
 };
 export type RoundResult = {
 	answer: string;
