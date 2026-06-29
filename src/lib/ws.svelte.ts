@@ -81,6 +81,31 @@ export type PlayerStats = {
 
 let chatSeq = 0;
 
+const LAST_ROOM_KEY = 'geoshape:lastRoom';
+
+export function rememberRoom(code: string): void {
+	if (!browser) return;
+	try {
+		localStorage.setItem(LAST_ROOM_KEY, code);
+	} catch {}
+}
+
+export function forgetRoom(): void {
+	if (!browser) return;
+	try {
+		localStorage.removeItem(LAST_ROOM_KEY);
+	} catch {}
+}
+
+export function getLastRoom(): string | null {
+	if (!browser) return null;
+	try {
+		return localStorage.getItem(LAST_ROOM_KEY);
+	} catch {
+		return null;
+	}
+}
+
 class GameSocket {
 	room = $state<PublicRoom | null>(null);
 	playerId = $state<string | null>(null);
@@ -263,7 +288,13 @@ class GameSocket {
 	async create(profile: Profile, solo = false, difficulty?: Difficulty): Promise<string> {
 		await this.connect();
 		return new Promise((resolve, reject) => {
-			this.#pendingAck = { resolve, reject };
+			this.#pendingAck = {
+				resolve: (code) => {
+					if (!solo) rememberRoom(code);
+					resolve(code);
+				},
+				reject
+			};
 			this.#send({ type: ClientMsg.CREATE, profile, solo, difficulty });
 		});
 	}
@@ -271,7 +302,13 @@ class GameSocket {
 	async join(code: string, profile: Profile): Promise<string> {
 		await this.connect();
 		return new Promise((resolve, reject) => {
-			this.#pendingAck = { resolve, reject };
+			this.#pendingAck = {
+				resolve: (c) => {
+					rememberRoom(c);
+					resolve(c);
+				},
+				reject
+			};
 			this.#send({ type: ClientMsg.JOIN, code, profile });
 		});
 	}
@@ -329,6 +366,7 @@ class GameSocket {
 	}
 
 	leave(): void {
+		forgetRoom();
 		this.#send({ type: ClientMsg.LEAVE });
 		this.room = null;
 		this.playerId = null;

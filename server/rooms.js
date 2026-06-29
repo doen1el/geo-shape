@@ -23,6 +23,7 @@ let playerSeq = 0;
  * @property {number} wins
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
+ * @property {ReturnType<typeof setTimeout> | null} disconnectTimer Pending grace-period removal, or null.
  */
 
 /**
@@ -124,12 +125,36 @@ export class RoomManager {
 	 * @returns {Player}
 	 */
 	addPlayer(room, profile, socket) {
+		if (profile.clientId) {
+			for (const existing of room.players.values()) {
+				if (existing.profile.clientId !== profile.clientId) continue;
+				if (existing.disconnectTimer) {
+					clearTimeout(existing.disconnectTimer);
+					existing.disconnectTimer = null;
+				}
+				existing.socket = socket;
+				existing.connected = true;
+				existing.profile = profile;
+				touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
+				return existing;
+			}
+		}
+
 		const id = `p${++playerSeq}`;
 		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
-		// Keep the leaderboard's name/avatar in sync with the latest profile.
+
 		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
 		/** @type {Player} */
-		const player = { id, profile, score: 0, roundPoints: 0, wins, connected: true, socket };
+		const player = {
+			id,
+			profile,
+			score: 0,
+			roundPoints: 0,
+			wins,
+			connected: true,
+			socket,
+			disconnectTimer: null
+		};
 		room.players.set(id, player);
 		if (!room.hostId) room.hostId = id;
 		return player;
@@ -143,6 +168,11 @@ export class RoomManager {
 	 * @param {string} playerId
 	 */
 	removePlayer(room, playerId) {
+		const leaving = room.players.get(playerId);
+		if (leaving?.disconnectTimer) {
+			clearTimeout(leaving.disconnectTimer);
+			leaving.disconnectTimer = null;
+		}
 		room.players.delete(playerId);
 		if (room.players.size === 0) {
 			this.rooms.delete(room.code);

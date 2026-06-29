@@ -46,8 +46,12 @@ export const en = {
 
 	'error.connect': 'Could not connect to the server.',
 
+	'rejoin.banner': 'You were in room {code} — it’s still open.',
+	'rejoin.go': 'Rejoin',
+	'rejoin.dismiss': 'Dismiss',
+
 	'lobby.nameTitle': "What's your name?",
-	'room.notFound': 'Room “{code}” not found 🤔',
+	'room.notFound': 'Room “{code}” not found',
 	'room.codeLabel': 'Room code',
 	'room.copied': 'Copied!',
 

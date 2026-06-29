@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -144,10 +144,6 @@
 		if (solo) game.start();
 		else game.dismissGameOver();
 	}
-
-	onDestroy(() => {
-		if (!leaving && game.room?.code === code) game.leave();
-	});
 </script>
 
 <!-- snippet: a row of pill toggle buttons -->

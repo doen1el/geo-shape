@@ -6,7 +6,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
-	import { game } from '$lib/ws.svelte';
+	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 
 	let name = $state(profile.name);
@@ -16,6 +16,8 @@
 	let soloOpen = $state(false);
 	let soloDifficulty = $state<'easy' | 'hard'>('easy');
 	let soloCategory = $state(0);
+	let resumeCode = $state<string | null>(null);
+	let resumeAvailable = $state(false);
 
 	const SOLO_CATEGORIES = [0, 1, 2, 3] as const;
 
@@ -40,6 +42,11 @@
 
 	onMount(() => {
 		game.requestStats(profile.clientId);
+		const last = getLastRoom();
+		if (last && last !== game.room?.code) {
+			resumeCode = last;
+			game.checkRoom(last);
+		}
 	});
 
 	$effect(() => {
@@ -47,6 +54,20 @@
 		const id = setTimeout(() => game.checkRoom(code), 250);
 		return () => clearTimeout(id);
 	});
+
+	$effect(() => {
+		const rc = game.roomCheck;
+		if (resumeCode && rc && rc.code === resumeCode) resumeAvailable = rc.exists;
+	});
+
+	function resumeRoom() {
+		if (resumeCode) goto(`/room/${resumeCode}`);
+	}
+	function dismissResume() {
+		forgetRoom();
+		resumeCode = null;
+		resumeAvailable = false;
+	}
 
 	function saveName() {
 		profile.set(name);
@@ -93,6 +114,25 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col justify-center gap-3">
+	{#if resumeCode && resumeAvailable}
+		<Card class="flex items-center gap-3 bg-main p-3">
+			<p class="min-w-0 flex-1 text-sm font-bold">
+				{t('rejoin.banner', { code: resumeCode })}
+			</p>
+			<Button size="sm" variant="neutral" onclick={resumeRoom}>{t('rejoin.go')}</Button>
+			<Button
+				size="sm"
+				variant="neutral"
+				class="w-9 shrink-0 px-0"
+				onclick={dismissResume}
+				aria-label={t('rejoin.dismiss')}
+				title={t('rejoin.dismiss')}
+			>
+				✕
+			</Button>
+		</Card>
+	{/if}
+
 	<!-- Identity -->
 	<Card class="p-4">
 		<div class="flex items-center gap-4">

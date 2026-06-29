@@ -17,6 +17,8 @@ export const ORDER_BONUS_STEP = 10;
 
 export const MAX_ROOMS = 500;
 
+export const RECONNECT_GRACE_MS = 120000;
+
 export const MAX_MESSAGE_BYTES = 16 * 1024;
 
 /**

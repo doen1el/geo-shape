@@ -48,8 +48,12 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'error.connect': 'Verbindung zum Server fehlgeschlagen.',
 
+	'rejoin.banner': 'Du warst in Raum {code} — er ist noch offen.',
+	'rejoin.go': 'Zurück',
+	'rejoin.dismiss': 'Schließen',
+
 	'lobby.nameTitle': 'Wie heißt du?',
-	'room.notFound': 'Raum „{code}“ nicht gefunden 🤔',
+	'room.notFound': 'Raum „{code}“ nicht gefunden',
 	'room.codeLabel': 'Raum-Code',
 	'room.copied': 'Kopiert!',
 

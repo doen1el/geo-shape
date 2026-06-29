@@ -16,7 +16,7 @@ import { getLeaderboard, getPlayerStats } from './db.js';
 import { cleanText } from './moderation.js';
 import { isAvatarStyle, DEFAULT_AVATAR } from './avatars.js';
 import { createRateLimiter } from './ratelimit.js';
-import { RATE_LIMITS, MAX_ROOMS, MAX_MESSAGE_BYTES } from './config.js';
+import { RATE_LIMITS, MAX_ROOMS, MAX_MESSAGE_BYTES, RECONNECT_GRACE_MS } from './config.js';
 
 const WS_PATH = '/ws';
 const ATTACHED = Symbol.for('geoshape.wss.attached');
@@ -132,14 +132,21 @@ function handleConnection(ws) {
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				const room = roomManager.getRoom(msg.code);
 
-				if (!room || room.solo)
+				const reconnecting =
+					!!room &&
+					!!profile.clientId &&
+					[...room.players.values()].some((p) => p.profile.clientId === profile.clientId);
+
+				if (!room || (room.solo && !reconnecting))
 					return send({ type: ServerMsg.ERROR, message: 'Room not found', code: 'not_found' });
 
-				if (session) leaveCurrent();
+				if (session) leaveCurrent(true);
 
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
-				console.log(`[ws] ${profile.name} joined room ${room.code} (${room.players.size} total)`);
+				console.log(
+					`[ws] ${profile.name} ${reconnecting ? 'reconnected to' : 'joined'} room ${room.code} (${room.players.size} total)`
+				);
 				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
 				roomManager.broadcastState(room);
 
@@ -149,7 +156,7 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.LEAVE: {
-				leaveCurrent();
+				leaveCurrent(true);
 				break;
 			}
 
@@ -238,23 +245,62 @@ function handleConnection(ws) {
 		}
 	});
 
-	ws.on('close', () => leaveCurrent());
-	ws.on('error', () => leaveCurrent());
+	ws.on('close', () => leaveCurrent(false));
+	ws.on('error', () => leaveCurrent(false));
 
-	function leaveCurrent() {
+	/**
+	 * @param {boolean} explicit `true` = user-initiated leave (remove now);
+	 *   `false` = the socket dropped (keep the slot & score for a grace window so
+	 *   a refresh / reconnect can resume).
+	 */
+	function leaveCurrent(explicit) {
 		if (!session) return;
 		const { room, playerId } = session;
-		const name = room.players.get(playerId)?.profile.name ?? playerId;
 		session = null;
-		roomManager.removePlayer(room, playerId);
-		if (roomManager.getRoom(room.code) === room) {
-			console.log(`[ws] ${name} left ${room.code} (${room.players.size} left)`);
-			notifyPlayerLeft(room);
-			roomManager.broadcastState(room);
-		} else {
-			console.log(`[ws] ${name} left — room ${room.code} closed`);
-			cleanupRoom(room);
+		const player = room.players.get(playerId);
+		if (!player) return;
+
+		if (player.socket !== ws) return;
+
+		if (explicit) {
+			finalizeRemoval(room, playerId);
+			return;
 		}
+
+		player.connected = false;
+		if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+		player.disconnectTimer = setTimeout(() => finalizeRemoval(room, playerId), RECONNECT_GRACE_MS);
+
+		if (room.hostId === playerId) {
+			const next = [...room.players.values()].find((p) => p.connected && p.id !== playerId);
+			if (next) room.hostId = next.id;
+		}
+
+		console.log(
+			`[ws] ${player.profile.name} disconnected from ${room.code} — ${Math.round(RECONNECT_GRACE_MS / 1000)}s to reconnect`
+		);
+		notifyPlayerLeft(room);
+		roomManager.broadcastState(room);
+	}
+}
+
+/**
+ * Permanently removes a player from a room and tidies up
+ * @param {import('./rooms.js').Room} room
+ * @param {string} playerId
+ */
+function finalizeRemoval(room, playerId) {
+	const player = room.players.get(playerId);
+	if (!player) return;
+	const name = player.profile.name;
+	roomManager.removePlayer(room, playerId);
+	if (roomManager.getRoom(room.code) === room) {
+		console.log(`[ws] ${name} left ${room.code} (${room.players.size} left)`);
+		notifyPlayerLeft(room);
+		roomManager.broadcastState(room);
+	} else {
+		console.log(`[ws] ${name} left — room ${room.code} closed`);
+		cleanupRoom(room);
 	}
 }
 
