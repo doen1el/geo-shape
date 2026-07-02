@@ -49,7 +49,7 @@ let playerSeq = 0;
  * @property {number} pauseRemainingMs
  * @property {number} countdownEndsAt
  * @property {Set<string>} solved
- * @property {Array<{kind: string, name: string, text?: string, playerId?: string, points?: number}>} chatLog
+ * @property {Array<{kind: string, name?: string, text?: string, playerId?: string, points?: number, variant?: string, round?: number}>} chatLog
  * @property {ReturnType<typeof setTimeout> | null} roundTimer
  * @property {ReturnType<typeof setTimeout> | null} pauseTimer
  */
@@ -237,7 +237,7 @@ export class RoomManager {
 	 * Records a chat entry in the room's history (capped) and broadcasts it, so
 	 * players who join later can be sent the backlog.
 	 * @param {Room} room
-	 * @param {{kind: string, name: string, text?: string, playerId?: string, points?: number}} entry
+	 * @param {{kind: string, name?: string, text?: string, playerId?: string, points?: number, variant?: string, round?: number}} entry
 	 */
 	chat(room, entry) {
 		room.chatLog.push(entry);

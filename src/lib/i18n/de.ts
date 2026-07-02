@@ -59,6 +59,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'lobby.chat': 'Chat',
 	'chat.placeholder': 'Schreib was…',
+	'chat.roundDivider': 'Runde {round}',
+	'chat.lobbyDivider': 'Lobby',
 	'lobby.players': 'Spieler',
 	'lobby.host': 'HOST',
 	'lobby.you': '(du)',

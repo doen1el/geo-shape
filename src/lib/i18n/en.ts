@@ -57,6 +57,8 @@ export const en = {
 
 	'lobby.chat': 'Chat',
 	'chat.placeholder': 'Say something…',
+	'chat.roundDivider': 'Round {round}',
+	'chat.lobbyDivider': 'Lobby',
 	'lobby.players': 'Players',
 	'lobby.host': 'HOST',
 	'lobby.you': '(you)',

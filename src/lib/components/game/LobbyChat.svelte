@@ -23,9 +23,19 @@
 <div class="flex h-full min-h-0 flex-col gap-2">
 	<div bind:this={listEl} class="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1 text-sm">
 		{#each game.chat as entry (entry.id)}
-			{#if entry.kind === 'solved'}
+			{#if entry.kind === 'divider'}
+				<div class="flex items-center gap-2 py-0.5">
+					<span class="h-0.5 flex-1 rounded bg-border/50"></span>
+					<span class="text-[10px] font-extrabold tracking-wide text-ink/50 uppercase">
+						{entry.variant === 'lobby'
+							? t('chat.lobbyDivider')
+							: t('chat.roundDivider', { round: entry.round ?? 0 })}
+					</span>
+					<span class="h-0.5 flex-1 rounded bg-border/50"></span>
+				</div>
+			{:else if entry.kind === 'solved'}
 				<p class="text-center font-bold text-main-accent">
-					✓ {t('game.solvedBy', { name: entry.name })}
+					✓ {t('game.solvedBy', { name: entry.name ?? '' })}
 				</p>
 			{:else}
 				{@const mine = entry.playerId != null && entry.playerId === game.playerId}

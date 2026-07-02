@@ -57,11 +57,13 @@ export type GameOver = { winnerName: string | null; isTie: boolean; players: Pub
 export type Verdict = 'correct' | 'close' | 'wrong';
 export type ChatEntry = {
 	id: number;
-	kind: 'guess' | 'solved' | 'msg';
-	name: string;
+	kind: 'guess' | 'solved' | 'msg' | 'divider';
+	name?: string;
 	text?: string;
 	playerId?: string;
 	points?: number;
+	variant?: 'round' | 'lobby';
+	round?: number;
 };
 
 export type LeaderboardEntry = {
@@ -186,7 +188,6 @@ class GameSocket {
 				this.countdown = { until: msg.startsAt + msg.durationMs };
 				break;
 			case ServerMsg.ROUND_START:
-				this.chat = [];
 				this.roundResult = null;
 				this.gameOver = null;
 				this.verdict = null;
@@ -238,7 +239,9 @@ class GameSocket {
 						name: msg.name,
 						text: msg.text,
 						playerId: msg.playerId,
-						points: msg.points
+						points: msg.points,
+						variant: msg.variant,
+						round: msg.round
 					}
 				];
 				break;
@@ -249,7 +252,9 @@ class GameSocket {
 					name: e.name,
 					text: e.text,
 					playerId: e.playerId,
-					points: e.points
+					points: e.points,
+					variant: e.variant,
+					round: e.round
 				}));
 				break;
 			case ServerMsg.ROOM_EXISTS:

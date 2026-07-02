@@ -82,7 +82,6 @@ export function startGame(room, player) {
 	clearTimers(room);
 	for (const p of room.players.values()) p.score = 0;
 	room.usedShapeIds.clear();
-	room.chatLog = [];
 	room.round = 0;
 	room.status = 'playing';
 	room.roundActive = false;
@@ -152,7 +151,7 @@ export function abortGame(room, player) {
 	room.solved = new Set();
 	room.usedShapeIds.clear();
 	for (const p of room.players.values()) p.score = 0;
-	resetLobbyChat(room);
+	markLobbyReturn(room);
 	roomManager.broadcastState(room);
 	console.log(`[game] ${room.code} aborted by host — back to lobby`);
 }
@@ -213,7 +212,8 @@ function startRound(room) {
 	room.paused = false;
 	room.pauseRemainingMs = 0;
 	room.countdownEndsAt = 0;
-	room.chatLog = [];
+
+	roomManager.chat(room, { kind: 'divider', variant: 'round', round: room.round });
 	for (const p of room.players.values()) p.roundPoints = 0;
 	room.roundEndsAt = Date.now() + room.roundDurationSec * 1000;
 
@@ -354,18 +354,17 @@ export function endGame(room) {
 	room.solved = new Set();
 	room.usedShapeIds.clear();
 	for (const p of room.players.values()) p.score = 0;
-	resetLobbyChat(room);
+	markLobbyReturn(room);
 	roomManager.broadcastState(room);
 }
 
 /**
- * Clears the room's chat backlog and tells clients to drop it, so a returning
- * lobby doesn't show leftover round chatter.
+ * Marks the return to the lobby with a divider, keeping the chat backlog intact
+ * for the room's lifetime.
  * @param {Room} room
  */
-function resetLobbyChat(room) {
-	room.chatLog = [];
-	roomManager.broadcast(room, { type: ServerMsg.CHAT_HISTORY, entries: [] });
+function markLobbyReturn(room) {
+	roomManager.chat(room, { kind: 'divider', variant: 'lobby' });
 }
 
 /**
