@@ -72,6 +72,7 @@ export const en = {
 	'settings.title': 'Settings',
 	'settings.category': 'Category',
 	'settings.rounds': 'Rounds',
+	'settings.allRounds': 'All',
 	'settings.time': 'Time per round',
 	'settings.difficulty': 'Difficulty',
 	'difficulty.easy': 'Easy',

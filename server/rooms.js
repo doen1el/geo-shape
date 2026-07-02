@@ -1,6 +1,6 @@
 import { ServerMsg } from './protocol.js';
 import { DEFAULT_MAX_ROUNDS, ROUND_DURATION_SEC } from './config.js';
-import { PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
+import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
 import { getPlayerStats, touchPlayer } from './db.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -38,6 +38,7 @@ let playerSeq = 0;
  * @property {string | null} hostId
  * @property {number} round
  * @property {number} maxRounds
+ * @property {boolean} allRounds
  * @property {number} categoryId
  * @property {number} roundDurationSec
  * @property {number} createdAt
@@ -88,6 +89,7 @@ export class RoomManager {
 			hostId: null,
 			round: 0,
 			maxRounds: DEFAULT_MAX_ROUNDS,
+			allRounds: false,
 			categoryId: PLAYABLE_CATEGORY_IDS[0] ?? 0,
 			roundDurationSec: ROUND_DURATION_SEC,
 			createdAt: Date.now(),
@@ -195,7 +197,9 @@ export class RoomManager {
 			difficulty: room.difficulty,
 			round: room.round,
 			maxRounds: room.maxRounds,
+			allRounds: room.allRounds,
 			categoryId: room.categoryId,
+			categorySizes: CATEGORY_SIZES,
 			roundDurationSec: room.roundDurationSec,
 			players: [...room.players.values()].map((p) => ({
 				id: p.id,

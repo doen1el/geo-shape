@@ -9,6 +9,8 @@ export const DEFAULT_MAX_ROUNDS = 5;
 export const MIN_ROUNDS = 1;
 export const MAX_ROUNDS = 15;
 
+export const ROUND_OPTIONS = [3, 5, 8, 10];
+
 export const MAX_ROUND_POINTS = 100;
 export const MIN_ROUND_POINTS = 20;
 

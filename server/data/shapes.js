@@ -69,6 +69,16 @@ export const PLAYABLE_CATEGORY_IDS = Object.values(CATEGORIES)
 	.map((c) => c.id);
 
 /**
+ * Number of distinct shapes per category, keyed by category id. The lobby uses
+ * this to cap the round count (you can't play more rounds than there are shapes)
+ * and to power the "all shapes" mode.
+ * @type {Record<number, number>}
+ */
+export const CATEGORY_SIZES = Object.fromEntries(
+	Object.values(CATEGORIES).map((c) => [c.id, c.shapes.length])
+);
+
+/**
  * @param {number} categoryId
  * @returns {Category | undefined}
  */

@@ -77,7 +77,9 @@ export const CONFETTI_EMOJI = '🎉';
  * @property {PublicPlayer[]} players
  * @property {number} round
  * @property {number} maxRounds
+ * @property {boolean} allRounds
  * @property {number} categoryId
+ * @property {Record<number, number>} categorySizes
  * @property {number} roundDurationSec
  */
 

@@ -25,7 +25,9 @@ export type PublicRoom = {
 	players: PublicPlayer[];
 	round: number;
 	maxRounds: number;
+	allRounds: boolean;
 	categoryId: number;
+	categorySizes: Record<number, number>;
 	roundDurationSec: number;
 };
 
@@ -339,6 +341,7 @@ class GameSocket {
 	setSettings(settings: {
 		categoryId?: number;
 		maxRounds?: number;
+		allRounds?: boolean;
 		roundDurationSec?: number;
 		difficulty?: Difficulty;
 	}): void {

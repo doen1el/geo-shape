@@ -44,6 +44,8 @@
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
 	const isHost = $derived(me?.isHost ?? false);
 	const canStart = $derived((room?.players.length ?? 0) >= 2);
+	// Number of shapes in the chosen category — caps how many rounds you can pick.
+	const categorySize = $derived(room ? (room.categorySizes?.[room.categoryId] ?? Infinity) : Infinity);
 
 	const checking = $derived(!room && checkedExists === null);
 	const notFound = $derived(!room && checkedExists === false);
@@ -176,7 +178,32 @@
 
 		<div class="flex flex-col gap-1.5">
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
-			{@render pills(ROUND_OPTIONS, room?.maxRounds ?? 5, (v) => game.setSettings({ maxRounds: v }), '')}
+			<div class="flex flex-wrap gap-2">
+				{#each ROUND_OPTIONS as opt (opt)}
+					{@const active = !room?.allRounds && room?.maxRounds === opt}
+					{@const tooMany = opt > categorySize}
+					<button
+						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+							{isHost && !tooMany ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+							{tooMany || (!isHost && !active) ? 'opacity-40' : ''}"
+						disabled={!isHost || tooMany}
+						onclick={() => game.setSettings({ maxRounds: opt })}
+					>
+						{opt}
+					</button>
+				{/each}
+				<button
+					class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+						{room?.allRounds ? 'bg-main shadow-shadow' : 'bg-surface'}
+						{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+						{!isHost && !room?.allRounds ? 'opacity-40' : ''}"
+					disabled={!isHost}
+					onclick={() => game.setSettings({ allRounds: true })}
+				>
+					{t('settings.allRounds')}{Number.isFinite(categorySize) ? ` (${categorySize})` : ''}
+				</button>
+			</div>
 		</div>
 
 		<div class="flex flex-col gap-1.5">

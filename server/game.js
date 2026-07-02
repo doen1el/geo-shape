@@ -1,6 +1,6 @@
 import { ServerMsg, Verdict } from './protocol.js';
 import { roomManager } from './rooms.js';
-import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS } from './data/shapes.js';
+import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
 import { judgeGuess } from './match.js';
 import { recordGameResult } from './db.js';
 import { cleanText } from './moderation.js';
@@ -13,6 +13,7 @@ import {
 	ORDER_BONUS_STEP,
 	MIN_ROUNDS,
 	MAX_ROUNDS,
+	ROUND_OPTIONS,
 	MIN_ROUND_DURATION_SEC,
 	MAX_ROUND_DURATION_SEC
 } from './config.js';
@@ -48,15 +49,27 @@ function allConnectedSolved(room) {
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
  * @param {Player} player
- * @param {{ categoryId?: number, maxRounds?: number, roundDurationSec?: number, difficulty?: string }} settings
+ * @param {{ categoryId?: number, maxRounds?: number, allRounds?: boolean, roundDurationSec?: number, difficulty?: string }} settings
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
 	if (typeof settings.categoryId === 'number' && PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)) {
 		room.categoryId = settings.categoryId;
 	}
-	if (typeof settings.maxRounds === 'number') {
+
+	if (settings.allRounds === true) {
+		room.allRounds = true;
+	} else if (typeof settings.maxRounds === 'number') {
+		room.allRounds = false;
 		room.maxRounds = Math.max(MIN_ROUNDS, Math.min(MAX_ROUNDS, Math.round(settings.maxRounds)));
+	}
+
+	const size = CATEGORY_SIZES[room.categoryId] ?? MAX_ROUNDS;
+	if (room.allRounds) {
+		room.maxRounds = Math.max(MIN_ROUNDS, size);
+	} else if (room.maxRounds > size) {
+		const fit = [...ROUND_OPTIONS].reverse().find((o) => o <= size);
+		room.maxRounds = fit ?? Math.max(MIN_ROUNDS, size);
 	}
 	if (typeof settings.roundDurationSec === 'number') {
 		room.roundDurationSec = Math.max(

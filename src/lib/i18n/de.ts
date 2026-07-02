@@ -74,6 +74,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'settings.title': 'Einstellungen',
 	'settings.category': 'Kategorie',
 	'settings.rounds': 'Runden',
+	'settings.allRounds': 'Alle',
 	'settings.time': 'Zeit pro Runde',
 	'settings.difficulty': 'Schwierigkeit',
 	'difficulty.easy': 'Einfach',
