@@ -36,6 +36,18 @@ export function levenshtein(a, b) {
 }
 
 /**
+ * Number of leading characters two strings share.
+ * @param {string} a
+ * @param {string} b
+ */
+function commonPrefixLen(a, b) {
+	const n = Math.min(a.length, b.length);
+	let i = 0;
+	while (i < n && a[i] === b[i]) i++;
+	return i;
+}
+
+/**
  * @param {string} guess
  * @param {string[]} answers
  * @returns {typeof Verdict[keyof typeof Verdict]}
@@ -52,7 +64,9 @@ export function judgeGuess(guess, answers) {
 		if (answers[i].length < 4) continue;
 		const target = normalized[i];
 		if (g.length >= 4 && target.startsWith(g)) return Verdict.CLOSE;
-		if (levenshtein(g, target) <= threshold) return Verdict.CLOSE;
+
+		if (levenshtein(g, target) <= threshold && commonPrefixLen(g, target) >= 2)
+			return Verdict.CLOSE;
 
 		if (g.length >= 4 && answers[i].includes(' ')) {
 			for (const word of answers[i].split(/[\s-]+/)) {
