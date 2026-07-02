@@ -76,3 +76,23 @@ export const info = {
 	14: {"capital":"Kiel","population":2950000,"areaKm2":15804,"funFact":{"en":"The only state bordering two seas — the North Sea and the Baltic Sea.","de":"Einziges Land an zwei Meeren — Nord- und Ostsee."}},
 	15: {"capital":"Erfurt","population":2130000,"areaKm2":16202,"funFact":{"en":"Nicknamed 'the green heart of Germany' for its forests.","de":"Wird wegen seiner Wälder 'grünes Herz Deutschlands' genannt."}}
 };
+
+// Capital marker position [x, y] in the 1000×1000 box.
+export const capitals = {
+	0: [557.4,454.3],
+	1: [535.2,744.8],
+	2: [465.5,448],
+	3: [514.5,526.9],
+	4: [557.5,907.1],
+	5: [438.1,541.4],
+	6: [288.7,702.1],
+	7: [215.2,621.7],
+	8: [620.2,581.7],
+	9: [257,596],
+	10: [817,486.4],
+	11: [598.8,672.4],
+	12: [592.6,434.7],
+	13: [417.8,439.3],
+	14: [610.1,439.6],
+	15: [416.1,476.1]
+};

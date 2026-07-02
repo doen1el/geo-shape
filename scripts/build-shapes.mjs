@@ -37,8 +37,12 @@ const DEFAULT_MIN_RATIO = 0.003; // drop polygons smaller than this fraction of 
 const MIN_SEG_PX = 2.0; // drop points closer than this (px) to the previous — sub-pixel detail
 const EARTH_R = 6371; // km, for area from spherical geometry
 
-/** Capital lookups, filled from Natural Earth populated places in main(). */
-const CAPITALS = { country: new Map(), usState: new Map() };
+/**
+ * Capital lookups, filled from Natural Earth populated places in main().
+ * Each value is `{ name, lon, lat }` — the coordinate lets us project the capital
+ * into the shape's own pixel box and mark it with an X on the round reveal.
+ */
+const CAPITALS = { country: new Map(), admin1: new Map() };
 
 // German states: colloquial aliases beyond NE name / name_en / postal code.
 const GERMAN_ALIASES = {
@@ -101,7 +105,9 @@ const CATEGORIES = {
 			answers: [p.name, p.name_en, p.postal, ...(GERMAN_ALIASES[p.postal] ?? [])].filter(Boolean)
 		}),
 		// Rich curated info (capital/pop/area/funFact), keyed by postal code.
-		info: (_shape, p) => germanStateInfo[p.postal]
+		info: (_shape, p) => germanStateInfo[p.postal],
+		// City-states (Berlin) have no admin-1 capital entry → fall back to the national capital.
+		capital: (p) => CAPITALS.admin1.get(`DEU|${p.name}`) ?? CAPITALS.country.get('DEU')
 	},
 
 	continents: {
@@ -134,11 +140,12 @@ const CATEGORIES = {
 		trimDeg: 13, // drop overseas territories (France's Guyane/Réunion, Spain's Canaries…)
 		label: countryLabel,
 		info: (shape, p) => ({
-			capital: CAPITALS.country.get(p.ADM0_A3),
+			capital: CAPITALS.country.get(p.ADM0_A3)?.name,
 			population: p.POP_EST > 0 ? p.POP_EST : undefined,
 			areaKm2: areaKm2(shape),
 			funFact: countryFacts[p.ADM0_A3]
-		})
+		}),
+		capital: (p) => CAPITALS.country.get(p.ADM0_A3)
 	},
 
 	us_states: {
@@ -149,10 +156,11 @@ const CATEGORIES = {
 		projection: 'mercator',
 		label: (p) => ({ name: p.name, answers: [p.name, p.name_en, p.postal].filter(Boolean) }),
 		info: (shape, p) => ({
-			capital: CAPITALS.usState.get(p.name),
+			capital: CAPITALS.admin1.get(`USA|${p.name}`)?.name,
 			areaKm2: areaKm2(shape),
 			funFact: usStateFacts[p.postal]
-		})
+		}),
+		capital: (p) => CAPITALS.admin1.get(`USA|${p.name}`)
 	}
 };
 
@@ -289,29 +297,40 @@ function prepareShape(feature, { trimDeg, minRatio }) {
 	return pruneIslands(trimmed, minRatio ?? DEFAULT_MIN_RATIO);
 }
 
-/** Project a prepared shape on its own so it sits centered and fills a SIZE box. */
-function pathFromShape(shape, { projection }) {
+/** Build the projection that fits a prepared shape, on its own, into a SIZE box. */
+function projectionFor(shape, { projection }) {
 	const [lon, lat] = geoCentroid(shape);
-	let proj;
 	if (lat < -60) {
 		// South-polar shape (Antarctica): a cylindrical projection flattens it into a
 		// sliver, so use an azimuthal projection centred on the pole for the round outline.
-		proj = geoAzimuthalEqualArea().rotate([-lon, 90]).fitSize([SIZE, SIZE], shape);
-	} else {
-		const make = PROJECTIONS[projection] ?? geoMercator;
-		proj = make().rotate([-lon, 0]).fitSize([SIZE, SIZE], shape); // re-center meridian → no antimeridian wrap
+		return geoAzimuthalEqualArea().rotate([-lon, 90]).fitSize([SIZE, SIZE], shape);
 	}
-	return buildPath(shape, proj);
+	const make = PROJECTIONS[projection] ?? geoMercator;
+	return make().rotate([-lon, 0]).fitSize([SIZE, SIZE], shape); // re-center meridian → no antimeridian wrap
 }
 
-/** Load Natural-Earth populated places → national + US-state capital lookups. */
+/**
+ * Project a capital's lon/lat with the shape's own projection. Returns a rounded
+ * `[x, y]` in the SIZE box, or null if it lands outside (trimmed/simplified away).
+ */
+function projectCapital(cap, proj) {
+	if (!cap || !Number.isFinite(cap.lon) || !Number.isFinite(cap.lat)) return null;
+	const xy = proj([cap.lon, cap.lat]);
+	if (!xy || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) return null;
+	if (xy[0] < 0 || xy[0] > SIZE || xy[1] < 0 || xy[1] > SIZE) return null;
+	return [Number(round1(xy[0])), Number(round1(xy[1]))];
+}
+
+/** Load Natural-Earth populated places → national + admin-1 capital lookups (name + coord). */
 async function loadCapitals() {
 	const pp = await loadSource('ne_10m_populated_places');
 	for (const f of pp.features) {
 		const p = f.properties;
-		if (p.ADM0CAP === 1 && p.ADM0_A3) CAPITALS.country.set(p.ADM0_A3, p.NAME);
-		if (p.FEATURECLA === 'Admin-1 capital' && p.ADM0_A3 === 'USA' && p.ADM1NAME)
-			CAPITALS.usState.set(p.ADM1NAME, p.NAME);
+		const [lon, lat] = f.geometry?.coordinates ?? [];
+		if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+		if (p.ADM0CAP === 1 && p.ADM0_A3) CAPITALS.country.set(p.ADM0_A3, { name: p.NAME, lon, lat });
+		if (p.FEATURECLA === 'Admin-1 capital' && p.ADM0_A3 && p.ADM1NAME)
+			CAPITALS.admin1.set(`${p.ADM0_A3}|${p.ADM1NAME}`, { name: p.NAME, lon, lat });
 	}
 }
 
@@ -349,23 +368,27 @@ async function build(key) {
 		const label = cfg.label(p);
 		if (!label?.name) continue;
 		const shape = prepareShape(f, cfg);
-		const d = pathFromShape(shape, cfg);
+		const proj = projectionFor(shape, cfg);
+		const d = buildPath(shape, proj);
 		if (!d) {
 			console.warn(`  ! could not project ${label.name}`);
 			continue;
 		}
-		items.push({ p, path: d, name: label.name, answers: dedupAnswers([label.name, ...label.answers]), info: cfg.info?.(shape, p) });
+		const capital = projectCapital(cfg.capital?.(p), proj);
+		items.push({ p, path: d, name: label.name, answers: dedupAnswers([label.name, ...label.answers]), info: cfg.info?.(shape, p), capital });
 	}
 
 	/** @type {Record<number, string>} */ const paths = {};
 	/** @type {Record<number, string>} */ const names = {};
 	/** @type {Record<number, string[]>} */ const answers = {};
 	/** @type {Record<number, object>} */ const info = {};
+	/** @type {Record<number, [number, number]>} */ const capitals = {};
 	const put = (id, it) => {
 		paths[id] = it.path;
 		names[id] = it.name;
 		answers[id] = it.answers;
 		if (it.info) info[id] = it.info;
+		if (it.capital) capitals[id] = it.capital;
 	};
 
 	if (cfg.assignId) {
@@ -378,7 +401,7 @@ async function build(key) {
 		items.sort((a, b) => a.name.localeCompare(b.name, 'en')).forEach((it, id) => put(id, it));
 	}
 
-	writeCategoryFile(key, cfg, { paths, names, answers, info });
+	writeCategoryFile(key, cfg, { paths, names, answers, info, capitals });
 	const count = Object.keys(paths).length;
 	console.log(`  → ${count} shapes`);
 	return count;
@@ -395,12 +418,14 @@ function dedupAnswers(list) {
 	return out;
 }
 
-function writeCategoryFile(key, cfg, { paths, names, answers, info }) {
+function writeCategoryFile(key, cfg, { paths, names, answers, info, capitals }) {
 	const header = `// AUTO-GENERATED by scripts/build-shapes.mjs — do not edit by hand.\n// Source: Natural Earth (${cfg.source}). Each shape fills a ${SIZE}×${SIZE} box.\n`;
 	let body = `${header}\nexport const paths = ${serializeMap(paths)};\n`;
 	body += `\nexport const names = ${serializeMap(names)};\n`;
 	body += `\nexport const answers = ${serializeMap(answers)};\n`;
 	if (Object.keys(info).length) body += `\nexport const info = ${serializeMap(info)};\n`;
+	if (capitals && Object.keys(capitals).length)
+		body += `\n// Capital marker position [x, y] in the ${SIZE}×${SIZE} box.\nexport const capitals = ${serializeMap(capitals)};\n`;
 	const file = join(OUT_DIR, `${key}_paths.js`);
 	writeFileSync(file, body);
 	const kb = (Buffer.byteLength(body) / 1024).toFixed(1);

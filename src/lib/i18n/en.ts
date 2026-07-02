@@ -60,7 +60,6 @@ export const en = {
 	'chat.roundDivider': 'Round {round}',
 	'chat.lobbyDivider': 'Lobby',
 	'chat.react': 'Send reaction',
-	'chat.reactHint': 'Tap to react · hold to pick an emoji',
 	'lobby.players': 'Players',
 	'lobby.host': 'HOST',
 	'lobby.you': '(you)',

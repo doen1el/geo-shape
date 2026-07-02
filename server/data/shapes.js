@@ -5,8 +5,8 @@ import * as usStates from './us_states_paths.js';
 
 /**
  * @typedef {{ key?: string, capital?: string, population?: number, areaKm2: number, funFact?: { en: string, de: string } }} StateInfo
- * @typedef {{ id: number, name: string, path: string, answers: string[], info: StateInfo | null }} Shape
- * @typedef {{ paths: Record<number, string>, names: Record<number, string>, answers: Record<number, string[]>, info?: Record<number, StateInfo> }} CategoryData
+ * @typedef {{ id: number, name: string, path: string, answers: string[], info: StateInfo | null, capital: number[] | null }} Shape
+ * @typedef {{ paths: Record<number, string>, names: Record<number, string>, answers: Record<number, string[]>, info?: Record<number, StateInfo>, capitals?: Record<number, number[]> }} CategoryData
  */
 
 /**
@@ -23,7 +23,8 @@ function buildShapes(data) {
 			name: data.names[id] ?? `#${id}`,
 			path: data.paths[id],
 			answers: data.answers[id] ?? [],
-			info: data.info?.[id] ?? null
+			info: data.info?.[id] ?? null,
+			capital: data.capitals?.[id] ?? null
 		}));
 }
 

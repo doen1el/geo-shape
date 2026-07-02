@@ -73,7 +73,6 @@
 	<button
 		type="button"
 		aria-label={t('chat.react')}
-		title={t('chat.reactHint')}
 		aria-haspopup="true"
 		aria-expanded={open}
 		class="relative flex h-11 w-11 touch-none items-center justify-center rounded-base border-2 border-border bg-surface text-xl shadow-shadow transition-all select-none hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"

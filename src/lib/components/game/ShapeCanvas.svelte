@@ -4,6 +4,9 @@
 	import { t } from '$lib/i18n/index.svelte';
 
 	const REVEAL_TAIL_MS = 10000;
+	const CAP_R = 24;
+	const CAP_W = 12;
+	const CAP_OFF = 5;
 
 	let {
 		round,
@@ -34,6 +37,10 @@
 		revealed || round.difficulty !== 'hard' || buildMs <= 0
 			? 1
 			: Math.min(1, Math.max(0, elapsedMs / buildMs))
+	);
+
+	const shapeFill = $derived(
+		revealed ? 'var(--color-main)' : drawProgress >= 1 ? 'var(--color-surface)' : 'none'
 	);
 
 	const showNext = $derived(revealed && !!reveal && reveal.totalMs > 0);
@@ -75,25 +82,112 @@
 		></div>
 	</div>
 
-	<!-- Outline: fixed box. -->
+	<!-- Outline: fixed box with a subtle diagonal hatch behind the shape. -->
 	<div
-		class="min-h-0 flex-1 overflow-hidden rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
+		class="canvas-box min-h-0 flex-1 overflow-hidden rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
 	>
 		{#key round.round}
 			<svg {viewBox} preserveAspectRatio="xMidYMid meet" class="h-full w-full">
-				<path
-					d={round.path}
-					pathLength="1"
-					stroke-dasharray="1"
-					stroke-dashoffset={1 - drawProgress}
-					fill={revealed ? 'var(--color-main)' : 'none'}
-					stroke="var(--color-border)"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					style="transition: stroke-dashoffset 160ms linear, fill 500ms ease;"
-				/>
+				<!-- On reveal the whole group "stamps" in; the capital X pops a beat later. -->
+				<g class="reveal-group" class:stamp={revealed}>
+					<path
+						d={round.path}
+						pathLength="1"
+						stroke-dasharray="1"
+						stroke-dashoffset={1 - drawProgress}
+						fill={shapeFill}
+						stroke="var(--color-border)"
+						stroke-width="6"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						style="transition: stroke-dashoffset 160ms linear;"
+					/>
+
+					{#if revealed && round.capital}
+						{@const cx = round.capital[0]}
+						{@const cy = round.capital[1]}
+						<g class="capital">
+							<!-- hard offset shadow -->
+							<g
+								transform="translate({CAP_OFF} {CAP_OFF})"
+								stroke="var(--color-border)"
+								stroke-width={CAP_W}
+								stroke-linecap="round"
+							>
+								<line x1={cx - CAP_R} y1={cy - CAP_R} x2={cx + CAP_R} y2={cy + CAP_R} />
+								<line x1={cx - CAP_R} y1={cy + CAP_R} x2={cx + CAP_R} y2={cy - CAP_R} />
+							</g>
+							<!-- the X itself — red, matching the danger "Leave" button -->
+							<g stroke="var(--color-danger)" stroke-width={CAP_W} stroke-linecap="round">
+								<line x1={cx - CAP_R} y1={cy - CAP_R} x2={cx + CAP_R} y2={cy + CAP_R} />
+								<line x1={cx - CAP_R} y1={cy + CAP_R} x2={cx + CAP_R} y2={cy - CAP_R} />
+							</g>
+						</g>
+					{/if}
+				</g>
 			</svg>
 		{/key}
 	</div>
 </div>
+
+<style>
+	.canvas-box {
+		background-image: repeating-linear-gradient(
+			-45deg,
+			color-mix(in srgb, var(--color-border) 4%, transparent) 0,
+			color-mix(in srgb, var(--color-border) 4%, transparent) 1.5px,
+			transparent 1.5px,
+			transparent 13px
+		);
+	}
+
+	.reveal-group.stamp {
+		transform-box: view-box;
+		transform-origin: center;
+		animation: stamp 460ms ease-out both;
+	}
+
+	@keyframes stamp {
+		0% {
+			transform: scale(1.5) rotate(-5deg);
+			opacity: 0;
+		}
+		50% {
+			transform: scale(0.9) rotate(2deg);
+			opacity: 1;
+		}
+		72% {
+			transform: scale(1.05) rotate(-1deg);
+		}
+		100% {
+			transform: scale(1) rotate(0deg);
+		}
+	}
+
+	.capital {
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: capPop 340ms cubic-bezier(0.2, 0.8, 0.3, 1) 240ms both;
+	}
+
+	@keyframes capPop {
+		0% {
+			transform: scale(0);
+			opacity: 0;
+		}
+		60% {
+			transform: scale(1.25);
+			opacity: 1;
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.reveal-group.stamp,
+		.capital {
+			animation: none;
+		}
+	}
+</style>

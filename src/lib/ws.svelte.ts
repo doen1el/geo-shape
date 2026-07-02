@@ -38,6 +38,7 @@ export type RoundInfo = {
 	difficulty: Difficulty;
 	viewBox: string;
 	path: string;
+	capital: [number, number] | null;
 	durationSec: number;
 	endsAt: number;
 };
@@ -208,6 +209,7 @@ class GameSocket {
 					difficulty: msg.difficulty === 'hard' ? 'hard' : 'easy',
 					viewBox: msg.viewBox,
 					path: msg.path,
+					capital: msg.capital ?? null,
 					durationSec: msg.durationSec,
 					endsAt: msg.endsAt
 				};

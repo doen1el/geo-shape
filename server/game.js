@@ -198,6 +198,7 @@ export function syncJoiner(room, player) {
 			difficulty: room.difficulty,
 			viewBox: category?.viewBox ?? '0 0 400 400',
 			path: room.currentShape.path,
+			capital: room.currentShape.capital,
 			durationSec: room.roundDurationSec,
 			endsAt: room.roundEndsAt
 		});
@@ -239,6 +240,7 @@ function startRound(room) {
 		difficulty: room.difficulty,
 		viewBox: category?.viewBox ?? '0 0 400 400',
 		path: shape.path,
+		capital: shape.capital,
 		durationSec: room.roundDurationSec,
 		endsAt: room.roundEndsAt
 	});
