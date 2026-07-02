@@ -244,12 +244,14 @@ function startRound(room) {
 export function handleGuess(room, player, text) {
 	const guess = String(text ?? '').trim();
 	if (!guess) return;
-	if (room.status !== 'playing' || !room.roundActive || room.paused || !room.currentShape) return;
+	if (room.status !== 'playing' || !room.roundActive || !room.currentShape) return;
 	if (room.solved.has(player.id)) return;
 
 	const verdict = judgeGuess(guess, room.currentShape.answers);
 
 	if (verdict === Verdict.CORRECT) {
+		if (room.paused) return;
+
 		const order = room.solved.size;
 		room.solved.add(player.id);
 		const timeLeftMs = Math.max(0, room.roundEndsAt - Date.now());
