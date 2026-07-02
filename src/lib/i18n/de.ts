@@ -71,6 +71,9 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'lobby.needPlayers': 'Mindestens 2 Spieler nötig',
 
 	'settings.title': 'Einstellungen',
+	'settings.language': 'Sprache',
+	'settings.sound': 'Sound',
+	'settings.volume': 'Lautstärke',
 	'settings.category': 'Kategorie',
 	'settings.rounds': 'Runden',
 	'settings.allRounds': 'Alle',
@@ -82,6 +85,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'difficulty.hard.desc': 'Umrandung baut sich auf — komplett erst die letzten 10s.',
 	'common.soon': 'Bald',
 	'common.or': 'oder',
+	'common.on': 'An',
+	'common.off': 'Aus',
 	'category.0': 'Bundesländer',
 	'category.1': 'Kontinente',
 	'category.2': 'Europa',

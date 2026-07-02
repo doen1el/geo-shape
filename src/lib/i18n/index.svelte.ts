@@ -7,13 +7,25 @@ export type Locale = 'en' | 'de';
 const dicts: Record<Locale, Partial<Record<MessageKey, string>>> = { en, de };
 const STORAGE_KEY = 'geoshape:locale';
 
+function detectLocale(): Locale {
+	const langs = navigator.languages?.length ? navigator.languages : [navigator.language];
+	for (const l of langs) {
+		const lc = l?.toLowerCase() ?? '';
+		if (lc.startsWith('de')) return 'de';
+		if (lc.startsWith('en')) return 'en';
+	}
+	return 'en';
+}
+
 class I18n {
 	locale = $state<Locale>('en');
 
 	constructor() {
 		if (!browser) return;
 		const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
+
 		if (saved === 'en' || saved === 'de') this.locale = saved;
+		else this.locale = detectLocale();
 	}
 
 	set(locale: Locale): void {

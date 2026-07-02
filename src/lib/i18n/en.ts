@@ -69,6 +69,9 @@ export const en = {
 	'lobby.needPlayers': 'Need at least 2 players',
 
 	'settings.title': 'Settings',
+	'settings.language': 'Language',
+	'settings.sound': 'Sound',
+	'settings.volume': 'Volume',
 	'settings.category': 'Category',
 	'settings.rounds': 'Rounds',
 	'settings.allRounds': 'All',
@@ -80,6 +83,8 @@ export const en = {
 	'difficulty.hard.desc': 'Outline builds up — full only for the last 10s.',
 	'common.soon': 'Soon',
 	'common.or': 'or',
+	'common.on': 'On',
+	'common.off': 'Off',
 	'category.0': 'German states',
 	'category.1': 'Continents',
 	'category.2': 'Europe',

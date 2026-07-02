@@ -5,6 +5,7 @@
 	import { scale, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
+	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -69,3 +70,5 @@
 		{/key}
 	</main>
 </div>
+
+<SettingsMenu />
