@@ -274,11 +274,6 @@ export function handleGuess(room, player, text) {
 		return;
 	}
 
-	if (verdict === Verdict.CLOSE) {
-		send(player, { type: ServerMsg.GUESS_RESULT, verdict });
-		return;
-	}
-
 	send(player, { type: ServerMsg.GUESS_RESULT, verdict });
 	roomManager.chat(room, {
 		kind: 'guess',
