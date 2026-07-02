@@ -1,7 +1,7 @@
 <p align="center">
     <img src="docs/icon/icon_white.png" alt="App Icon" width="100" />
     <br>
-    v1.0.0
+    v1.1.0
 </p>
 
 ## GeoShape
@@ -53,7 +53,6 @@ You can of course open issues for bugs, feedback, and feature ideas. All suggest
 ## 💻 Local development
 
 Clone the repository:
-
 ```bash
 git clone https://codeberg.org/doen1el/geo-shape
 cd geo-shape
