@@ -50,6 +50,26 @@ The game is then available at `http://localhost:3000`.
 
 You can of course open issues for bugs, feedback, and feature ideas. All suggestions are very welcome :)
 
+## 💻 Local development
+
+Clone the repository:
+
+```bash
+git clone https://codeberg.org/doen1el/geo-shape
+cd geo-shape
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
+```bash
+pnpm dev
+```
+
 ## 📜 Credits
 
 - [NaturalEarth](https://www.naturalearthdata.com/)
