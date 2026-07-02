@@ -177,46 +177,6 @@
 		<h2 class="text-lg font-extrabold">{t('settings.title')}</h2>
 
 		<div class="flex flex-col gap-1.5">
-			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
-			<div class="flex flex-wrap gap-2">
-				{#each ROUND_OPTIONS as opt (opt)}
-					{@const active = !room?.allRounds && room?.maxRounds === opt}
-					{@const tooMany = opt > categorySize}
-					<button
-						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
-							{isHost && !tooMany ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
-							{tooMany || (!isHost && !active) ? 'opacity-40' : ''}"
-						disabled={!isHost || tooMany}
-						onclick={() => game.setSettings({ maxRounds: opt })}
-					>
-						{opt}
-					</button>
-				{/each}
-				<button
-					class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-						{room?.allRounds ? 'bg-main shadow-shadow' : 'bg-surface'}
-						{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
-						{!isHost && !room?.allRounds ? 'opacity-40' : ''}"
-					disabled={!isHost}
-					onclick={() => game.setSettings({ allRounds: true })}
-				>
-					{t('settings.allRounds')}{Number.isFinite(categorySize) ? ` (${categorySize})` : ''}
-				</button>
-			</div>
-		</div>
-
-		<div class="flex flex-col gap-1.5">
-			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.time')}</span>
-			{@render pills(
-				TIME_OPTIONS,
-				room?.roundDurationSec ?? 90,
-				(v) => game.setSettings({ roundDurationSec: v }),
-				's'
-			)}
-		</div>
-
-		<div class="flex flex-col gap-1.5">
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 				{t('settings.difficulty')}
 			</span>
@@ -268,6 +228,46 @@
 					</button>
 				{/each}
 			</div>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
+			<div class="flex flex-wrap gap-2">
+				{#each ROUND_OPTIONS as opt (opt)}
+					{@const active = !room?.allRounds && room?.maxRounds === opt}
+					{@const tooMany = opt > categorySize}
+					<button
+						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+							{isHost && !tooMany ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+							{tooMany || (!isHost && !active) ? 'opacity-40' : ''}"
+						disabled={!isHost || tooMany}
+						onclick={() => game.setSettings({ maxRounds: opt })}
+					>
+						{opt}
+					</button>
+				{/each}
+				<button
+					class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+						{room?.allRounds ? 'bg-main shadow-shadow' : 'bg-surface'}
+						{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+						{!isHost && !room?.allRounds ? 'opacity-40' : ''}"
+					disabled={!isHost}
+					onclick={() => game.setSettings({ allRounds: true })}
+				>
+					{t('settings.allRounds')}{Number.isFinite(categorySize) ? ` (${categorySize})` : ''}
+				</button>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.time')}</span>
+			{@render pills(
+				TIME_OPTIONS,
+				room?.roundDurationSec ?? 90,
+				(v) => game.setSettings({ roundDurationSec: v }),
+				's'
+			)}
 		</div>
 	</Card>
 {/snippet}

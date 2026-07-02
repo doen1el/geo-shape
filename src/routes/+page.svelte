@@ -16,10 +16,27 @@
 	let soloOpen = $state(false);
 	let soloDifficulty = $state<'easy' | 'hard'>('easy');
 	let soloCategory = $state(0);
+	let soloRounds = $state(5);
+	let soloAllRounds = $state(false);
+	let soloTime = $state(90);
 	let resumeCode = $state<string | null>(null);
 	let resumeAvailable = $state(false);
 
 	const SOLO_CATEGORIES = [0, 1, 2, 3] as const;
+	const ROUND_OPTIONS = [3, 5, 8, 10];
+	const TIME_OPTIONS = [45, 60, 90, 120];
+	
+	const CATEGORY_SIZES: Record<number, number> = { 0: 16, 1: 7, 2: 40, 3: 50 };
+
+	const soloCategorySize = $derived(CATEGORY_SIZES[soloCategory] ?? Infinity);
+
+	function pickSoloCategory(id: number) {
+		soloCategory = id;
+		const size = CATEGORY_SIZES[id] ?? Infinity;
+		if (!soloAllRounds && soloRounds > size) {
+			soloRounds = [...ROUND_OPTIONS].reverse().find((o) => o <= size) ?? size;
+		}
+	}
 
 	const canPlay = $derived(name.trim().length > 0);
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
@@ -101,7 +118,11 @@
 		saveName();
 		try {
 			const newCode = await game.create(profile.toJSON(), true, soloDifficulty);
-			game.setSettings({ categoryId: soloCategory });
+			game.setSettings({
+				categoryId: soloCategory,
+				roundDurationSec: soloTime,
+				...(soloAllRounds ? { allRounds: true } : { maxRounds: soloRounds })
+			});
 			game.start();
 			soloOpen = false;
 			await goto(`/room/${newCode}?solo=1`);
@@ -211,8 +232,12 @@
 		<p class="text-center font-bold text-danger">{errorMsg}</p>
 	{/if}
 
-	<!-- Solo setup: pick difficulty + category before starting -->
-	<Dialog open={soloOpen} onclose={() => (soloOpen = false)}>
+	<!-- Solo setup: pick difficulty, category, rounds & time before starting -->
+	<Dialog
+		open={soloOpen}
+		onclose={() => (soloOpen = false)}
+		class="max-w-md max-h-[calc(100svh-2rem)] overflow-y-auto"
+	>
 		<div class="flex flex-col gap-4">
 			<h2 class="text-xl font-extrabold">{t('solo.setup')}</h2>
 
@@ -251,9 +276,63 @@
 							id
 								? 'bg-main shadow-shadow'
 								: 'bg-surface'}"
-							onclick={() => (soloCategory = id)}
+							onclick={() => pickSoloCategory(id)}
 						>
 							{t(`category.${id}` as 'category.0')}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.rounds')}
+				</span>
+				<div class="flex flex-wrap gap-2">
+					{#each ROUND_OPTIONS as opt (opt)}
+						{@const active = !soloAllRounds && soloRounds === opt}
+						{@const tooMany = opt > soloCategorySize}
+						<button
+							type="button"
+							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+								{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+								{tooMany
+								? 'opacity-40'
+								: 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'}"
+							disabled={tooMany}
+							onclick={() => {
+								soloAllRounds = false;
+								soloRounds = opt;
+							}}
+						>
+							{opt}
+						</button>
+					{/each}
+					<button
+						type="button"
+						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none
+							{soloAllRounds ? 'bg-main shadow-shadow' : 'bg-surface'}"
+						onclick={() => (soloAllRounds = true)}
+					>
+						{t('settings.allRounds')} ({soloCategorySize})
+					</button>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.time')}
+				</span>
+				<div class="flex flex-wrap gap-2">
+					{#each TIME_OPTIONS as opt (opt)}
+						{@const active = soloTime === opt}
+						<button
+							type="button"
+							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none
+								{active ? 'bg-main shadow-shadow' : 'bg-surface'}"
+							onclick={() => (soloTime = opt)}
+						>
+							{opt}s
 						</button>
 					{/each}
 				</div>

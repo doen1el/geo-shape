@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
+	import { cn } from '$lib/utils';
 
 	type Props = {
 		open: boolean;
@@ -33,7 +34,10 @@
 			tabindex="-1"
 		></button>
 		<div
-			class="relative w-full max-w-sm rounded-base border-2 border-border bg-surface p-6 shadow-shadow-lg {className}"
+			class={cn(
+				'relative w-full max-w-sm rounded-base border-2 border-border bg-surface p-6 shadow-shadow-lg',
+				className
+			)}
 			transition:scale={{ duration: 180, start: 0.92, easing: backOut }}
 			role="dialog"
 			aria-modal="true"
