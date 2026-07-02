@@ -2,6 +2,8 @@ import { browser } from '$app/environment';
 import { ClientMsg, ServerMsg } from '../../server/protocol.js';
 import type { Profile } from './stores/profile.svelte';
 
+export { REACTION_EMOJIS, CONFETTI_EMOJI } from '../../server/protocol.js';
+
 export type PublicPlayer = {
 	id: string;
 	name: string;
@@ -82,6 +84,9 @@ export type PlayerStats = {
 };
 
 let chatSeq = 0;
+let reactSeq = 0;
+
+export type Reaction = { id: number; emoji: string; playerId: string; name: string };
 
 const LAST_ROOM_KEY = 'geoshape:lastRoom';
 
@@ -120,6 +125,7 @@ class GameSocket {
 	gameOver = $state<GameOver | null>(null);
 	verdict = $state<{ value: Verdict; at: number } | null>(null);
 	chat = $state<ChatEntry[]>([]);
+	reactions = $state<Reaction[]>([]);
 	countdown = $state<{ until: number } | null>(null);
 	paused = $state<{ remainingMs: number } | null>(null);
 
@@ -257,6 +263,17 @@ class GameSocket {
 					round: e.round
 				}));
 				break;
+			case ServerMsg.REACTION: {
+				const id = ++reactSeq;
+				this.reactions = [
+					...this.reactions.slice(-29),
+					{ id, emoji: msg.emoji, playerId: msg.playerId, name: msg.name }
+				];
+				setTimeout(() => {
+					this.reactions = this.reactions.filter((r) => r.id !== id);
+				}, 3000);
+				break;
+			}
 			case ServerMsg.ROOM_EXISTS:
 				this.roomCheck = { code: msg.code, exists: !!msg.exists };
 				break;
@@ -282,6 +299,7 @@ class GameSocket {
 		this.gameOver = null;
 		this.verdict = null;
 		this.chat = [];
+		this.reactions = [];
 		this.countdown = null;
 		this.paused = null;
 	}
@@ -349,6 +367,10 @@ class GameSocket {
 
 	say(text: string): void {
 		this.#send({ type: ClientMsg.SAY, text });
+	}
+
+	react(emoji: string): void {
+		this.#send({ type: ClientMsg.REACT, emoji });
 	}
 
 	async checkRoom(code: string): Promise<void> {

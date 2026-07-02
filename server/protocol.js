@@ -10,6 +10,7 @@ export const ClientMsg = /** @type {const} */ ({
 	ABORT: 'abort',
 	GUESS: 'guess',
 	SAY: 'say',
+	REACT: 'react',
 	CHECK_ROOM: 'check_room',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats'
@@ -28,6 +29,7 @@ export const ServerMsg = /** @type {const} */ ({
 	GUESS_RESULT: 'guess_result',
 	CHAT: 'chat',
 	CHAT_HISTORY: 'chat_history',
+	REACTION: 'reaction',
 	ROOM_EXISTS: 'room_exists',
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
@@ -40,6 +42,10 @@ export const Verdict = /** @type {const} */ ({
 	CLOSE: 'close',
 	WRONG: 'wrong'
 });
+
+export const REACTION_EMOJIS = /** @type {const} */ (['🔥', '😂', '😮', '👏', '💀', '🎉']);
+
+export const CONFETTI_EMOJI = '🎉';
 
 /**
  * @typedef {Object} Profile

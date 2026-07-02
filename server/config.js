@@ -31,5 +31,6 @@ export const RATE_LIMITS = {
 	join: { max: 12, windowMs: 60000 },
 	say: { max: 6, windowMs: 4000 },
 	guess: { max: 15, windowMs: 4000 },
+	react: { max: 8, windowMs: 4000 },
 	check_room: { max: 30, windowMs: 10000 }
 };

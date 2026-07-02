@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { ClientMsg, ServerMsg } from './protocol.js';
+import { ClientMsg, ServerMsg, REACTION_EMOJIS } from './protocol.js';
 import { roomManager } from './rooms.js';
 import {
 	startGame,
@@ -213,6 +213,21 @@ function handleConnection(ws) {
 						name: player.profile.name,
 						text,
 						playerId: player.id
+					});
+				}
+				break;
+			}
+
+			case ClientMsg.REACT: {
+				if (!session || limited('react')) break;
+				const player = session.room.players.get(session.playerId);
+
+				if (player && REACTION_EMOJIS.includes(msg.emoji)) {
+					roomManager.broadcast(session.room, {
+						type: ServerMsg.REACTION,
+						emoji: msg.emoji,
+						playerId: player.id,
+						name: player.profile.name
 					});
 				}
 				break;

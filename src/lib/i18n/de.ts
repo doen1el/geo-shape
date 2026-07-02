@@ -61,6 +61,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'chat.placeholder': 'Schreib was…',
 	'chat.roundDivider': 'Runde {round}',
 	'chat.lobbyDivider': 'Lobby',
+	'chat.react': 'Reaktion senden',
+	'chat.reactHint': 'Tippen zum Reagieren · halten zum Emoji-Wechseln',
 	'lobby.players': 'Spieler',
 	'lobby.host': 'HOST',
 	'lobby.you': '(du)',

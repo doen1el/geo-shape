@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Input from '$lib/components/ui/Input.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ReactionButton from '$lib/components/game/ReactionButton.svelte';
+	import ReactionOverlay from '$lib/components/game/ReactionOverlay.svelte';
+	import { Send } from '@lucide/svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
@@ -20,7 +23,8 @@
 	}
 </script>
 
-<div class="flex h-full min-h-0 flex-col gap-2">
+<div class="relative flex h-full min-h-0 flex-col gap-2">
+	<ReactionOverlay />
 	<div bind:this={listEl} class="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1 text-sm">
 		{#each game.chat as entry (entry.id)}
 			{#if entry.kind === 'divider'}
@@ -59,6 +63,15 @@
 		<div class="min-w-0 flex-1">
 			<Input bind:value={text} placeholder={t('chat.placeholder')} maxlength={120} />
 		</div>
-		<Button type="submit" disabled={text.trim().length === 0}>{t('game.send')}</Button>
+		<ReactionButton />
+		<Button
+			type="submit"
+			size="icon"
+			aria-label={t('game.send')}
+			title={t('game.send')}
+			disabled={text.trim().length === 0}
+		>
+			<Send size={20} strokeWidth={2.5} aria-hidden="true" />
+		</Button>
 	</form>
 </div>
