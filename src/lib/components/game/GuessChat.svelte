@@ -6,6 +6,7 @@
 
 	let text = $state('');
 	let listEl = $state<HTMLDivElement | null>(null);
+	let inputEl = $state<HTMLInputElement | null>(null);
 	let banner = $state<{ kind: 'correct' | 'close'; until: number } | null>(null);
 
 	const mySolved = $derived(
@@ -25,6 +26,10 @@
 	$effect(() => {
 		game.chat.length;
 		if (listEl) listEl.scrollTop = listEl.scrollHeight;
+	});
+
+	$effect(() => {
+		if (canGuess && inputEl) inputEl.focus();
 	});
 
 	function submit() {
@@ -77,6 +82,7 @@
 	<form class="flex items-stretch gap-2" onsubmit={(e) => (e.preventDefault(), submit())}>
 		<div class="min-w-0 flex-1">
 			<Input
+				bind:element={inputEl}
 				bind:value={text}
 				placeholder={mySolved ? t('game.alreadySolved') : t('game.guessPlaceholder')}
 				disabled={!canGuess}

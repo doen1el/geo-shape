@@ -5,12 +5,19 @@
 	type Props = {
 		value?: string;
 		class?: string;
+		element?: HTMLInputElement | null;
 	} & HTMLInputAttributes;
 
-	let { value = $bindable(''), class: className, ...rest }: Props = $props();
+	let {
+		value = $bindable(''),
+		class: className,
+		element = $bindable(null),
+		...rest
+	}: Props = $props();
 </script>
 
 <input
+	bind:this={element}
 	bind:value
 	class={cn(
 		'h-11 w-full rounded-base border-2 border-border bg-surface px-4 font-medium text-ink shadow-shadow ring-offset-bg transition-all placeholder:text-ink/40 focus-visible:translate-x-[2px] focus-visible:translate-y-[2px] focus-visible:shadow-none focus-visible:outline-none disabled:opacity-50',
