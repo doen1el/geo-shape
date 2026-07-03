@@ -44,6 +44,7 @@ let playerSeq = 0;
  * @property {number} createdAt
  * @property {Set<number>} usedShapeIds
  * @property {Shape | null} currentShape
+ * @property {string} roundPath
  * @property {boolean} roundActive
  * @property {number} roundEndsAt
  * @property {boolean} paused
@@ -95,6 +96,7 @@ export class RoomManager {
 			createdAt: Date.now(),
 			usedShapeIds: new Set(),
 			currentShape: null,
+			roundPath: '',
 			roundActive: false,
 			roundEndsAt: 0,
 			paused: false,

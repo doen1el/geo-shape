@@ -44,6 +44,30 @@ function allConnectedSolved(room) {
 	return connected.length > 0 && connected.every((p) => room.solved.has(p.id));
 }
 
+/** @param {any[]} arr @param {number} k */
+const rotate = (arr, k) => arr.slice(k).concat(arr.slice(0, k));
+
+/**
+ * Randomize where the outline's pen starts drawing (hard mode) so players can't
+ * memorize a shape by its fixed draw-in point.
+ * @param {string} d
+ * @returns {string}
+ */
+function randomizePathStart(d) {
+	const subs = d
+		.split('M')
+		.filter(Boolean)
+		.map((s) => (s.endsWith('Z') ? s.slice(0, -1) : s).split('L')); // → [["x,y", …], …]
+	if (subs.length === 0) return d;
+
+	const rings = subs.map((pts) =>
+		pts.length > 1 ? rotate(pts, Math.floor(Math.random() * pts.length)) : pts
+	);
+	return rotate(rings, Math.floor(Math.random() * rings.length))
+		.map((pts) => 'M' + pts.join('L') + 'Z')
+		.join('');
+}
+
 /**
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
@@ -195,7 +219,7 @@ export function syncJoiner(room, player) {
 			categoryId: room.categoryId,
 			difficulty: room.difficulty,
 			viewBox: category?.viewBox ?? '0 0 400 400',
-			path: room.currentShape.path,
+			path: room.roundPath,
 			capital: room.currentShape.capital,
 			durationSec: room.roundDurationSec,
 			endsAt: room.roundEndsAt
@@ -219,6 +243,7 @@ function startRound(room) {
 
 	room.round += 1;
 	room.currentShape = shape;
+	room.roundPath = room.difficulty === 'hard' ? randomizePathStart(shape.path) : shape.path;
 	room.solved = new Set();
 	room.roundActive = true;
 	room.paused = false;
@@ -237,7 +262,7 @@ function startRound(room) {
 		categoryId: room.categoryId,
 		difficulty: room.difficulty,
 		viewBox: category?.viewBox ?? '0 0 400 400',
-		path: shape.path,
+		path: room.roundPath,
 		capital: shape.capital,
 		durationSec: room.roundDurationSec,
 		endsAt: room.roundEndsAt
