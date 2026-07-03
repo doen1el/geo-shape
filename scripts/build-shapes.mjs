@@ -67,6 +67,18 @@ const COUNTRY_ALIASES = {
 	Serbia: ['serbien']
 };
 
+// Cleaner display names where NE's NAME_EN is the long official form. Answers still
+// accept every NE spelling (NAME/NAME_LONG/NAME_DE) plus the ISO code and aliases.
+const DISPLAY_NAME = {
+	"People's Republic of China": 'China',
+	'United States of America': 'United States'
+};
+
+// Disputed / non-UN entities to drop from the country categories: their outline is
+// carved out of a neighbour (Somaliland out of Somalia, Western Sahara out of Morocco),
+// so asking for them as a country is both unfair and mangles the neighbour's shape.
+const NON_SOVEREIGN = new Set(['Somaliland', 'Western Sahara', 'W. Sahara']);
+
 // Continents (keyed by Natural-Earth CONTINENT): English display `name` +
 // accepted answers (German + English).
 const CONTINENTS = {
@@ -161,7 +173,13 @@ const CATEGORIES = {
 			funFact: usStateFacts[p.postal]
 		}),
 		capital: (p) => CAPITALS.admin1.get(`USA|${p.name}`)
-	}
+	},
+
+	africa: continentCountries('Africa', { id: 4 }),
+	asia: continentCountries('Asia', { id: 5 }),
+	north_america: continentCountries('North America', { id: 6, trimDeg: 30 }),
+	south_america: continentCountries('South America', { id: 7, trimDeg: 10 }),
+	oceania: continentCountries('Oceania', { id: 8, trimDeg: 13, minAreaKm2: 30000 })
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -171,11 +189,35 @@ const CATEGORIES = {
  * the international/English name; answers accept German + English + ISO-2 code.
  */
 function countryLabel(/** @type {any} */ p) {
-	const name = p.NAME_EN || p.NAME;
+	const name = DISPLAY_NAME[p.NAME_EN] ?? DISPLAY_NAME[p.NAME] ?? p.NAME_EN ?? p.NAME;
 	const iso = /^[A-Za-z]{2}$/.test(p.ISO_A2) ? p.ISO_A2 : null; // Kürzel (skip NE's "-99")
 	const aliases = COUNTRY_ALIASES[p.NAME_EN] ?? COUNTRY_ALIASES[p.NAME] ?? [];
 	const answers = [p.NAME_DE, p.NAME_EN, p.NAME, p.NAME_LONG, iso, ...aliases];
 	return { name, answers: answers.filter(Boolean) };
+}
+
+function continentCountries(continent, { id, minAreaKm2 = 5000, detail = 0.42, projection = 'mercator', trimDeg }) {
+	return {
+		id,
+		source: 'ne_50m_admin_0_countries',
+		select: (/** @type {any} */ p) =>
+			p.CONTINENT === continent &&
+			p.SOV_A3.slice(0, 2) === p.ADM0_A3.slice(0, 2) &&
+			!NON_SOVEREIGN.has(p.NAME_EN) &&
+			!NON_SOVEREIGN.has(p.NAME),
+		detail,
+		projection,
+		minAreaKm2,
+		trimDeg,
+		label: countryLabel,
+		info: (/** @type {any} */ shape, /** @type {any} */ p) => ({
+			capital: CAPITALS.country.get(p.ADM0_A3)?.name,
+			population: p.POP_EST > 0 ? p.POP_EST : undefined,
+			areaKm2: areaKm2(shape),
+			funFact: countryFacts[p.ADM0_A3]
+		}),
+		capital: (/** @type {any} */ p) => CAPITALS.country.get(p.ADM0_A3)
+	};
 }
 
 /** Fetch (and cache) a Natural-Earth GeoJSON FeatureCollection. */
@@ -368,6 +410,7 @@ async function build(key) {
 		const label = cfg.label(p);
 		if (!label?.name) continue;
 		const shape = prepareShape(f, cfg);
+		if (cfg.minAreaKm2 && areaKm2(shape) < cfg.minAreaKm2) continue; // drop unguessable micro-states
 		const proj = projectionFor(shape, cfg);
 		const d = buildPath(shape, proj);
 		if (!d) {

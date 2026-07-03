@@ -89,6 +89,11 @@ export const en = {
 	'category.1': 'Continents',
 	'category.2': 'Europe',
 	'category.3': 'US states',
+	'category.4': 'Africa',
+	'category.5': 'Asia',
+	'category.6': 'North America',
+	'category.7': 'South America',
+	'category.8': 'World',
 
 	'leave.title': 'Leave the room?',
 	'leave.text': 'You will lose your spot in this game.',

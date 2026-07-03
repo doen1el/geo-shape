@@ -13,7 +13,6 @@ import {
 	ORDER_BONUS_STEP,
 	MIN_ROUNDS,
 	MAX_ROUNDS,
-	ROUND_OPTIONS,
 	MIN_ROUND_DURATION_SEC,
 	MAX_ROUND_DURATION_SEC
 } from './config.js';
@@ -61,15 +60,14 @@ export function updateSettings(room, player, settings) {
 		room.allRounds = true;
 	} else if (typeof settings.maxRounds === 'number') {
 		room.allRounds = false;
-		room.maxRounds = Math.max(MIN_ROUNDS, Math.min(MAX_ROUNDS, Math.round(settings.maxRounds)));
+		room.maxRounds = Math.max(MIN_ROUNDS, Math.round(settings.maxRounds));
 	}
 
 	const size = CATEGORY_SIZES[room.categoryId] ?? MAX_ROUNDS;
 	if (room.allRounds) {
 		room.maxRounds = Math.max(MIN_ROUNDS, size);
-	} else if (room.maxRounds > size) {
-		const fit = [...ROUND_OPTIONS].reverse().find((o) => o <= size);
-		room.maxRounds = fit ?? Math.max(MIN_ROUNDS, size);
+	} else {
+		room.maxRounds = Math.max(MIN_ROUNDS, Math.min(room.maxRounds, size));
 	}
 	if (typeof settings.roundDurationSec === 'number') {
 		room.roundDurationSec = Math.max(

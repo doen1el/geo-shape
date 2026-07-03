@@ -90,7 +90,7 @@ export class RoomManager {
 			round: 0,
 			maxRounds: DEFAULT_MAX_ROUNDS,
 			allRounds: false,
-			categoryId: PLAYABLE_CATEGORY_IDS[0] ?? 0,
+			categoryId: PLAYABLE_CATEGORY_IDS.includes(1) ? 1 : (PLAYABLE_CATEGORY_IDS[0] ?? 0),
 			roundDurationSec: ROUND_DURATION_SEC,
 			createdAt: Date.now(),
 			usedShapeIds: new Set(),

@@ -5,6 +5,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import Slider from '$lib/components/ui/Slider.svelte';
 	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
@@ -15,27 +16,31 @@
 	let errorMsg = $state('');
 	let soloOpen = $state(false);
 	let soloDifficulty = $state<'easy' | 'hard'>('easy');
-	let soloCategory = $state(0);
+	let soloCategory = $state(1);
 	let soloRounds = $state(5);
-	let soloAllRounds = $state(false);
 	let soloTime = $state(90);
 	let resumeCode = $state<string | null>(null);
 	let resumeAvailable = $state(false);
 
-	const SOLO_CATEGORIES = [0, 1, 2, 3] as const;
-	const ROUND_OPTIONS = [3, 5, 8, 10];
-	const TIME_OPTIONS = [45, 60, 90, 120];
-	
-	const CATEGORY_SIZES: Record<number, number> = { 0: 16, 1: 7, 2: 40, 3: 50 };
+	const SOLO_CATEGORIES = [1, 8, 2, 4, 5, 6, 7, 0, 3] as const;
+	const MIN_TIME = 30;
+	const MAX_TIME = 180;
+	const TIME_STEP = 15;
 
-	const soloCategorySize = $derived(CATEGORY_SIZES[soloCategory] ?? Infinity);
+	const CATEGORY_SIZES: Record<number, number> = {
+		0: 16, 1: 7, 2: 40, 3: 50, 4: 49, 5: 45, 6: 15, 7: 12, 8: 164
+	};
+
+	const soloCategorySize = $derived(CATEGORY_SIZES[soloCategory] ?? 10);
+	const roundMax = $derived(soloCategorySize);
+	const soloRoundsLabel = $derived(
+		soloRounds >= roundMax ? `${t('settings.allRounds')} (${soloCategorySize})` : String(soloRounds)
+	);
 
 	function pickSoloCategory(id: number) {
 		soloCategory = id;
-		const size = CATEGORY_SIZES[id] ?? Infinity;
-		if (!soloAllRounds && soloRounds > size) {
-			soloRounds = [...ROUND_OPTIONS].reverse().find((o) => o <= size) ?? size;
-		}
+		const size = CATEGORY_SIZES[id] ?? 10;
+		if (soloRounds > size) soloRounds = size;
 	}
 
 	const canPlay = $derived(name.trim().length > 0);
@@ -121,7 +126,7 @@
 			game.setSettings({
 				categoryId: soloCategory,
 				roundDurationSec: soloTime,
-				...(soloAllRounds ? { allRounds: true } : { maxRounds: soloRounds })
+				...(soloRounds >= roundMax ? { allRounds: true } : { maxRounds: soloRounds })
 			});
 			game.start();
 			soloOpen = false;
@@ -285,57 +290,34 @@
 			</div>
 
 			<div class="flex flex-col gap-1.5">
-				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
-					{t('settings.rounds')}
-				</span>
-				<div class="flex flex-wrap gap-2">
-					{#each ROUND_OPTIONS as opt (opt)}
-						{@const active = !soloAllRounds && soloRounds === opt}
-						{@const tooMany = opt > soloCategorySize}
-						<button
-							type="button"
-							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-								{active ? 'bg-main shadow-shadow' : 'bg-surface'}
-								{tooMany
-								? 'opacity-40'
-								: 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'}"
-							disabled={tooMany}
-							onclick={() => {
-								soloAllRounds = false;
-								soloRounds = opt;
-							}}
-						>
-							{opt}
-						</button>
-					{/each}
-					<button
-						type="button"
-						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none
-							{soloAllRounds ? 'bg-main shadow-shadow' : 'bg-surface'}"
-						onclick={() => (soloAllRounds = true)}
-					>
-						{t('settings.allRounds')} ({soloCategorySize})
-					</button>
+				<div class="flex items-baseline justify-between gap-2">
+					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+						{t('settings.rounds')}
+					</span>
+					<span class="text-sm font-extrabold">{soloRoundsLabel}</span>
 				</div>
+				<Slider
+					bind:value={soloRounds}
+					min={1}
+					max={roundMax}
+					aria-label={t('settings.rounds')}
+				/>
 			</div>
 
 			<div class="flex flex-col gap-1.5">
-				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
-					{t('settings.time')}
-				</span>
-				<div class="flex flex-wrap gap-2">
-					{#each TIME_OPTIONS as opt (opt)}
-						{@const active = soloTime === opt}
-						<button
-							type="button"
-							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none
-								{active ? 'bg-main shadow-shadow' : 'bg-surface'}"
-							onclick={() => (soloTime = opt)}
-						>
-							{opt}s
-						</button>
-					{/each}
+				<div class="flex items-baseline justify-between gap-2">
+					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+						{t('settings.time')}
+					</span>
+					<span class="text-sm font-extrabold">{soloTime}s</span>
 				</div>
+				<Slider
+					bind:value={soloTime}
+					min={MIN_TIME}
+					max={MAX_TIME}
+					step={TIME_STEP}
+					aria-label={t('settings.time')}
+				/>
 			</div>
 
 			<Button class="w-full" disabled={busy} onclick={playSolo}>

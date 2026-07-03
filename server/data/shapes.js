@@ -2,6 +2,11 @@ import * as germanStates from './german_states_paths.js';
 import * as continents from './continents_paths.js';
 import * as europe from './europe_paths.js';
 import * as usStates from './us_states_paths.js';
+import * as africa from './africa_paths.js';
+import * as asia from './asia_paths.js';
+import * as northAmerica from './north_america_paths.js';
+import * as southAmerica from './south_america_paths.js';
+import * as oceania from './oceania_paths.js';
 
 /**
  * @typedef {{ key?: string, capital?: string, population?: number, areaKm2: number, funFact?: { en: string, de: string } }} StateInfo
@@ -26,6 +31,32 @@ function buildShapes(data) {
 			info: data.info?.[id] ?? null,
 			capital: data.capitals?.[id] ?? null
 		}));
+}
+
+// Country categories, built once and reused — both as their own categories and,
+// merged, as the composed "world" mode. (Oceania has no standalone category; only
+// its three big countries — Australia/NZ/PNG — feed `world`.)
+const country = {
+	europe: buildShapes(europe),
+	africa: buildShapes(africa),
+	asia: buildShapes(asia),
+	northAmerica: buildShapes(northAmerica),
+	southAmerica: buildShapes(southAmerica),
+	oceania: buildShapes(oceania)
+};
+
+/**
+ * Concatenate country lists into one "world" category. Each shape is already
+ * projected/trimmed correctly for its own continent (a single world-wide `trimDeg`
+ * can't fit both archipelagos and Alaska), so we just merge and re-key ids 0..n-1.
+ * @param {Shape[][]} lists
+ * @returns {Shape[]}
+ */
+function mergeShapes(lists) {
+	return lists
+		.flat()
+		.sort((a, b) => a.name.localeCompare(b.name, 'en'))
+		.map((s, i) => ({ ...s, id: i }));
 }
 
 /**
@@ -54,13 +85,50 @@ export const CATEGORIES = {
 		id: 2,
 		key: 'europe',
 		viewBox: '0 0 1000 1000',
-		shapes: buildShapes(europe)
+		shapes: country.europe
 	},
 	3: {
 		id: 3,
 		key: 'us_states',
 		viewBox: '0 0 1000 1000',
 		shapes: buildShapes(usStates)
+	},
+	4: {
+		id: 4,
+		key: 'africa',
+		viewBox: '0 0 1000 1000',
+		shapes: country.africa
+	},
+	5: {
+		id: 5,
+		key: 'asia',
+		viewBox: '0 0 1000 1000',
+		shapes: country.asia
+	},
+	6: {
+		id: 6,
+		key: 'north_america',
+		viewBox: '0 0 1000 1000',
+		shapes: country.northAmerica
+	},
+	7: {
+		id: 7,
+		key: 'south_america',
+		viewBox: '0 0 1000 1000',
+		shapes: country.southAmerica
+	},
+	8: {
+		id: 8,
+		key: 'world',
+		viewBox: '0 0 1000 1000',
+		shapes: mergeShapes([
+			country.europe,
+			country.africa,
+			country.asia,
+			country.northAmerica,
+			country.southAmerica,
+			country.oceania
+		])
 	}
 };
 

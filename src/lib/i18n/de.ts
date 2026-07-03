@@ -91,6 +91,11 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'category.1': 'Kontinente',
 	'category.2': 'Europa',
 	'category.3': 'US-Bundesstaaten',
+	'category.4': 'Afrika',
+	'category.5': 'Asien',
+	'category.6': 'Nordamerika',
+	'category.7': 'Südamerika',
+	'category.8': 'Welt',
 
 	'leave.title': 'Raum verlassen?',
 	'leave.text': 'Du verlierst deinen Platz in diesem Spiel.',

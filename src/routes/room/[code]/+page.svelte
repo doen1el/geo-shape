@@ -6,6 +6,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import Slider from '$lib/components/ui/Slider.svelte';
 	import Countdown from '$lib/components/game/Countdown.svelte';
 	import ShapeCanvas from '$lib/components/game/ShapeCanvas.svelte';
 	import GuessChat from '$lib/components/game/GuessChat.svelte';
@@ -20,13 +21,20 @@
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
 
-	const ROUND_OPTIONS = [3, 5, 8, 10];
-	const TIME_OPTIONS = [45, 60, 90, 120];
+	const MIN_TIME = 30;
+	const MAX_TIME = 180;
+	const TIME_STEP = 15;
+
 	const CATEGORY_CARDS = [
-		{ id: 0, key: 'category.0', available: true },
-		{ id: 1, key: 'category.1', available: true },
-		{ id: 2, key: 'category.2', available: true },
-		{ id: 3, key: 'category.3', available: true }
+		{ id: 1, key: 'category.1', available: true }, // Continents
+		{ id: 8, key: 'category.8', available: true }, // World
+		{ id: 2, key: 'category.2', available: true }, // Europe
+		{ id: 4, key: 'category.4', available: true }, // Africa
+		{ id: 5, key: 'category.5', available: true }, // Asia
+		{ id: 6, key: 'category.6', available: true }, // North America
+		{ id: 7, key: 'category.7', available: true }, // South America
+		{ id: 0, key: 'category.0', available: true }, // German states
+		{ id: 3, key: 'category.3', available: true }  // US states
 	] as const;
 
 	let nameInput = $state(profile.name);
@@ -44,8 +52,28 @@
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
 	const isHost = $derived(me?.isHost ?? false);
 	const canStart = $derived((room?.players.length ?? 0) >= 2);
-	// Number of shapes in the chosen category — caps how many rounds you can pick.
 	const categorySize = $derived(room ? (room.categorySizes?.[room.categoryId] ?? Infinity) : Infinity);
+	const roundMax = $derived(Number.isFinite(categorySize) ? categorySize : 10);
+
+	let roundsUi = $state(5);
+	let timeUi = $state(90);
+	$effect(() => {
+		roundsUi = room?.allRounds ? roundMax : Math.min(room?.maxRounds ?? 5, roundMax);
+	});
+	$effect(() => {
+		timeUi = room?.roundDurationSec ?? 90;
+	});
+
+	const roundsLabel = $derived(
+		roundsUi >= roundMax
+			? `${t('settings.allRounds')}${Number.isFinite(categorySize) ? ` (${categorySize})` : ''}`
+			: String(roundsUi)
+	);
+
+	function commitRounds(v: number) {
+		if (v >= roundMax) game.setSettings({ allRounds: true });
+		else game.setSettings({ maxRounds: v });
+	}
 
 	const checking = $derived(!room && checkedExists === null);
 	const notFound = $derived(!room && checkedExists === false);
@@ -148,30 +176,6 @@
 	}
 </script>
 
-<!-- snippet: a row of pill toggle buttons -->
-{#snippet pills(
-	options: readonly number[],
-	current: number,
-	pick: (v: number) => void,
-	suffix: string
-)}
-	<div class="flex flex-wrap gap-2">
-		{#each options as opt (opt)}
-			{@const active = current === opt}
-			<button
-				class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-					{active ? 'bg-main shadow-shadow' : 'bg-surface'}
-					{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
-					{!isHost && !active ? 'opacity-40' : ''}"
-				disabled={!isHost}
-				onclick={() => pick(opt)}
-			>
-				{opt}{suffix}
-			</button>
-		{/each}
-	</div>
-{/snippet}
-
 {#snippet settingsPanel()}
 	<Card class="flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
 		<h2 class="text-lg font-extrabold">{t('settings.title')}</h2>
@@ -231,43 +235,34 @@
 		</div>
 
 		<div class="flex flex-col gap-1.5">
-			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
-			<div class="flex flex-wrap gap-2">
-				{#each ROUND_OPTIONS as opt (opt)}
-					{@const active = !room?.allRounds && room?.maxRounds === opt}
-					{@const tooMany = opt > categorySize}
-					<button
-						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
-							{isHost && !tooMany ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
-							{tooMany || (!isHost && !active) ? 'opacity-40' : ''}"
-						disabled={!isHost || tooMany}
-						onclick={() => game.setSettings({ maxRounds: opt })}
-					>
-						{opt}
-					</button>
-				{/each}
-				<button
-					class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
-						{room?.allRounds ? 'bg-main shadow-shadow' : 'bg-surface'}
-						{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
-						{!isHost && !room?.allRounds ? 'opacity-40' : ''}"
-					disabled={!isHost}
-					onclick={() => game.setSettings({ allRounds: true })}
-				>
-					{t('settings.allRounds')}{Number.isFinite(categorySize) ? ` (${categorySize})` : ''}
-				</button>
+			<div class="flex items-baseline justify-between gap-2">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
+				<span class="text-sm font-extrabold">{roundsLabel}</span>
 			</div>
+			<Slider
+				bind:value={roundsUi}
+				min={1}
+				max={roundMax}
+				disabled={!isHost}
+				oncommit={commitRounds}
+				aria-label={t('settings.rounds')}
+			/>
 		</div>
 
 		<div class="flex flex-col gap-1.5">
-			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.time')}</span>
-			{@render pills(
-				TIME_OPTIONS,
-				room?.roundDurationSec ?? 90,
-				(v) => game.setSettings({ roundDurationSec: v }),
-				's'
-			)}
+			<div class="flex items-baseline justify-between gap-2">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.time')}</span>
+				<span class="text-sm font-extrabold">{timeUi}s</span>
+			</div>
+			<Slider
+				bind:value={timeUi}
+				min={MIN_TIME}
+				max={MAX_TIME}
+				step={TIME_STEP}
+				disabled={!isHost}
+				oncommit={(v) => game.setSettings({ roundDurationSec: v })}
+				aria-label={t('settings.time')}
+			/>
 		</div>
 	</Card>
 {/snippet}
