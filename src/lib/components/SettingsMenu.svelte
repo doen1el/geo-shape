@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Settings } from '@lucide/svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
+	import Slider from '$lib/components/ui/Slider.svelte';
 	import { i18n, t, type Locale } from '$lib/i18n/index.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 
@@ -11,11 +12,10 @@
 		{ id: 'en', label: 'English' }
 	];
 
-	const volumePct = $derived(Math.round(settings.volume * 100));
-
-	function onVolume(e: Event) {
-		settings.setVolume(Number((e.currentTarget as HTMLInputElement).value) / 100);
-	}
+	let volumePct = $state(Math.round(settings.volume * 100));
+	$effect(() => {
+		settings.setVolume(volumePct / 100);
+	});
 </script>
 
 <!-- Floating settings entry, bottom-right of the screen. -->
@@ -76,22 +76,19 @@
 		</div>
 
 		<!-- Volume -->
-		<div class="flex flex-col gap-1.5" class:opacity-40={!settings.soundOn}>
-			<div class="flex items-center justify-between">
+		<div class="flex flex-col gap-1.5">
+			<div class="flex items-center justify-between" class:opacity-40={!settings.soundOn}>
 				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 					{t('settings.volume')}
 				</span>
 				<span class="text-xs font-extrabold tabular-nums">{volumePct}%</span>
 			</div>
-			<input
-				type="range"
-				min="0"
-				max="100"
-				value={volumePct}
-				oninput={onVolume}
+			<Slider
+				bind:value={volumePct}
+				min={0}
+				max={100}
 				disabled={!settings.soundOn}
 				aria-label={t('settings.volume')}
-				class="h-2 w-full cursor-pointer appearance-none rounded-base border-2 border-border bg-surface accent-main disabled:cursor-not-allowed"
 			/>
 		</div>
 	</div>
