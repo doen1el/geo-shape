@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { avatarUrl } from '$lib/stores/profile.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import type { PublicPlayer } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
@@ -21,11 +21,11 @@
 					? 'bg-main'
 					: 'bg-bg'} {p.connected ? '' : 'opacity-50'}"
 			>
-				<img
-					src={avatarUrl(p.avatar, p.name)}
+				<Avatar
+					style={p.avatar}
+					seed={p.name}
+					size={28}
 					alt={p.name}
-					width="28"
-					height="28"
 					class="shrink-0 rounded-base border-2 border-border bg-surface"
 				/>
 				<span class="truncate font-bold">{p.name}</span>

@@ -3,7 +3,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { game } from '$lib/ws.svelte';
-	import { avatarUrl } from '$lib/stores/profile.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
@@ -24,11 +24,11 @@
 			{#each game.leaderboard as p, i (p.name + i)}
 				<li class="flex items-center gap-3 rounded-base border-2 border-border bg-bg px-3 py-2">
 					<span class="w-7 text-center text-lg font-extrabold">{medals[i] ?? i + 1}</span>
-					<img
-						src={avatarUrl(p.avatar, p.name)}
+					<Avatar
+						style={p.avatar}
+						seed={p.name}
+						size={36}
 						alt={p.name}
-						width="36"
-						height="36"
 						class="rounded-base border-2 border-border bg-surface"
 					/>
 					<span class="flex-1 truncate font-bold">{p.name}</span>

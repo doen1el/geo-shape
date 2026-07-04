@@ -6,7 +6,8 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
-	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 
@@ -169,7 +170,7 @@
 					aria-label={t('identity.tapAvatar')}
 					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
 				>
-					<img src={avatarUrl(profile.avatar, name)} alt="avatar" width="64" height="64" />
+					<Avatar style={profile.avatar} seed={name} size={64} alt="avatar" />
 				</button>
 				<div
 					class="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap text-ink opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"

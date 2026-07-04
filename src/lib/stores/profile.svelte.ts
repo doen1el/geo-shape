@@ -2,17 +2,45 @@ import { browser } from '$app/environment';
 
 const STORAGE_KEY = 'geoshape:profile';
 
+// Every DiceBear style.
 export const AVATAR_STYLES = [
 	'fun-emoji',
 	'adventurer',
+	'adventurer-neutral',
+	'avataaars',
+	'avataaars-neutral',
+	'big-ears',
+	'big-ears-neutral',
+	'big-smile',
 	'bottts',
+	'bottts-neutral',
 	'croodles',
-	'thumbs',
-	'micah',
-	'notionists',
+	'croodles-neutral',
+	'dylan',
 	'lorelei',
+	'lorelei-neutral',
+	'micah',
+	'miniavs',
+	'notionists',
+	'notionists-neutral',
 	'open-peeps',
-	'pixel-art'
+	'personas',
+	'pixel-art',
+	'pixel-art-neutral',
+	'toon-head',
+	'thumbs',
+	'disco',
+	'glass',
+	'glyphs',
+	'icons',
+	'identicon',
+	'initial-face',
+	'initials',
+	'rings',
+	'shape-grid',
+	'shapes',
+	'stripes',
+	'triangles'
 ] as const;
 
 const DEFAULT_STYLE = AVATAR_STYLES[0];
@@ -75,9 +103,3 @@ function isStyle(value: unknown): value is string {
 }
 
 export const profile = new ProfileStore();
-
-export function avatarUrl(style: string, seed: string): string {
-	const safeStyle = isStyle(style) ? style : DEFAULT_STYLE;
-	const safeSeed = seed && seed.trim() ? seed.trim() : 'anon';
-	return `https://api.dicebear.com/9.x/${safeStyle}/svg?seed=${encodeURIComponent(safeSeed)}&backgroundColor=ffdfbf,ffd5dc,d1d4f9,c0aede,b6e3f4&radius=10`;
-}

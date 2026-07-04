@@ -36,6 +36,8 @@
 		"vite": "^6.0.0"
 	},
 	"dependencies": {
+		"@dicebear/core": "^10.3.0",
+		"@dicebear/styles": "^10.2.0",
 		"@lucide/svelte": "^1.22.0",
 		"obscenity": "^0.4.6",
 		"ws": "^8.18.0"

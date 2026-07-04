@@ -14,7 +14,8 @@
 	import Scoreboard from '$lib/components/game/Scoreboard.svelte';
 	import Podium from '$lib/components/game/Podium.svelte';
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
-	import { profile, avatarUrl } from '$lib/stores/profile.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
@@ -388,11 +389,11 @@
 										? ''
 										: 'opacity-50'}"
 								>
-									<img
-										src={avatarUrl(p.avatar, p.name)}
+									<Avatar
+										style={p.avatar}
+										seed={p.name}
+										size={36}
 										alt={p.name}
-										width="36"
-										height="36"
 										class="rounded-base border-2 border-border bg-surface"
 									/>
 									<span class="truncate font-bold">{p.name}</span>
@@ -498,7 +499,7 @@
 				onclick={() => profile.cycleAvatar()}
 				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow"
 			>
-				<img src={avatarUrl(profile.avatar, nameInput)} alt="avatar" width="44" height="44" />
+				<Avatar style={profile.avatar} seed={nameInput} size={44} alt="avatar" />
 			</button>
 			<Input bind:value={nameInput} placeholder={t('identity.namePlaceholder')} maxlength={20} />
 		</div>

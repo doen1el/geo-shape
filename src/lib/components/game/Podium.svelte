@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { avatarUrl } from '$lib/stores/profile.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import type { PublicPlayer } from '$lib/ws.svelte';
 
 	let { players, playerId }: { players: PublicPlayer[]; playerId: string | null } = $props();
@@ -27,11 +27,11 @@
 				{#if s.place === 1}
 					<span class="text-2xl leading-none">👑</span>
 				{/if}
-				<img
-					src={avatarUrl(s.player.avatar, s.player.name)}
+				<Avatar
+					style={s.player.avatar}
+					seed={s.player.name}
+					size={s.avatar}
 					alt={s.player.name}
-					width={s.avatar}
-					height={s.avatar}
 					class="rounded-base border-2 border-border bg-surface shadow-shadow"
 				/>
 				<span
