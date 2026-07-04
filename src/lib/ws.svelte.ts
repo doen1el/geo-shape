@@ -52,6 +52,7 @@ export type StateInfo = {
 };
 export type RoundResult = {
 	answer: string;
+	answerDe: string;
 	info: StateInfo | null;
 	players: PublicPlayer[];
 	nextInMs: number;
@@ -217,6 +218,7 @@ class GameSocket {
 			case ServerMsg.ROUND_END:
 				this.roundResult = {
 					answer: msg.answer,
+					answerDe: msg.answerDe ?? msg.answer,
 					info: msg.info ?? null,
 					players: msg.players,
 					nextInMs: msg.nextInMs,

@@ -21,6 +21,17 @@ export const names = {
 	6: "South America"
 };
 
+// German display names — client falls back to `names` when absent.
+export const namesDe = {
+	0: "Afrika",
+	1: "Antarktika",
+	2: "Asien",
+	3: "Europa",
+	4: "Nordamerika",
+	5: "Ozeanien",
+	6: "Südamerika"
+};
+
 export const answers = {
 	0: ["Africa","Afrika"],
 	1: ["Antarctica","Antarktika","Antarktis"],

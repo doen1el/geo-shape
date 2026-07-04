@@ -31,6 +31,22 @@ export const names = {
 	11: "Venezuela"
 };
 
+// German display names — client falls back to `names` when absent.
+export const namesDe = {
+	0: "Argentinien",
+	1: "Bolivien",
+	2: "Brasilien",
+	3: "Chile",
+	4: "Kolumbien",
+	5: "Ecuador",
+	6: "Guyana",
+	7: "Paraguay",
+	8: "Peru",
+	9: "Suriname",
+	10: "Uruguay",
+	11: "Venezuela"
+};
+
 export const answers = {
 	0: ["Argentina","Argentinien","AR"],
 	1: ["Bolivia","Bolivien","BO"],

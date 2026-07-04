@@ -13,6 +13,13 @@ export const names = {
 	2: "Papua New Guinea"
 };
 
+// German display names — client falls back to `names` when absent.
+export const namesDe = {
+	0: "Australien",
+	1: "Neuseeland",
+	2: "Papua-Neuguinea"
+};
+
 export const answers = {
 	0: ["Australia","Australien","AU"],
 	1: ["New Zealand","Neuseeland","NZ"],

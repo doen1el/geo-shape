@@ -17,7 +17,7 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
-	import { t } from '$lib/i18n/index.svelte';
+	import { i18n, t } from '$lib/i18n/index.svelte';
 
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
@@ -334,7 +334,12 @@
 								<p
 									class="shrink-0 rounded-base border-2 border-border bg-main px-4 py-2 text-center text-lg font-extrabold shadow-shadow"
 								>
-									{t('game.theAnswerWas', { answer: game.roundResult?.answer ?? '' })}
+									{t('game.theAnswerWas', {
+										answer:
+											(i18n.locale === 'de'
+												? game.roundResult?.answerDe
+												: game.roundResult?.answer) ?? ''
+									})}
 								</p>
 								{#if game.roundResult?.info}
 									<div class="shrink-0">

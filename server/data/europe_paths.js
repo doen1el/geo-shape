@@ -87,6 +87,50 @@ export const names = {
 	39: "United Kingdom"
 };
 
+// German display names — client falls back to `names` when absent.
+export const namesDe = {
+	0: "Albanien",
+	1: "Österreich",
+	2: "Belarus",
+	3: "Belgien",
+	4: "Bosnien und Herzegowina",
+	5: "Bulgarien",
+	6: "Kroatien",
+	7: "Tschechien",
+	8: "Dänemark",
+	9: "Estland",
+	10: "Finnland",
+	11: "Frankreich",
+	12: "Deutschland",
+	13: "Griechenland",
+	14: "Ungarn",
+	15: "Island",
+	16: "Irland",
+	17: "Italien",
+	18: "Kosovo",
+	19: "Lettland",
+	20: "Litauen",
+	21: "Luxemburg",
+	22: "Malta",
+	23: "Republik Moldau",
+	24: "Montenegro",
+	25: "Niederlande",
+	26: "Nordmazedonien",
+	27: "Norwegen",
+	28: "Polen",
+	29: "Portugal",
+	30: "Rumänien",
+	31: "Russland",
+	32: "Serbien",
+	33: "Slowakei",
+	34: "Slowenien",
+	35: "Spanien",
+	36: "Schweden",
+	37: "Schweiz",
+	38: "Ukraine",
+	39: "Vereinigtes Königreich"
+};
+
 export const answers = {
 	0: ["Albania","Albanien","AL"],
 	1: ["Austria","Österreich","AT"],

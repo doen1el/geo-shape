@@ -331,12 +331,14 @@ function endRound(room) {
 	clearTimers(room);
 	room.roundActive = false;
 	const answer = room.currentShape?.name ?? '';
+	const answerDe = room.currentShape?.nameDe ?? answer;
 	const info = room.currentShape?.info ?? null;
 	const isLast = room.round >= room.maxRounds;
 
 	roomManager.broadcast(room, {
 		type: ServerMsg.ROUND_END,
 		answer,
+		answerDe,
 		info,
 		players: roomManager.toPublic(room).players,
 		nextInMs: ROUND_END_PAUSE_MS,
