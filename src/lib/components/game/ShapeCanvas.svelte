@@ -50,7 +50,12 @@
 		reveal && reveal.totalMs > 0 ? Math.min(100, (nextRemainingMs / reveal.totalMs) * 100) : 0
 	);
 
-	const viewBox = $derived(round.viewBox);
+	const VIEWBOX_PAD = 12;
+	const viewBox = $derived.by(() => {
+		const [x, y, w, h] = round.viewBox.split(/[\s,]+/).map(Number);
+		if ([x, y, w, h].some((n) => !Number.isFinite(n))) return round.viewBox;
+		return `${x - VIEWBOX_PAD} ${y - VIEWBOX_PAD} ${w + VIEWBOX_PAD * 2} ${h + VIEWBOX_PAD * 2}`;
+	});
 </script>
 
 <div class="flex h-full min-h-0 flex-col gap-2">
