@@ -63,18 +63,18 @@ export const answers = {
 };
 
 export const info = {
-	0: {"capital":"Buenos Aires","capitalDe":"Buenos Aires","population":44938712,"areaKm2":2761567},
-	1: {"capital":"La Paz","capitalDe":"La Paz","population":11513100,"areaKm2":1090481},
-	2: {"capital":"Brasília","capitalDe":"Brasília","population":211049527,"areaKm2":8450221},
-	3: {"capital":"Santiago","capitalDe":"Santiago de Chile","population":18952038,"areaKm2":656353},
-	4: {"capital":"Bogota","capitalDe":"Bogotá","population":50339443,"areaKm2":1139563},
-	5: {"capital":"Quito","capitalDe":"Quito","population":17373662,"areaKm2":248249},
-	6: {"capital":"Georgetown","capitalDe":"Georgetown","population":782766,"areaKm2":212093},
-	7: {"capital":"Asunción","capitalDe":"Asunción","population":7044636,"areaKm2":400826},
-	8: {"capital":"Lima","capitalDe":"Lima","population":32510453,"areaKm2":1295063},
-	9: {"capital":"Paramaribo","capitalDe":"Paramaribo","population":581363,"areaKm2":145754},
-	10: {"capital":"Montevideo","capitalDe":"Montevideo","population":3461734,"areaKm2":177437},
-	11: {"capital":"Caracas","capitalDe":"Caracas","population":28515829,"areaKm2":913013}
+	0: {"capital":"Buenos Aires","capitalDe":"Buenos Aires","population":44938712,"areaKm2":2761567,"funFact":{"en":"Argentina is home to Aconcagua, the highest mountain outside Asia.","de":"In Argentinien liegt der Aconcagua, der höchste Berg außerhalb Asiens."}},
+	1: {"capital":"La Paz","capitalDe":"La Paz","population":11513100,"areaKm2":1090481,"funFact":{"en":"Bolivia’s Salar de Uyuni is the world’s largest salt flat.","de":"Boliviens Salar de Uyuni ist die größte Salzwüste der Welt."}},
+	2: {"capital":"Brasília","capitalDe":"Brasília","population":211049527,"areaKm2":8450221,"funFact":{"en":"Brazil is the largest country in South America and holds most of the Amazon.","de":"Brasilien ist das größte Land Südamerikas und beherbergt den Großteil des Amazonas."}},
+	3: {"capital":"Santiago","capitalDe":"Santiago de Chile","population":18952038,"areaKm2":656353,"funFact":{"en":"Chile’s Atacama Desert is the driest place on Earth.","de":"Chiles Atacama-Wüste ist der trockenste Ort der Erde."}},
+	4: {"capital":"Bogota","capitalDe":"Bogotá","population":50339443,"areaKm2":1139563,"funFact":{"en":"Colombia is the only South American country with coastlines on both the Pacific and the Caribbean.","de":"Kolumbien ist das einzige Land Südamerikas mit Küsten am Pazifik und an der Karibik."}},
+	5: {"capital":"Quito","capitalDe":"Quito","population":17373662,"areaKm2":248249,"funFact":{"en":"Ecuador is named after the equator, which runs right through it.","de":"Ecuador ist nach dem Äquator benannt, der mitten durch das Land verläuft."}},
+	6: {"capital":"Georgetown","capitalDe":"Georgetown","population":782766,"areaKm2":212093,"funFact":{"en":"Guyana is the only South American country with English as its official language.","de":"Guyana ist das einzige Land Südamerikas mit Englisch als Amtssprache."}},
+	7: {"capital":"Asunción","capitalDe":"Asunción","population":7044636,"areaKm2":400826,"funFact":{"en":"Paraguay is one of only two landlocked countries in South America.","de":"Paraguay ist eines von nur zwei Binnenländern Südamerikas."}},
+	8: {"capital":"Lima","capitalDe":"Lima","population":32510453,"areaKm2":1295063,"funFact":{"en":"Peru is home to Machu Picchu, the famous Inca citadel high in the Andes.","de":"In Peru liegt Machu Picchu, die berühmte Inka-Stadt hoch in den Anden."}},
+	9: {"capital":"Paramaribo","capitalDe":"Paramaribo","population":581363,"areaKm2":145754,"funFact":{"en":"Suriname is the smallest country in South America and over 90% forest.","de":"Suriname ist das kleinste Land Südamerikas und zu über 90 % bewaldet."}},
+	10: {"capital":"Montevideo","capitalDe":"Montevideo","population":3461734,"areaKm2":177437,"funFact":{"en":"Uruguay hosted and won the very first football World Cup, in 1930.","de":"Uruguay war Gastgeber und Sieger der allerersten Fußball-Weltmeisterschaft 1930."}},
+	11: {"capital":"Caracas","capitalDe":"Caracas","population":28515829,"areaKm2":913013,"funFact":{"en":"Venezuela’s Angel Falls is the world’s tallest waterfall.","de":"Venezuelas Angel-Wasserfall (Salto Ángel) ist der höchste Wasserfall der Welt."}}
 };
 
 // Capital marker position [x, y] in the 1000×1000 box.

@@ -27,9 +27,9 @@ export const answers = {
 };
 
 export const info = {
-	0: {"capital":"Canberra","capitalDe":"Canberra","population":25364307,"areaKm2":7613563},
-	1: {"capital":"Wellington","capitalDe":"Wellington","population":4917000,"areaKm2":266295},
-	2: {"capital":"Port Moresby","capitalDe":"Port Moresby","population":8776109,"areaKm2":457867}
+	0: {"capital":"Canberra","capitalDe":"Canberra","population":25364307,"areaKm2":7613563,"funFact":{"en":"Australia is the only country that is also a whole continent.","de":"Australien ist das einzige Land, das zugleich ein ganzer Kontinent ist."}},
+	1: {"capital":"Wellington","capitalDe":"Wellington","population":4917000,"areaKm2":266295,"funFact":{"en":"New Zealand was the first country to give women the right to vote, in 1893.","de":"Neuseeland gab 1893 als erstes Land Frauen das Wahlrecht."}},
+	2: {"capital":"Port Moresby","capitalDe":"Port Moresby","population":8776109,"areaKm2":457867,"funFact":{"en":"Papua New Guinea has over 800 languages — more than any other country.","de":"Papua-Neuguinea hat über 800 Sprachen — mehr als jedes andere Land."}}
 };
 
 // Capital marker position [x, y] in the 1000×1000 box.
