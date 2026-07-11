@@ -6,6 +6,7 @@
 	import { Send } from '@lucide/svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
+	import { playerColor } from '$lib/playerColors';
 
 	let text = $state('');
 	let listEl = $state<HTMLDivElement | null>(null);
@@ -68,9 +69,8 @@
 				{@const mine = entry.playerId != null && entry.playerId === game.playerId}
 				<div class="flex {mine ? 'justify-end' : 'justify-start'}">
 					<div
-						class="max-w-[85%] rounded-base border-2 border-border px-2.5 py-1 {mine
-							? 'bg-main'
-							: 'bg-bg'}"
+						class="max-w-[85%] rounded-base border-2 border-border px-2.5 py-1 {mine ? 'bg-main' : ''}"
+						style={mine ? undefined : `background-color: ${playerColor(entry.playerId)}`}
 					>
 						{#if !mine}
 							<span class="text-[10px] font-bold text-ink/50">{entry.name}</span>

@@ -1,5 +1,6 @@
 <script lang="ts" module>
 	import { Style, Avatar } from '@dicebear/core';
+	import { PLAYER_COLORS_BARE } from '$lib/playerColors';
 
 	// Client-side avatar generation
 	const loaders: Record<string, () => Promise<{ default: unknown }>> = {
@@ -82,7 +83,7 @@
 			src = new Avatar(s, {
 				seed: rawSeed?.trim() ? rawSeed.trim() : 'anon',
 				size: px,
-				backgroundColor: ['ffdfbf', 'ffd5dc', 'd1d4f9', 'c0aede', 'b6e3f4'],
+				backgroundColor: PLAYER_COLORS_BARE,
 				borderRadius: 10
 			}).toDataUri();
 		});
