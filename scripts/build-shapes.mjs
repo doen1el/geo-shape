@@ -77,7 +77,11 @@ const DISPLAY_NAME = {
 // Disputed / non-UN entities to drop from the country categories: their outline is
 // carved out of a neighbour (Somaliland out of Somalia, Western Sahara out of Morocco),
 // so asking for them as a country is both unfair and mangles the neighbour's shape.
-const NON_SOVEREIGN = new Set(['Somaliland', 'Western Sahara', 'W. Sahara']);
+const NON_SOVEREIGN = new Set([
+	'Somaliland', 'Western Sahara', 'W. Sahara',
+	'Baikonur', 'Bir Tawil', 'Southern Patagonian Ice Field', 'Cyprus U.N. Buffer Zone',
+	'Scarborough Reef', 'Spratly Is.', 'Bajo Nuevo Bank', 'Serranilla Bank', 'Brazilian I.'
+]);
 
 const CONTINENTS = {
 	Africa: { name: 'Africa', nameDe: 'Afrika', answers: ['Afrika', 'Africa'] },
@@ -122,7 +126,7 @@ const CATEGORIES = {
 
 	continents: {
 		id: 1,
-		source: 'ne_110m_admin_0_countries',
+		source: 'ne_10m_admin_0_countries',
 		// Reassign Russia to Asia so "Europe" is the classic shape and Asia keeps Russia.
 		remap: (p) => (p.NAME === 'Russia' ? { ...p, CONTINENT: 'Asia' } : p),
 		select: (p) => CONTINENTS[p.CONTINENT] != null,
@@ -136,7 +140,7 @@ const CATEGORIES = {
 
 	europe: {
 		id: 2,
-		source: 'ne_50m_admin_0_countries',
+		source: 'ne_10m_admin_0_countries',
 		// Keep self-governing countries, drop dependencies. NE suffixes a sovereign's
 		// own SOV_A3 when it has dependencies (UK = GB1/GBR, France = FR1/FRA), so the
 		// home territory shares the first two letters with ADM0_A3 while a dependency
@@ -197,7 +201,7 @@ function countryLabel(/** @type {any} */ p) {
 function continentCountries(continent, { id, minAreaKm2 = 5000, detail = 0.42, projection = 'mercator', trimDeg }) {
 	return {
 		id,
-		source: 'ne_50m_admin_0_countries',
+		source: 'ne_10m_admin_0_countries',
 		select: (/** @type {any} */ p) =>
 			p.CONTINENT === continent &&
 			p.SOV_A3.slice(0, 2) === p.ADM0_A3.slice(0, 2) &&
