@@ -27,9 +27,9 @@ export const answers = {
 };
 
 export const info = {
-	0: {"capital":"Canberra","population":25364307,"areaKm2":7613563},
-	1: {"capital":"Wellington","population":4917000,"areaKm2":266295},
-	2: {"capital":"Port Moresby","population":8776109,"areaKm2":457867}
+	0: {"capital":"Canberra","capitalDe":"Canberra","population":25364307,"areaKm2":7613563},
+	1: {"capital":"Wellington","capitalDe":"Wellington","population":4917000,"areaKm2":266295},
+	2: {"capital":"Port Moresby","capitalDe":"Port Moresby","population":8776109,"areaKm2":457867}
 };
 
 // Capital marker position [x, y] in the 1000×1000 box.

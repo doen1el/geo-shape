@@ -10,9 +10,11 @@
 		new Intl.NumberFormat(intlLocale, { notation: 'compact', maximumFractionDigits: 1 })
 	);
 
+	const capital = $derived(locale === 'de' ? (info.capitalDe ?? info.capital) : info.capital);
+
 	const cells = $derived(
 		[
-			info.capital && { label: t('info.capital'), value: info.capital },
+			capital && { label: t('info.capital'), value: capital },
 			info.population && { label: t('info.population'), value: cf.format(info.population) },
 			info.areaKm2 && { label: t('info.area'), value: `${cf.format(info.areaKm2)} km²` }
 		].filter((c): c is { label: string; value: string } => !!c)

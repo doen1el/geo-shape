@@ -46,6 +46,7 @@ export type RoundInfo = {
 export type StateInfo = {
 	key?: string;
 	capital?: string;
+	capitalDe?: string;
 	population?: number;
 	areaKm2: number;
 	funFact?: { en: string; de: string };

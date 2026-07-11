@@ -51,6 +51,16 @@ const GERMAN_ALIASES = {
 	HH: ['hansestadt hamburg']
 };
 
+// English names for the 16 German states
+const GERMAN_STATE_EN = {
+	BW: 'Baden-Württemberg', BY: 'Bavaria', BE: 'Berlin', BB: 'Brandenburg',
+	HB: 'Bremen', HH: 'Hamburg', HE: 'Hesse', MV: 'Mecklenburg-Western Pomerania',
+	NI: 'Lower Saxony', NW: 'North Rhine-Westphalia', RP: 'Rhineland-Palatinate',
+	SL: 'Saarland', SN: 'Saxony', ST: 'Saxony-Anhalt', SH: 'Schleswig-Holstein', TH: 'Thuringia'
+};
+
+const stateCode = (/** @type {any} */ p) => p.code_hasc?.split('.')[1] || p.postal;
+
 const PROJECTIONS = { mercator: geoMercator, equalEarth: geoEqualEarth, naturalEarth: geoNaturalEarth1 };
 
 // ── Country name aliases (keyed by Natural-Earth NAME_EN) ──────────────────────
@@ -104,6 +114,12 @@ function areaKm2(feature) {
 	return Math.round(geoArea(feature) * EARTH_R * EARTH_R);
 }
 
+/**
+ * Capital name pair (English + German) for spreading into an info object. Keys are
+ * `undefined` — and thus dropped by JSON.stringify — when the capital is unknown.
+ */
+const capNames = (cap) => ({ capital: cap?.name, capitalDe: cap?.nameDe });
+
 // ── Category configs ───────────────────────────────────────────────────────────
 // Each: select features → label (display name + answers) → optional info. `assignId`
 // pins ids (else they're assigned alphabetically by display name).
@@ -114,13 +130,21 @@ const CATEGORIES = {
 		select: (p) => p.iso_a2 === 'DE',
 		detail: 0.45,
 		projection: 'mercator',
-		label: (p) => ({
-			name: p.name, // German name (Bayern, Nordrhein-Westfalen…)
-			answers: [p.name, p.name_en, p.postal, ...(GERMAN_ALIASES[p.postal] ?? [])].filter(Boolean)
-		}),
-		// Rich curated info (capital/pop/area/funFact), keyed by postal code.
-		info: (_shape, p) => germanStateInfo[p.postal],
-		// City-states (Berlin) have no admin-1 capital entry → fall back to the national capital.
+		label: (p) => {
+			const code = stateCode(p);
+			return {
+				name: GERMAN_STATE_EN[code] ?? p.name,
+				nameDe: p.name,
+				answers: [p.name, p.name_en, code, ...(GERMAN_ALIASES[code] ?? [])].filter(Boolean)
+			};
+		},
+
+		info: (_shape, p) => {
+			const base = germanStateInfo[stateCode(p)];
+			if (!base) return base;
+			const cap = CAPITALS.admin1.get(`DEU|${p.name}`) ?? CAPITALS.country.get('DEU');
+			return { ...base, capital: cap?.name ?? base.capital, capitalDe: cap?.nameDe ?? base.capital };
+		},
 		capital: (p) => CAPITALS.admin1.get(`DEU|${p.name}`) ?? CAPITALS.country.get('DEU')
 	},
 
@@ -154,7 +178,7 @@ const CATEGORIES = {
 		trimDeg: 13, // drop overseas territories (France's Guyane/Réunion, Spain's Canaries…)
 		label: countryLabel,
 		info: (shape, p) => ({
-			capital: CAPITALS.country.get(p.ADM0_A3)?.name,
+			...capNames(CAPITALS.country.get(p.ADM0_A3)),
 			population: p.POP_EST > 0 ? p.POP_EST : undefined,
 			areaKm2: areaKm2(shape),
 			funFact: countryFacts[p.ADM0_A3]
@@ -170,7 +194,7 @@ const CATEGORIES = {
 		projection: 'mercator',
 		label: (p) => ({ name: p.name, answers: [p.name, p.name_en, p.postal].filter(Boolean) }),
 		info: (shape, p) => ({
-			capital: CAPITALS.admin1.get(`USA|${p.name}`)?.name,
+			...capNames(CAPITALS.admin1.get(`USA|${p.name}`)),
 			areaKm2: areaKm2(shape),
 			funFact: usStateFacts[p.postal]
 		}),
@@ -213,7 +237,7 @@ function continentCountries(continent, { id, minAreaKm2 = 5000, detail = 0.42, p
 		trimDeg,
 		label: countryLabel,
 		info: (/** @type {any} */ shape, /** @type {any} */ p) => ({
-			capital: CAPITALS.country.get(p.ADM0_A3)?.name,
+			...capNames(CAPITALS.country.get(p.ADM0_A3)),
 			population: p.POP_EST > 0 ? p.POP_EST : undefined,
 			areaKm2: areaKm2(shape),
 			funFact: countryFacts[p.ADM0_A3]
@@ -372,9 +396,12 @@ async function loadCapitals() {
 		const p = f.properties;
 		const [lon, lat] = f.geometry?.coordinates ?? [];
 		if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
-		if (p.ADM0CAP === 1 && p.ADM0_A3) CAPITALS.country.set(p.ADM0_A3, { name: p.NAME, lon, lat });
+		// NAME is the English/international name; NAME_DE gives the German exonym
+		// (Moscow → Moskau, Rome → Rom) so the info panel can localize the capital.
+		const names = { name: p.NAME, nameDe: p.NAME_DE || p.NAME };
+		if (p.ADM0CAP === 1 && p.ADM0_A3) CAPITALS.country.set(p.ADM0_A3, { ...names, lon, lat });
 		if (p.FEATURECLA === 'Admin-1 capital' && p.ADM0_A3 && p.ADM1NAME)
-			CAPITALS.admin1.set(`${p.ADM0_A3}|${p.ADM1NAME}`, { name: p.NAME, lon, lat });
+			CAPITALS.admin1.set(`${p.ADM0_A3}|${p.ADM1NAME}`, { ...names, lon, lat });
 	}
 }
 

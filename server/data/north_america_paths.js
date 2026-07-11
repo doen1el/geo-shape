@@ -79,22 +79,22 @@ export const answers = {
 };
 
 export const info = {
-	0: {"capital":"Belmopan","population":390353,"areaKm2":22294},
-	1: {"capital":"Ottawa","population":37589262,"areaKm2":9640982},
-	2: {"capital":"San José","population":5047561,"areaKm2":51298},
-	3: {"capital":"Havana","population":11333483,"areaKm2":108946},
-	4: {"capital":"Santo Domingo","population":10738958,"areaKm2":48429},
-	5: {"capital":"San Salvador","population":6453553,"areaKm2":20548},
-	6: {"capital":"Guatemala City","population":16604026,"areaKm2":109248},
-	7: {"capital":"Port-au-Prince","population":11263077,"areaKm2":26892},
-	8: {"capital":"Tegucigalpa","population":9746117,"areaKm2":112345},
-	9: {"capital":"Kingston","population":2948279,"areaKm2":11069},
-	10: {"capital":"Mexico City","population":127575529,"areaKm2":1957179},
-	11: {"capital":"Managua","population":6545502,"areaKm2":129112},
-	12: {"capital":"Panama City","population":4246439,"areaKm2":74475},
-	13: {"capital":"Nassau","population":389482,"areaKm2":12461},
-	14: {"capital":"Port-of-Spain","population":1394973,"areaKm2":5149},
-	15: {"capital":"Washington,  D.C.","population":328239523,"areaKm2":7959866}
+	0: {"capital":"Belmopan","capitalDe":"Belmopan","population":390353,"areaKm2":22294},
+	1: {"capital":"Ottawa","capitalDe":"Ottawa","population":37589262,"areaKm2":9640982},
+	2: {"capital":"San José","capitalDe":"San José","population":5047561,"areaKm2":51298},
+	3: {"capital":"Havana","capitalDe":"Havanna","population":11333483,"areaKm2":108946},
+	4: {"capital":"Santo Domingo","capitalDe":"Santo Domingo","population":10738958,"areaKm2":48429},
+	5: {"capital":"San Salvador","capitalDe":"San Salvador","population":6453553,"areaKm2":20548},
+	6: {"capital":"Guatemala City","capitalDe":"Guatemala-Stadt","population":16604026,"areaKm2":109248},
+	7: {"capital":"Port-au-Prince","capitalDe":"Port-au-Prince","population":11263077,"areaKm2":26892},
+	8: {"capital":"Tegucigalpa","capitalDe":"Tegucigalpa","population":9746117,"areaKm2":112345},
+	9: {"capital":"Kingston","capitalDe":"Kingston","population":2948279,"areaKm2":11069},
+	10: {"capital":"Mexico City","capitalDe":"Mexiko-Stadt","population":127575529,"areaKm2":1957179},
+	11: {"capital":"Managua","capitalDe":"Managua","population":6545502,"areaKm2":129112},
+	12: {"capital":"Panama City","capitalDe":"Panama-Stadt","population":4246439,"areaKm2":74475},
+	13: {"capital":"Nassau","capitalDe":"Nassau","population":389482,"areaKm2":12461},
+	14: {"capital":"Port-of-Spain","capitalDe":"Port of Spain","population":1394973,"areaKm2":5149},
+	15: {"capital":"Washington,  D.C.","capitalDe":"Washington","population":328239523,"areaKm2":7959866}
 };
 
 // Capital marker position [x, y] in the 1000×1000 box.

@@ -343,7 +343,12 @@
 								</p>
 								{#if game.roundResult?.info}
 									<div class="shrink-0">
-										<StateInfo info={game.roundResult.info} name={game.roundResult.answer} />
+										<StateInfo
+											info={game.roundResult.info}
+											name={(i18n.locale === 'de'
+												? game.roundResult.answerDe
+												: game.roundResult.answer) ?? game.roundResult.answer}
+										/>
 									</div>
 								{/if}
 							</div>

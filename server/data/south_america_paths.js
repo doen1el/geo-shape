@@ -63,18 +63,18 @@ export const answers = {
 };
 
 export const info = {
-	0: {"capital":"Buenos Aires","population":44938712,"areaKm2":2761567},
-	1: {"capital":"La Paz","population":11513100,"areaKm2":1090481},
-	2: {"capital":"Brasília","population":211049527,"areaKm2":8450221},
-	3: {"capital":"Santiago","population":18952038,"areaKm2":656353},
-	4: {"capital":"Bogota","population":50339443,"areaKm2":1139563},
-	5: {"capital":"Quito","population":17373662,"areaKm2":248249},
-	6: {"capital":"Georgetown","population":782766,"areaKm2":212093},
-	7: {"capital":"Asunción","population":7044636,"areaKm2":400826},
-	8: {"capital":"Lima","population":32510453,"areaKm2":1295063},
-	9: {"capital":"Paramaribo","population":581363,"areaKm2":145754},
-	10: {"capital":"Montevideo","population":3461734,"areaKm2":177437},
-	11: {"capital":"Caracas","population":28515829,"areaKm2":913013}
+	0: {"capital":"Buenos Aires","capitalDe":"Buenos Aires","population":44938712,"areaKm2":2761567},
+	1: {"capital":"La Paz","capitalDe":"La Paz","population":11513100,"areaKm2":1090481},
+	2: {"capital":"Brasília","capitalDe":"Brasília","population":211049527,"areaKm2":8450221},
+	3: {"capital":"Santiago","capitalDe":"Santiago de Chile","population":18952038,"areaKm2":656353},
+	4: {"capital":"Bogota","capitalDe":"Bogotá","population":50339443,"areaKm2":1139563},
+	5: {"capital":"Quito","capitalDe":"Quito","population":17373662,"areaKm2":248249},
+	6: {"capital":"Georgetown","capitalDe":"Georgetown","population":782766,"areaKm2":212093},
+	7: {"capital":"Asunción","capitalDe":"Asunción","population":7044636,"areaKm2":400826},
+	8: {"capital":"Lima","capitalDe":"Lima","population":32510453,"areaKm2":1295063},
+	9: {"capital":"Paramaribo","capitalDe":"Paramaribo","population":581363,"areaKm2":145754},
+	10: {"capital":"Montevideo","capitalDe":"Montevideo","population":3461734,"areaKm2":177437},
+	11: {"capital":"Caracas","capitalDe":"Caracas","population":28515829,"areaKm2":913013}
 };
 
 // Capital marker position [x, y] in the 1000×1000 box.
