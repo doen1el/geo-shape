@@ -102,6 +102,7 @@ export const en = {
 
 	'game.round': 'Round {round}/{max}',
 	'game.guessPlaceholder': 'Type your guess…',
+	'game.solvedChatPlaceholder': 'You got it! Keep chatting…',
 	'game.send': 'Send',
 	'game.pause': 'Pause',
 	'game.resume': 'Resume',
@@ -113,7 +114,6 @@ export const en = {
 	'game.correct': 'Correct! 🎉',
 	'game.close': 'Close! 🔥',
 	'game.solvedBy': '{name} guessed it!',
-	'game.alreadySolved': 'You already guessed it — sit tight!',
 	'game.theAnswerWas': 'The answer was {answer}',
 	'game.nextRoundIn': 'Next round in {seconds}s',
 	'game.resultsIn': 'Results in {seconds}s',

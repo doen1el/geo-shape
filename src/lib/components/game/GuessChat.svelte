@@ -16,7 +16,7 @@
 	const mySolved = $derived(
 		game.room?.players.find((p) => p.id === game.playerId)?.solved ?? false
 	);
-	const canGuess = $derived(game.round !== null && !game.roundResult && !mySolved);
+	const roundLive = $derived(game.round !== null && !game.roundResult);
 
 	$effect(() => {
 		const v = game.verdict;
@@ -33,13 +33,14 @@
 	});
 
 	$effect(() => {
-		if (canGuess && inputEl) inputEl.focus();
+		if (roundLive && inputEl) inputEl.focus();
 	});
 
 	function submit() {
 		const value = text.trim();
-		if (!value || !canGuess) return;
-		game.guess(value);
+		if (!value || !roundLive) return;
+		if (mySolved) game.say(value);
+		else game.guess(value);
 		text = '';
 	}
 </script>
@@ -98,10 +99,10 @@
 			<Input
 				bind:element={inputEl}
 				bind:value={text}
-				placeholder={mySolved ? t('game.alreadySolved') : t('game.guessPlaceholder')}
-				disabled={!canGuess}
-				maxlength={40}
-				aria-label={t('game.guessPlaceholder')}
+				placeholder={mySolved ? t('game.solvedChatPlaceholder') : t('game.guessPlaceholder')}
+				disabled={!roundLive}
+				maxlength={mySolved ? 120 : 40}
+				aria-label={mySolved ? t('game.solvedChatPlaceholder') : t('game.guessPlaceholder')}
 			/>
 		</div>
 		<ReactionButton />
@@ -110,7 +111,7 @@
 			size="icon"
 			aria-label={t('game.send')}
 			title={t('game.send')}
-			disabled={!canGuess || text.trim().length === 0}
+			disabled={!roundLive || text.trim().length === 0}
 		>
 			<Send size={20} strokeWidth={2.5} aria-hidden="true" />
 		</Button>

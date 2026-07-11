@@ -104,6 +104,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'game.round': 'Runde {round}/{max}',
 	'game.guessPlaceholder': 'Tippe deine Antwort…',
+	'game.solvedChatPlaceholder': 'Erraten! Schreib weiter im Chat…',
 	'game.send': 'Senden',
 	'game.pause': 'Pause',
 	'game.resume': 'Weiter',
@@ -115,7 +116,6 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'game.correct': 'Richtig! 🎉',
 	'game.close': 'Nah dran! 🔥',
 	'game.solvedBy': '{name} hat es erraten!',
-	'game.alreadySolved': 'Du hast es schon — warte kurz!',
 	'game.theAnswerWas': 'Die Antwort war {answer}',
 	'game.nextRoundIn': 'Nächste Runde in {seconds}s',
 	'game.resultsIn': 'Ergebnis in {seconds}s',

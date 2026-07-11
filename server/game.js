@@ -283,7 +283,19 @@ export function handleGuess(room, player, text) {
 	const guess = String(text ?? '').trim();
 	if (!guess) return;
 	if (room.status !== 'playing' || !room.roundActive || !room.currentShape) return;
-	if (room.solved.has(player.id)) return;
+
+	if (room.solved.has(player.id)) {
+		const chatText = cleanText(guess.slice(0, 120)).trim();
+		if (chatText) {
+			roomManager.chat(room, {
+				kind: 'msg',
+				name: player.profile.name,
+				text: chatText,
+				playerId: player.id
+			});
+		}
+		return;
+	}
 
 	const verdict = judgeGuess(guess, room.currentShape.answers);
 
