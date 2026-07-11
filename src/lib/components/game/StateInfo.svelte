@@ -5,15 +5,20 @@
 	let { info, name }: { info: StateInfo; name: string } = $props();
 
 	const locale = $derived(i18n.locale);
-	const nf = $derived(new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-US'));
+	const intlLocale = $derived(locale === 'de' ? 'de-DE' : 'en-US');
+	const cf = $derived(
+		new Intl.NumberFormat(intlLocale, { notation: 'compact', maximumFractionDigits: 1 })
+	);
 
 	const cells = $derived(
 		[
 			info.capital && { label: t('info.capital'), value: info.capital },
-			info.population && { label: t('info.population'), value: nf.format(info.population) },
-			info.areaKm2 && { label: t('info.area'), value: `${nf.format(info.areaKm2)} km²` }
-		].filter((c) => !!c)
+			info.population && { label: t('info.population'), value: cf.format(info.population) },
+			info.areaKm2 && { label: t('info.area'), value: `${cf.format(info.areaKm2)} km²` }
+		].filter((c): c is { label: string; value: string } => !!c)
 	);
+	const maxLen = $derived(Math.max(0, ...cells.map((c) => c.value.length)));
+	const valueSize = $derived(maxLen > 11 ? 'text-xs' : maxLen > 8 ? 'text-sm' : 'text-base');
 	const funFact = $derived(info.funFact ? (locale === 'de' ? info.funFact.de : info.funFact.en) : '');
 </script>
 
@@ -26,9 +31,11 @@
 			style="grid-template-columns: repeat({cells.length}, minmax(0, 1fr))"
 		>
 			{#each cells as cell (cell.label)}
-				<div class="rounded-base border-2 border-border bg-bg px-2 py-2">
-					<dt class="text-[11px] font-bold tracking-wide text-ink/50 uppercase">{cell.label}</dt>
-					<dd class="font-extrabold tabular-nums">{cell.value}</dd>
+				<div class="rounded-base border-2 border-border bg-bg px-1.5 py-2">
+					<dt class="truncate text-[11px] font-bold tracking-wide text-ink/50 uppercase">
+						{cell.label}
+					</dt>
+					<dd class="{valueSize} font-extrabold whitespace-nowrap tabular-nums">{cell.value}</dd>
 				</div>
 			{/each}
 		</dl>
