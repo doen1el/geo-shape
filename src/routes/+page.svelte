@@ -7,6 +7,7 @@
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import CategorySelect from '$lib/components/game/CategorySelect.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
@@ -23,7 +24,6 @@
 	let resumeCode = $state<string | null>(null);
 	let resumeAvailable = $state(false);
 
-	const SOLO_CATEGORIES = [1, 8, 2, 4, 5, 6, 7, 0, 3] as const;
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
 	const TIME_STEP = 15;
@@ -65,12 +65,20 @@
 
 	onMount(() => {
 		game.requestStats(profile.clientId);
+		game.watchRooms();
 		const last = getLastRoom();
 		if (last && last !== game.room?.code) {
 			resumeCode = last;
 			game.checkRoom(last);
 		}
+		return () => game.unwatchRooms();
 	});
+
+	function joinPublic(roomCode: string) {
+		if (!canPlay) return;
+		saveName();
+		goto(`/room/${roomCode}`);
+	}
 
 	$effect(() => {
 		if (code.length !== 4) return;
@@ -274,20 +282,7 @@
 				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 					{t('settings.category')}
 				</span>
-				<div class="grid grid-cols-2 gap-2">
-					{#each SOLO_CATEGORIES as id (id)}
-						<button
-							type="button"
-							class="rounded-base border-2 border-border px-2 py-2.5 text-sm font-bold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {soloCategory ===
-							id
-								? 'bg-main shadow-shadow'
-								: 'bg-surface'}"
-							onclick={() => pickSoloCategory(id)}
-						>
-							{t(`category.${id}` as 'category.0')}
-						</button>
-					{/each}
-				</div>
+				<CategorySelect value={soloCategory} onpick={pickSoloCategory} />
 			</div>
 
 			<div class="flex flex-col gap-1.5">
@@ -339,5 +334,55 @@
 				</div>
 			{/each}
 		</div>
+	{/if}
+
+	<!-- Public lobbies -->
+	{#if game.publicRooms.length > 0}
+		<Card class="flex min-h-0 flex-col gap-2 p-3">
+			<div class="flex items-baseline justify-between">
+				<h2 class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('browse.title')}</h2>
+				<span class="text-xs font-extrabold text-ink/40">{game.publicRooms.length}</span>
+			</div>
+			<ul class="flex max-h-44 min-h-0 flex-col gap-2 overflow-y-auto">
+				{#each game.publicRooms as r (r.code)}
+					{@const full = r.players >= r.maxPlayers}
+					<li class="flex items-center gap-2 rounded-base border-2 border-border bg-bg px-2.5 py-1.5">
+						<div class="min-w-0 flex-1">
+							<div class="flex items-baseline gap-1.5">
+								<span class="truncate text-sm font-extrabold">
+									{t(`category.${r.categoryId}` as 'category.0')}
+								</span>
+								<span class="shrink-0 text-[10px] font-bold text-ink/50 uppercase">
+									{t(`difficulty.${r.difficulty}` as 'difficulty.easy')}
+								</span>
+							</div>
+							<p class="truncate text-[11px] font-bold text-ink/50">
+								{r.hostName ? t('browse.hostedBy', { name: r.hostName }) : r.code}
+							</p>
+						</div>
+
+						<span
+							class="shrink-0 rounded border-2 border-border px-1.5 py-0.5 text-[10px] font-extrabold whitespace-nowrap
+								{r.status === 'lobby' ? 'bg-main' : 'bg-secondary'}"
+						>
+							{r.status === 'lobby'
+								? t('browse.lobby')
+								: t('game.round', { round: r.round, max: r.maxRounds })}
+						</span>
+						<span class="shrink-0 text-xs font-extrabold tabular-nums">
+							{r.players}/{r.maxPlayers}
+						</span>
+						<Button
+							size="sm"
+							variant="secondary"
+							disabled={!canPlay || full}
+							onclick={() => joinPublic(r.code)}
+						>
+							{full ? t('browse.full') : t('browse.join')}
+						</Button>
+					</li>
+				{/each}
+			</ul>
+		</Card>
 	{/if}
 </div>

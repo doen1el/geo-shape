@@ -143,6 +143,9 @@ function handleConnection(ws) {
 				if (!room || (room.solo && !reconnecting))
 					return send({ type: ServerMsg.ERROR, message: 'Room not found', code: 'not_found' });
 
+				if (!reconnecting && roomManager.isFull(room))
+					return send({ type: ServerMsg.ERROR, message: 'Room is full', code: 'full' });
+
 				if (session) leaveCurrent(true);
 
 				const player = roomManager.addPlayer(room, profile, ws);
@@ -240,7 +243,24 @@ function handleConnection(ws) {
 				if (limited('check_room')) break;
 				const code = typeof msg.code === 'string' ? msg.code.toUpperCase().slice(0, 8) : '';
 				const r = roomManager.getRoom(code);
-				send({ type: ServerMsg.ROOM_EXISTS, code, exists: !!r && !r.solo });
+				send({
+					type: ServerMsg.ROOM_EXISTS,
+					code,
+					exists: !!r && !r.solo,
+					full: !!r && roomManager.isFull(r)
+				});
+				break;
+			}
+
+			case ClientMsg.LIST_ROOMS: {
+				if (limited('list_rooms')) break;
+				roomManager.watchLobby(ws);
+				send({ type: ServerMsg.PUBLIC_ROOMS, rooms: roomManager.listPublic() });
+				break;
+			}
+
+			case ClientMsg.UNLIST_ROOMS: {
+				roomManager.unwatchLobby(ws);
 				break;
 			}
 
@@ -263,8 +283,14 @@ function handleConnection(ws) {
 		}
 	});
 
-	ws.on('close', () => leaveCurrent(false));
-	ws.on('error', () => leaveCurrent(false));
+	ws.on('close', () => {
+		roomManager.unwatchLobby(ws);
+		leaveCurrent(false);
+	});
+	ws.on('error', () => {
+		roomManager.unwatchLobby(ws);
+		leaveCurrent(false);
+	});
 
 	/**
 	 * @param {boolean} explicit `true` = user-initiated leave (remove now);

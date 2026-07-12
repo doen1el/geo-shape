@@ -38,6 +38,13 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'identity.tapAvatar': 'Avatar antippen zum Umstylen',
 
+	'browse.title': 'Öffentliche Lobbies',
+	'browse.join': 'Beitreten',
+	'browse.lobby': 'Lobby',
+	'browse.inGame': 'Im Spiel',
+	'browse.full': 'Voll',
+	'browse.hostedBy': 'von {name}',
+
 	'solo.badge': 'Solo',
 	'solo.title': 'Solo üben',
 	'solo.subtitle': 'Trainiere gegen die Uhr — ganz ohne Mitspieler.',
@@ -54,6 +61,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'lobby.nameTitle': 'Wie heißt du?',
 	'room.notFound': 'Raum „{code}“ nicht gefunden',
+	'room.full': 'Raum „{code}“ ist voll',
 	'room.codeLabel': 'Raum-Code',
 	'room.copied': 'Kopiert!',
 
@@ -78,6 +86,12 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'settings.rounds': 'Runden',
 	'settings.allRounds': 'Alle',
 	'settings.time': 'Zeit pro Runde',
+	'settings.maxPlayers': 'Max. Spieler',
+	'settings.visibility': 'Sichtbarkeit',
+	'visibility.private': 'Privat',
+	'visibility.public': 'Öffentlich',
+	'visibility.private.desc': 'Nur mit Raum-Code beitretbar.',
+	'visibility.public.desc': 'Erscheint auf der Startseite — jede/r kann beitreten, auch mitten im Spiel.',
 	'settings.difficulty': 'Schwierigkeit',
 	'difficulty.easy': 'Einfach',
 	'difficulty.hard': 'Schwer',
@@ -96,6 +110,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'category.6': 'Nordamerika',
 	'category.7': 'Südamerika',
 	'category.8': 'Welt',
+	'catgroup.countries': 'Länder',
+	'catgroup.states': 'Staaten',
 
 	'leave.title': 'Raum verlassen?',
 	'leave.text': 'Du verlierst deinen Platz in diesem Spiel.',

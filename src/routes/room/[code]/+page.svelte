@@ -7,6 +7,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
+	import CategorySelect from '$lib/components/game/CategorySelect.svelte';
 	import Countdown from '$lib/components/game/Countdown.svelte';
 	import ShapeCanvas from '$lib/components/game/ShapeCanvas.svelte';
 	import GuessChat from '$lib/components/game/GuessChat.svelte';
@@ -25,22 +26,13 @@
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
 	const TIME_STEP = 15;
-
-	const CATEGORY_CARDS = [
-		{ id: 1, key: 'category.1', available: true }, // Continents
-		{ id: 8, key: 'category.8', available: true }, // World
-		{ id: 2, key: 'category.2', available: true }, // Europe
-		{ id: 4, key: 'category.4', available: true }, // Africa
-		{ id: 5, key: 'category.5', available: true }, // Asia
-		{ id: 6, key: 'category.6', available: true }, // North America
-		{ id: 7, key: 'category.7', available: true }, // South America
-		{ id: 0, key: 'category.0', available: true }, // German states
-		{ id: 3, key: 'category.3', available: true }  // US states
-	] as const;
+	const MIN_MAX_PLAYERS = 2;
+	const MAX_MAX_PLAYERS = 20;
 
 	let nameInput = $state(profile.name);
 	let needsName = $state(!profile.isComplete);
 	let checkedExists = $state<boolean | null>(null);
+	let roomFull = $state(false);
 	let joinStarted = false;
 	let soloStartRequested = false;
 
@@ -58,12 +50,18 @@
 
 	let roundsUi = $state(5);
 	let timeUi = $state(90);
+	let playersUi = $state(10);
 	$effect(() => {
 		roundsUi = room?.allRounds ? roundMax : Math.min(room?.maxRounds ?? 5, roundMax);
 	});
 	$effect(() => {
 		timeUi = room?.roundDurationSec ?? 90;
 	});
+	$effect(() => {
+		playersUi = room?.maxPlayers ?? 10;
+	});
+
+	const playersMin = $derived(Math.max(MIN_MAX_PLAYERS, room?.players.length ?? 0));
 
 	const roundsLabel = $derived(
 		roundsUi >= roundMax
@@ -128,7 +126,8 @@
 		try {
 			await game.join(code, profile.toJSON());
 		} catch {
-			checkedExists = false;
+			if (game.errorCode === 'full') roomFull = true;
+			else checkedExists = false;
 		}
 	}
 
@@ -181,6 +180,49 @@
 	<Card class="flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
 		<h2 class="text-lg font-extrabold">{t('settings.title')}</h2>
 
+		<div class="flex flex-wrap items-start gap-x-6 gap-y-3">
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.visibility')}
+				</span>
+				<div class="flex gap-2">
+					{#each [false, true] as pub (pub)}
+						{@const active = (room?.isPublic ?? false) === pub}
+						<button
+							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+								{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+								{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+								{!isHost && !active ? 'opacity-40' : ''}"
+							disabled={!isHost}
+							onclick={() => game.setSettings({ isPublic: pub })}
+						>
+							{pub ? t('visibility.public') : t('visibility.private')}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<div class="flex min-w-[8rem] flex-1 flex-col gap-1.5">
+				<div class="flex items-baseline justify-between gap-2">
+					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+						{t('settings.maxPlayers')}
+					</span>
+					<span class="text-sm font-extrabold">{playersUi}</span>
+				</div>
+				<Slider
+					bind:value={playersUi}
+					min={playersMin}
+					max={MAX_MAX_PLAYERS}
+					disabled={!isHost}
+					oncommit={(v) => game.setSettings({ maxPlayers: v })}
+					aria-label={t('settings.maxPlayers')}
+				/>
+			</div>
+		</div>
+		<p class="-mt-2 text-[11px] font-medium text-ink/50">
+			{room?.isPublic ? t('visibility.public.desc') : t('visibility.private.desc')}
+		</p>
+
 		<div class="flex flex-col gap-1.5">
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 				{t('settings.difficulty')}
@@ -209,30 +251,11 @@
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 				{t('settings.category')}
 			</span>
-			<div class="grid grid-cols-2 gap-2">
-				{#each CATEGORY_CARDS as cat (cat.key)}
-					{@const active = room?.categoryId === cat.id}
-					<button
-						class="relative flex h-16 items-center justify-center rounded-base border-2 border-border p-2 text-center text-sm font-bold transition-all
-							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
-							{isHost && cat.available
-							? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'
-							: ''}
-							{!cat.available || (!isHost && !active) ? 'opacity-40' : ''}"
-						disabled={!isHost || !cat.available}
-						onclick={() => game.setSettings({ categoryId: cat.id })}
-					>
-						{t(cat.key)}
-						{#if !cat.available}
-							<span
-								class="absolute top-1 right-1 rounded border border-border bg-secondary px-1 text-[9px] font-extrabold"
-							>
-								{t('common.soon')}
-							</span>
-						{/if}
-					</button>
-				{/each}
-			</div>
+			<CategorySelect
+				value={room?.categoryId ?? 1}
+				disabled={!isHost}
+				onpick={(id) => game.setSettings({ categoryId: id })}
+			/>
 		</div>
 
 		<div class="flex flex-col gap-1.5">
@@ -265,6 +288,7 @@
 				aria-label={t('settings.time')}
 			/>
 		</div>
+
 	</Card>
 {/snippet}
 
@@ -396,7 +420,8 @@
 				<div class="flex min-h-0 flex-col gap-4">
 					<Card class="flex min-h-0 flex-1 flex-col p-4">
 						<h2 class="mb-3 text-lg font-extrabold">
-							{t('lobby.players')} <span class="text-ink/40">({room.players.length})</span>
+							{t('lobby.players')}
+							<span class="text-ink/40">({room.players.length}/{room.maxPlayers})</span>
 						</h2>
 						<ul class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
 							{#each room.players as p (p.id)}
@@ -464,7 +489,7 @@
 					</div>
 				{:else}
 					<div
-						class="flex flex-[2] items-center justify-center rounded-base border-2 border-dashed border-border/40 font-bold text-ink/50"
+						class="mt-1 flex flex-[2] items-center justify-center rounded-base border-2 border-dashed border-border/40 font-bold text-ink/50"
 					>
 						{t('lobby.waitingHost')}
 					</div>
@@ -472,6 +497,13 @@
 			</div>
 		</div>
 	{/if}
+{:else if roomFull}
+	<div class="flex flex-1 items-center justify-center">
+		<Card class="p-8 text-center">
+			<p class="mb-4 text-lg font-extrabold">{t('room.full', { code })}</p>
+			<Button href="/" variant="neutral">{t('common.back')}</Button>
+		</Card>
+	</div>
 {:else if notFound}
 	<div class="flex flex-1 items-center justify-center">
 		<Card class="p-8 text-center">

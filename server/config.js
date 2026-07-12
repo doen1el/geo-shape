@@ -17,7 +17,13 @@ export const MIN_ROUND_POINTS = 20;
 export const FIRST_SOLVE_BONUS = 30;
 export const ORDER_BONUS_STEP = 10;
 
+export const DEFAULT_MAX_PLAYERS = 10;
+export const MIN_MAX_PLAYERS = 2;
+export const MAX_MAX_PLAYERS = 20;
+
 export const MAX_ROOMS = 500;
+
+export const LOBBY_PUSH_MS = 400;
 
 export const RECONNECT_GRACE_MS = 120000;
 
@@ -34,5 +40,6 @@ export const RATE_LIMITS = {
 	say: { max: 6, windowMs: 4000 },
 	guess: { max: 15, windowMs: 4000 },
 	react: { max: 8, windowMs: 4000 },
-	check_room: { max: 30, windowMs: 10000 }
+	check_room: { max: 30, windowMs: 10000 },
+	list_rooms: { max: 20, windowMs: 10000 }
 };

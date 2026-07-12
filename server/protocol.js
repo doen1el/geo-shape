@@ -12,6 +12,8 @@ export const ClientMsg = /** @type {const} */ ({
 	SAY: 'say',
 	REACT: 'react',
 	CHECK_ROOM: 'check_room',
+	LIST_ROOMS: 'list_rooms',
+	UNLIST_ROOMS: 'unlist_rooms',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats',
 	PING: 'ping'
@@ -32,6 +34,7 @@ export const ServerMsg = /** @type {const} */ ({
 	CHAT_HISTORY: 'chat_history',
 	REACTION: 'reaction',
 	ROOM_EXISTS: 'room_exists',
+	PUBLIC_ROOMS: 'public_rooms',
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
 	PONG: 'pong',
@@ -83,6 +86,23 @@ export const CONFETTI_EMOJI = '🎉';
  * @property {number} categoryId
  * @property {Record<number, number>} categorySizes
  * @property {number} roundDurationSec
+ * @property {boolean} isPublic
+ * @property {number} maxPlayers
+ */
+
+/**
+ * A public room as listed in the lobby browser on the landing page.
+ *
+ * @typedef {Object} PublicRoomSummary
+ * @property {string} code
+ * @property {'lobby' | 'playing' | 'finished'} status
+ * @property {'easy' | 'hard'} difficulty
+ * @property {number} categoryId
+ * @property {number} players
+ * @property {number} maxPlayers
+ * @property {number} round
+ * @property {number} maxRounds
+ * @property {string} hostName
  */
 
 export {};

@@ -14,7 +14,9 @@ import {
 	MIN_ROUNDS,
 	MAX_ROUNDS,
 	MIN_ROUND_DURATION_SEC,
-	MAX_ROUND_DURATION_SEC
+	MAX_ROUND_DURATION_SEC,
+	MIN_MAX_PLAYERS,
+	MAX_MAX_PLAYERS
 } from './config.js';
 
 /** @typedef {import('./rooms.js').Room} Room */
@@ -72,7 +74,7 @@ function randomizePathStart(d) {
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
  * @param {Player} player
- * @param {{ categoryId?: number, maxRounds?: number, allRounds?: boolean, roundDurationSec?: number, difficulty?: string }} settings
+ * @param {{ categoryId?: number, maxRounds?: number, allRounds?: boolean, roundDurationSec?: number, difficulty?: string, isPublic?: boolean, maxPlayers?: number }} settings
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
@@ -101,6 +103,15 @@ export function updateSettings(room, player, settings) {
 	}
 	if (settings.difficulty === 'easy' || settings.difficulty === 'hard') {
 		room.difficulty = settings.difficulty;
+	}
+	if (typeof settings.maxPlayers === 'number') {
+		room.maxPlayers = Math.max(
+			Math.max(MIN_MAX_PLAYERS, room.players.size),
+			Math.min(MAX_MAX_PLAYERS, Math.round(settings.maxPlayers))
+		);
+	}
+	if (typeof settings.isPublic === 'boolean' && !room.solo) {
+		room.isPublic = settings.isPublic;
 	}
 	roomManager.broadcastState(room);
 }

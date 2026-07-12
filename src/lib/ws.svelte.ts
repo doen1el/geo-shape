@@ -29,6 +29,20 @@ export type PublicRoom = {
 	categoryId: number;
 	categorySizes: Record<number, number>;
 	roundDurationSec: number;
+	isPublic: boolean;
+	maxPlayers: number;
+};
+
+export type PublicRoomSummary = {
+	code: string;
+	status: 'lobby' | 'playing' | 'finished';
+	difficulty: Difficulty;
+	categoryId: number;
+	players: number;
+	maxPlayers: number;
+	round: number;
+	maxRounds: number;
+	hostName: string;
 };
 
 export type RoundInfo = {
@@ -133,6 +147,7 @@ class GameSocket {
 	playerId = $state<string | null>(null);
 	connected = $state(false);
 	error = $state<string | null>(null);
+	errorCode = $state<string | null>(null);
 
 	// --- game state ---
 	round = $state<RoundInfo | null>(null);
@@ -148,7 +163,8 @@ class GameSocket {
 	leaderboard = $state<LeaderboardEntry[]>([]);
 	stats = $state<PlayerStats | null>(null);
 
-	roomCheck = $state<{ code: string; exists: boolean } | null>(null);
+	roomCheck = $state<{ code: string; exists: boolean; full: boolean } | null>(null);
+	publicRooms = $state<PublicRoomSummary[]>([]);
 
 	#ws: WebSocket | null = null;
 	#openPromise: Promise<void> | null = null;
@@ -220,6 +236,7 @@ class GameSocket {
 			case ServerMsg.CREATED:
 				this.playerId = msg.playerId;
 				this.error = null;
+				this.errorCode = null;
 				this.#resetGame();
 				this.#pendingAck?.resolve(msg.code);
 				this.#pendingAck = null;
@@ -326,7 +343,10 @@ class GameSocket {
 				break;
 			}
 			case ServerMsg.ROOM_EXISTS:
-				this.roomCheck = { code: msg.code, exists: !!msg.exists };
+				this.roomCheck = { code: msg.code, exists: !!msg.exists, full: !!msg.full };
+				break;
+			case ServerMsg.PUBLIC_ROOMS:
+				this.publicRooms = msg.rooms ?? [];
 				break;
 			case ServerMsg.LEADERBOARD:
 				this.leaderboard = msg.players ?? [];
@@ -345,6 +365,7 @@ class GameSocket {
 			case ServerMsg.ERROR: {
 				const message = typeof msg.message === 'string' ? msg.message : 'Unknown error';
 				this.error = message;
+				this.errorCode = typeof msg.code === 'string' ? msg.code : null;
 				this.#pendingAck?.reject(new Error(message));
 				this.#pendingAck = null;
 				break;
@@ -364,7 +385,7 @@ class GameSocket {
 	}
 
 	#send(data: object): void {
-		this.#ws?.send(JSON.stringify(data));
+		if (this.#ws?.readyState === 1) this.#ws.send(JSON.stringify(data));
 	}
 
 	async create(profile: Profile, solo = false, difficulty?: Difficulty): Promise<string> {
@@ -383,6 +404,8 @@ class GameSocket {
 
 	async join(code: string, profile: Profile): Promise<string> {
 		await this.connect();
+		this.error = null;
+		this.errorCode = null;
 		return new Promise((resolve, reject) => {
 			this.#pendingAck = {
 				resolve: (c) => {
@@ -401,6 +424,8 @@ class GameSocket {
 		allRounds?: boolean;
 		roundDurationSec?: number;
 		difficulty?: Difficulty;
+		isPublic?: boolean;
+		maxPlayers?: number;
 	}): void {
 		this.#send({ type: ClientMsg.SETTINGS, ...settings });
 	}
@@ -436,6 +461,15 @@ class GameSocket {
 	async checkRoom(code: string): Promise<void> {
 		await this.connect();
 		this.#send({ type: ClientMsg.CHECK_ROOM, code });
+	}
+
+	async watchRooms(): Promise<void> {
+		await this.connect();
+		this.#send({ type: ClientMsg.LIST_ROOMS });
+	}
+
+	unwatchRooms(): void {
+		this.#send({ type: ClientMsg.UNLIST_ROOMS });
 	}
 
 	async requestLeaderboard(): Promise<void> {

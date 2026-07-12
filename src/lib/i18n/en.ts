@@ -36,6 +36,13 @@ export const en = {
 
 	'identity.tapAvatar': 'Tap avatar to restyle',
 
+	'browse.title': 'Public lobbies',
+	'browse.join': 'Join',
+	'browse.lobby': 'Lobby',
+	'browse.inGame': 'In game',
+	'browse.full': 'Full',
+	'browse.hostedBy': 'by {name}',
+
 	'solo.badge': 'Solo',
 	'solo.title': 'Practice solo',
 	'solo.subtitle': 'Sharpen your skills against the clock — no friends needed.',
@@ -52,6 +59,7 @@ export const en = {
 
 	'lobby.nameTitle': "What's your name?",
 	'room.notFound': 'Room “{code}” not found',
+	'room.full': 'Room “{code}” is full',
 	'room.codeLabel': 'Room code',
 	'room.copied': 'Copied!',
 
@@ -76,6 +84,12 @@ export const en = {
 	'settings.rounds': 'Rounds',
 	'settings.allRounds': 'All',
 	'settings.time': 'Time per round',
+	'settings.maxPlayers': 'Max players',
+	'settings.visibility': 'Visibility',
+	'visibility.private': 'Private',
+	'visibility.public': 'Public',
+	'visibility.private.desc': 'Only players with the room code can join.',
+	'visibility.public.desc': 'Listed on the home page — anyone can join, even mid-game.',
 	'settings.difficulty': 'Difficulty',
 	'difficulty.easy': 'Easy',
 	'difficulty.hard': 'Hard',
@@ -94,6 +108,8 @@ export const en = {
 	'category.6': 'North America',
 	'category.7': 'South America',
 	'category.8': 'World',
+	'catgroup.countries': 'Countries',
+	'catgroup.states': 'States',
 
 	'leave.title': 'Leave the room?',
 	'leave.text': 'You will lose your spot in this game.',

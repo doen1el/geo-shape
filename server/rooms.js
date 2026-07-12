@@ -1,5 +1,10 @@
 import { ServerMsg } from './protocol.js';
-import { DEFAULT_MAX_ROUNDS, ROUND_DURATION_SEC } from './config.js';
+import {
+	DEFAULT_MAX_ROUNDS,
+	ROUND_DURATION_SEC,
+	DEFAULT_MAX_PLAYERS,
+	LOBBY_PUSH_MS
+} from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
 import { getPlayerStats, touchPlayer } from './db.js';
 
@@ -12,6 +17,7 @@ let playerSeq = 0;
  * @typedef {import('./protocol.js').Profile} Profile
  * @typedef {import('./protocol.js').PublicRoom} PublicRoom
  * @typedef {import('./protocol.js').PublicPlayer} PublicPlayer
+ * @typedef {import('./protocol.js').PublicRoomSummary} PublicRoomSummary
  */
 
 /**
@@ -32,6 +38,8 @@ let playerSeq = 0;
  * @typedef {Object} Room
  * @property {string} code
  * @property {boolean} solo
+ * @property {boolean} isPublic
+ * @property {number} maxPlayers
  * @property {'easy' | 'hard'} difficulty
  * @property {'lobby' | 'playing' | 'finished'} status
  * @property {Map<string, Player>} players
@@ -60,6 +68,10 @@ export class RoomManager {
 	constructor() {
 		/** @type {Map<string, Room>} */
 		this.rooms = new Map();
+		/** @type {Set<import('ws').WebSocket>} */
+		this.lobbyWatchers = new Set();
+		/** @type {ReturnType<typeof setTimeout> | null} */
+		this.lobbyPushTimer = null;
 	}
 
 	/** @returns {string} A unique, unused room code. */
@@ -84,6 +96,8 @@ export class RoomManager {
 		const room = {
 			code: this.generateCode(),
 			solo,
+			isPublic: false,
+			maxPlayers: DEFAULT_MAX_PLAYERS,
 			difficulty: difficulty === 'hard' ? 'hard' : 'easy',
 			status: 'lobby',
 			players: new Map(),
@@ -180,11 +194,20 @@ export class RoomManager {
 		room.players.delete(playerId);
 		if (room.players.size === 0) {
 			this.rooms.delete(room.code);
+			this.publishLobby();
 			return;
 		}
 		if (room.hostId === playerId) {
 			room.hostId = room.players.keys().next().value ?? null;
 		}
+	}
+
+	/**
+	 * A room at capacity takes no new players
+	 * @param {Room} room
+	 */
+	isFull(room) {
+		return room.players.size >= room.maxPlayers;
 	}
 
 	/**
@@ -203,6 +226,8 @@ export class RoomManager {
 			categoryId: room.categoryId,
 			categorySizes: CATEGORY_SIZES,
 			roundDurationSec: room.roundDurationSec,
+			isPublic: room.isPublic,
+			maxPlayers: room.maxPlayers,
 			players: [...room.players.values()].map((p) => ({
 				id: p.id,
 				name: p.profile.name,
@@ -237,6 +262,60 @@ export class RoomManager {
 	 */
 	broadcastState(room) {
 		this.broadcast(room, { type: ServerMsg.ROOM_STATE, room: this.toPublic(room) });
+		this.publishLobby();
+	}
+
+	/**
+	 * The public rooms for the landing-page browser
+	 * @returns {PublicRoomSummary[]}
+	 */
+	listPublic() {
+		return [...this.rooms.values()]
+			.filter((room) => room.isPublic && !room.solo && room.players.size > 0)
+			.map((room) => ({
+				code: room.code,
+				status: room.status,
+				difficulty: room.difficulty,
+				categoryId: room.categoryId,
+				players: room.players.size,
+				maxPlayers: room.maxPlayers,
+				round: room.round,
+				maxRounds: room.maxRounds,
+				hostName: (room.hostId ? room.players.get(room.hostId)?.profile.name : '') ?? ''
+			}))
+			.sort((a, b) => {
+				const joinable = (/** @type {PublicRoomSummary} */ r) =>
+					(r.status === 'lobby' ? 0 : 1) + (r.players >= r.maxPlayers ? 2 : 0);
+				return joinable(a) - joinable(b) || b.players - a.players;
+			});
+	}
+
+	/** @param {import('ws').WebSocket} socket */
+	watchLobby(socket) {
+		this.lobbyWatchers.add(socket);
+	}
+
+	/** @param {import('ws').WebSocket} socket */
+	unwatchLobby(socket) {
+		this.lobbyWatchers.delete(socket);
+	}
+
+	/**
+	 * Pushes the public-room list to every watcher.
+	 */
+	publishLobby() {
+		if (this.lobbyWatchers.size === 0 || this.lobbyPushTimer) return;
+		this.lobbyPushTimer = setTimeout(() => {
+			this.lobbyPushTimer = null;
+			const payload = JSON.stringify({
+				type: ServerMsg.PUBLIC_ROOMS,
+				rooms: this.listPublic()
+			});
+			for (const socket of this.lobbyWatchers) {
+				if (socket.readyState === 1) socket.send(payload);
+				else this.lobbyWatchers.delete(socket);
+			}
+		}, LOBBY_PUSH_MS);
 	}
 
 	/**
