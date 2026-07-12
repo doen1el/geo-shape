@@ -6,22 +6,31 @@
 
 	const ranked = $derived([...players].sort((a, b) => b.score - a.score));
 
+	const placeOf = (player: PublicPlayer) => ranked.filter((p) => p.score > player.score).length + 1;
+
+	const STEP: Record<number, { block: string; avatar: number; bg: string }> = {
+		1: { block: 'h-24', avatar: 72, bg: 'bg-main' },
+		2: { block: 'h-16', avatar: 52, bg: 'bg-secondary' },
+		3: { block: 'h-12', avatar: 44, bg: 'bg-sand' }
+	};
+
 	type Slot = {
-		place: number;
 		player: PublicPlayer | undefined;
+		place: number;
 		block: string;
 		avatar: number;
 		bg: string;
 	};
-	const slots = $derived<Slot[]>([
-		{ place: 2, player: ranked[1], block: 'h-16', avatar: 52, bg: 'bg-secondary' },
-		{ place: 1, player: ranked[0], block: 'h-24', avatar: 72, bg: 'bg-main' },
-		{ place: 3, player: ranked[2], block: 'h-12', avatar: 44, bg: 'bg-sand' }
-	]);
+	const slots = $derived<Slot[]>(
+		[ranked[1], ranked[0], ranked[2]].map((player) => {
+			const place = player ? placeOf(player) : 0;
+			return { player, place, ...(STEP[place] ?? STEP[3]) };
+		})
+	);
 </script>
 
 <div class="flex w-full items-end justify-center gap-2 sm:gap-3">
-	{#each slots as s (s.place)}
+	{#each slots as s, i (i)}
 		{#if s.player}
 			<div class="flex flex-1 flex-col items-center gap-1.5">
 				{#if s.place === 1}
