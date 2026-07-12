@@ -51,10 +51,20 @@ export type StateInfo = {
 	areaKm2: number;
 	funFact?: { en: string; de: string };
 };
+export type NeighborShape = {
+	name: string;
+	nameDe: string;
+	path: string;
+	border: string;
+	cx?: number;
+	cy?: number;
+};
 export type RoundResult = {
 	answer: string;
 	answerDe: string;
 	info: StateInfo | null;
+	context: NeighborShape[] | null;
+	revealPath: string | null;
 	players: PublicPlayer[];
 	nextInMs: number;
 	nextRoundAt: number;
@@ -253,6 +263,8 @@ class GameSocket {
 					answer: msg.answer,
 					answerDe: msg.answerDe ?? msg.answer,
 					info: msg.info ?? null,
+					context: msg.context ?? null,
+					revealPath: msg.revealPath ?? null,
 					players: msg.players,
 					nextInMs: msg.nextInMs,
 					nextRoundAt: Date.now() + (msg.nextInMs ?? 0),

@@ -297,7 +297,7 @@ export function handleGuess(room, player, text) {
 		return;
 	}
 
-	const verdict = judgeGuess(guess, room.currentShape.answers);
+	const verdict = judgeGuess(guess, room.currentShape.answers, room.currentShape.neighbors);
 
 	if (verdict === Verdict.CORRECT) {
 		if (room.paused) return;
@@ -345,6 +345,8 @@ function endRound(room) {
 	const answer = room.currentShape?.name ?? '';
 	const answerDe = room.currentShape?.nameDe ?? answer;
 	const info = room.currentShape?.info ?? null;
+	const context = room.currentShape?.context ?? null;
+	const revealPath = room.currentShape?.revealPath ?? null;
 	const isLast = room.round >= room.maxRounds;
 
 	roomManager.broadcast(room, {
@@ -352,6 +354,8 @@ function endRound(room) {
 		answer,
 		answerDe,
 		info,
+		context,
+		revealPath,
 		players: roomManager.toPublic(room).players,
 		nextInMs: ROUND_END_PAUSE_MS,
 		isLast

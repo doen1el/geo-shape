@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { RoundInfo } from '$lib/ws.svelte';
-	import { t } from '$lib/i18n/index.svelte';
+	import type { RoundInfo, NeighborShape } from '$lib/ws.svelte';
+	import { i18n, t } from '$lib/i18n/index.svelte';
 
 	const REVEAL_TAIL_MS = 10000;
 	const CAP_R = 24;
@@ -12,12 +12,16 @@
 		round,
 		revealed = false,
 		paused = null,
-		reveal = null
+		reveal = null,
+		context = null,
+		revealPath = null
 	}: {
 		round: RoundInfo;
 		revealed?: boolean;
 		paused?: { remainingMs: number } | null;
 		reveal?: { nextRoundAt: number; totalMs: number; isLast: boolean } | null;
+		context?: NeighborShape[] | null;
+		revealPath?: string | null;
 	} = $props();
 
 	let now = $state(Date.now());
@@ -56,6 +60,11 @@
 		if ([x, y, w, h].some((n) => !Number.isFinite(n))) return round.viewBox;
 		return `${x - VIEWBOX_PAD} ${y - VIEWBOX_PAD} ${w + VIEWBOX_PAD * 2} ${h + VIEWBOX_PAD * 2}`;
 	});
+
+	const neighbors = $derived(revealed && context?.length ? context : []);
+	const nbName = (n: NeighborShape) => (i18n.locale === 'de' ? n.nameDe : n.name);
+
+	const targetPath = $derived(revealed && revealPath ? revealPath : round.path);
 </script>
 
 <div class="flex h-full min-h-0 flex-col gap-2">
@@ -87,16 +96,34 @@
 		></div>
 	</div>
 
-	<!-- Outline: fixed box with a subtle diagonal hatch behind the shape. -->
 	<div
-		class="canvas-box min-h-0 flex-1 overflow-hidden rounded-base border-2 border-border bg-surface p-2 shadow-shadow"
+		class="canvas-box min-h-0 flex-1 overflow-hidden rounded-base border-2 border-border bg-surface shadow-shadow {neighbors.length
+			? 'p-0'
+			: 'p-2'}"
 	>
 		{#key round.round}
 			<svg {viewBox} preserveAspectRatio="xMidYMid meet" class="h-full w-full">
-				<!-- On reveal the whole group "stamps" in; the capital X pops a beat later. -->
+				{#if neighbors.length}
+					<g class="neighbors">
+						{#each neighbors as nb (nb.name)}
+							<path d={nb.path} class="nb-shape" />
+						{/each}
+						{#each neighbors as nb (nb.name)}
+							<path
+								d={nb.border}
+								fill="none"
+								stroke="var(--color-border)"
+								stroke-width="3"
+								stroke-linejoin="round"
+								stroke-linecap="round"
+							/>
+						{/each}
+					</g>
+				{/if}
+
 				<g class="reveal-group" class:stamp={revealed}>
 					<path
-						d={round.path}
+						d={targetPath}
 						pathLength="1"
 						stroke-dasharray="1"
 						stroke-dashoffset={1 - drawProgress}
@@ -130,6 +157,16 @@
 						</g>
 					{/if}
 				</g>
+
+				{#if neighbors.length}
+					<g class="neighbors">
+						{#each neighbors as nb (nb.name)}
+							{#if nb.cx != null && nb.cy != null}
+								<text x={nb.cx} y={nb.cy} class="nb-label">{nbName(nb)}</text>
+							{/if}
+						{/each}
+					</g>
+				{/if}
 			</svg>
 		{/key}
 	</div>
@@ -144,6 +181,36 @@
 			transparent 1.5px,
 			transparent 13px
 		);
+	}
+
+	.neighbors {
+		animation: nb-fade 500ms ease-out 220ms both;
+	}
+
+	@keyframes nb-fade {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	.nb-shape {
+		fill: color-mix(in srgb, var(--color-ink) 13%, var(--color-surface));
+	}
+
+	.nb-label {
+		font-size: 30px;
+		font-weight: 800;
+		fill: var(--color-ink);
+		fill-opacity: 0.6;
+		text-anchor: middle;
+		dominant-baseline: middle;
+		paint-order: stroke;
+		stroke: color-mix(in srgb, var(--color-ink) 13%, var(--color-surface));
+		stroke-width: 6px;
+		stroke-linejoin: round;
 	}
 
 	.reveal-group.stamp {
@@ -191,7 +258,8 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.reveal-group.stamp,
-		.capital {
+		.capital,
+		.neighbors {
 			animation: none;
 		}
 	}

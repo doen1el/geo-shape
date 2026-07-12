@@ -329,7 +329,13 @@
 							<!-- Reveal: shape shrinks to make room for the answer + info -->
 							<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
 								<div class="min-h-[16svh] flex-1">
-									<ShapeCanvas round={game.round} revealed reveal={revealInfo} />
+									<ShapeCanvas
+										round={game.round}
+										revealed
+										reveal={revealInfo}
+										context={game.roundResult?.context}
+										revealPath={game.roundResult?.revealPath}
+									/>
 								</div>
 								<p
 									class="shrink-0 rounded-base border-2 border-border bg-main px-4 py-2 text-center text-lg font-extrabold shadow-shadow"

@@ -10,8 +10,9 @@ import * as oceania from './oceania_paths.js';
 
 /**
  * @typedef {{ key?: string, capital?: string, population?: number, areaKm2: number, funFact?: { en: string, de: string } }} StateInfo
- * @typedef {{ id: number, name: string, nameDe: string, path: string, answers: string[], info: StateInfo | null, capital: number[] | null }} Shape
- * @typedef {{ paths: Record<number, string>, names: Record<number, string>, namesDe?: Record<number, string>, answers: Record<number, string[]>, info?: Record<number, StateInfo>, capitals?: Record<number, number[]> }} CategoryData
+ * @typedef {{ name: string, nameDe: string, path: string, border: string, cx?: number, cy?: number }} NeighborShape
+ * @typedef {{ id: number, name: string, nameDe: string, path: string, answers: string[], info: StateInfo | null, capital: number[] | null, neighbors: string[], context: NeighborShape[], revealPath: string | null }} Shape
+ * @typedef {{ paths: Record<number, string>, names: Record<number, string>, namesDe?: Record<number, string>, answers: Record<number, string[]>, info?: Record<number, StateInfo>, capitals?: Record<number, number[]>, neighbors?: Record<number, string[]>, context?: Record<number, NeighborShape[]>, revealPaths?: Record<number, string> }} CategoryData
  */
 
 /**
@@ -30,13 +31,13 @@ function buildShapes(data) {
 			path: data.paths[id],
 			answers: data.answers[id] ?? [],
 			info: data.info?.[id] ?? null,
-			capital: data.capitals?.[id] ?? null
+			capital: data.capitals?.[id] ?? null,
+			neighbors: data.neighbors?.[id] ?? [],
+			context: data.context?.[id] ?? [],
+			revealPath: data.revealPaths?.[id] ?? null
 		}));
 }
 
-// Country categories, built once and reused — both as their own categories and,
-// merged, as the composed "world" mode. (Oceania has no standalone category; only
-// its three big countries — Australia/NZ/PNG — feed `world`.)
 const country = {
 	europe: buildShapes(europe),
 	africa: buildShapes(africa),
@@ -47,9 +48,7 @@ const country = {
 };
 
 /**
- * Concatenate country lists into one "world" category. Each shape is already
- * projected/trimmed correctly for its own continent (a single world-wide `trimDeg`
- * can't fit both archipelagos and Alaska), so we just merge and re-key ids 0..n-1.
+ * Concatenate country lists into one "world" category.
  * @param {Shape[][]} lists
  * @returns {Shape[]}
  */
@@ -139,9 +138,7 @@ export const PLAYABLE_CATEGORY_IDS = Object.values(CATEGORIES)
 	.map((c) => c.id);
 
 /**
- * Number of distinct shapes per category, keyed by category id. The lobby uses
- * this to cap the round count (you can't play more rounds than there are shapes)
- * and to power the "all shapes" mode.
+ * Number of distinct shapes per category, keyed by category id.
  * @type {Record<number, number>}
  */
 export const CATEGORY_SIZES = Object.fromEntries(
@@ -158,7 +155,6 @@ export function getCategory(categoryId) {
 
 /**
  * Picks a random shape from a category, avoiding ids already used this game.
- * Resets the "used" set once every shape has been shown.
  *
  * @param {number} categoryId
  * @param {Set<number>} usedIds

@@ -50,9 +50,10 @@ function commonPrefixLen(a, b) {
 /**
  * @param {string} guess
  * @param {string[]} answers
+ * @param {string[]} [neighbors] Guessable names of bordering countries
  * @returns {typeof Verdict[keyof typeof Verdict]}
  */
-export function judgeGuess(guess, answers) {
+export function judgeGuess(guess, answers, neighbors = []) {
 	const g = normalize(guess);
 	if (!g) return Verdict.WRONG;
 
@@ -76,5 +77,8 @@ export function judgeGuess(guess, answers) {
 
 		if (g.length >= 5 && target.includes(g)) return Verdict.CLOSE;
 	}
+
+	if (neighbors.some((n) => normalize(n) === g)) return Verdict.CLOSE;
+
 	return Verdict.WRONG;
 }
