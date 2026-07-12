@@ -109,6 +109,9 @@ function handleConnection(ws) {
 		}
 
 		switch (msg.type) {
+			case ClientMsg.PING:
+				return send({ type: ServerMsg.PONG, t0: msg.t0, serverTime: Date.now() });
+
 			case ClientMsg.CREATE: {
 				if (limited('create'))
 					return send({ type: ServerMsg.ERROR, message: 'Too many rooms — slow down.' });

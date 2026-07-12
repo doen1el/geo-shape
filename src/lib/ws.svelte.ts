@@ -144,6 +144,33 @@ class GameSocket {
 	#openPromise: Promise<void> | null = null;
 	#pendingAck: { resolve: (code: string) => void; reject: (err: Error) => void } | null = null;
 
+	#serverOffset = 0;
+	#bestRtt = Infinity;
+	#clockTimer: ReturnType<typeof setInterval> | null = null;
+
+	#toLocal(serverTs: number): number {
+		return serverTs - this.#serverOffset;
+	}
+
+	#pingBurst(count: number): void {
+		this.#bestRtt = Infinity;
+		let sent = 0;
+		const id = setInterval(() => {
+			if (this.#ws?.readyState !== 1 || sent >= count) {
+				clearInterval(id);
+				return;
+			}
+			sent++;
+			this.#send({ type: ClientMsg.PING, t0: Date.now() });
+		}, 200);
+	}
+
+	#startClockSync(): void {
+		this.#pingBurst(5); // quick initial estimate on connect
+		if (this.#clockTimer) clearInterval(this.#clockTimer);
+		this.#clockTimer = setInterval(() => this.#pingBurst(3), 30_000); // correct slow drift
+	}
+
 	connect(): Promise<void> {
 		if (!browser) return Promise.resolve();
 		if (this.#ws && this.#ws.readyState <= 1 && this.#openPromise) return this.#openPromise;
@@ -155,6 +182,7 @@ class GameSocket {
 		this.#openPromise = new Promise((resolve, reject) => {
 			ws.addEventListener('open', () => {
 				this.connected = true;
+				this.#startClockSync();
 				resolve();
 			});
 			ws.addEventListener('error', () => reject(new Error('WebSocket error')));
@@ -162,6 +190,10 @@ class GameSocket {
 
 		ws.addEventListener('close', () => {
 			this.connected = false;
+			if (this.#clockTimer) {
+				clearInterval(this.#clockTimer);
+				this.#clockTimer = null;
+			}
 		});
 		ws.addEventListener('message', (ev) => this.#onMessage(ev));
 		return this.#openPromise;
@@ -196,7 +228,7 @@ class GameSocket {
 				this.gameOver = null;
 				this.roundResult = null;
 				this.paused = null;
-				this.countdown = { until: msg.startsAt + msg.durationMs };
+				this.countdown = { until: this.#toLocal(msg.startsAt + msg.durationMs) };
 				break;
 			case ServerMsg.ROUND_START:
 				this.roundResult = null;
@@ -213,7 +245,7 @@ class GameSocket {
 					path: msg.path,
 					capital: msg.capital ?? null,
 					durationSec: msg.durationSec,
-					endsAt: msg.endsAt
+					endsAt: this.#toLocal(msg.endsAt)
 				};
 				break;
 			case ServerMsg.ROUND_END:
@@ -232,7 +264,7 @@ class GameSocket {
 				break;
 			case ServerMsg.RESUMED:
 				this.paused = null;
-				if (this.round) this.round = { ...this.round, endsAt: msg.endsAt };
+				if (this.round) this.round = { ...this.round, endsAt: this.#toLocal(msg.endsAt) };
 				break;
 			case ServerMsg.GAME_OVER:
 				this.gameOver = { winnerName: msg.winnerName, isTie: msg.isTie, players: msg.players };
@@ -290,6 +322,14 @@ class GameSocket {
 			case ServerMsg.STATS:
 				this.stats = msg.stats ?? null;
 				break;
+			case ServerMsg.PONG: {
+				const rtt = Date.now() - msg.t0;
+				if (rtt <= this.#bestRtt) {
+					this.#bestRtt = rtt;
+					this.#serverOffset = msg.serverTime + rtt / 2 - Date.now();
+				}
+				break;
+			}
 			case ServerMsg.ERROR: {
 				const message = typeof msg.message === 'string' ? msg.message : 'Unknown error';
 				this.error = message;

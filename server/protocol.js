@@ -13,7 +13,8 @@ export const ClientMsg = /** @type {const} */ ({
 	REACT: 'react',
 	CHECK_ROOM: 'check_room',
 	GET_LEADERBOARD: 'get_leaderboard',
-	GET_STATS: 'get_stats'
+	GET_STATS: 'get_stats',
+	PING: 'ping'
 });
 
 /** Message types the server sends to the client. */
@@ -33,6 +34,7 @@ export const ServerMsg = /** @type {const} */ ({
 	ROOM_EXISTS: 'room_exists',
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
+	PONG: 'pong',
 	ERROR: 'error'
 });
 
