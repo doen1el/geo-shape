@@ -1,7 +1,7 @@
 <p align="center">
     <img src="docs/icon/icon_white.png" alt="App Icon" width="100" />
     <br>
-    v1.2.0
+    v1.3.0
 </p>
 
 ## GeoShape
