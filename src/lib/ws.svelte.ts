@@ -61,6 +61,7 @@ export type StateInfo = {
 	key?: string;
 	capital?: string;
 	capitalDe?: string;
+	countries?: number;
 	population?: number;
 	areaKm2: number;
 	funFact?: { en: string; de: string };

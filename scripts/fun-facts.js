@@ -38,6 +38,20 @@ export const continentFacts = {
 	}
 };
 
+/**
+ * Continent stats for the info panel
+ * @type {Record<string, { countries: number, population?: number }>}
+ */
+export const continentStats = {
+	Africa: { countries: 54, population: 1_520_000_000 },
+	Asia: { countries: 48, population: 4_800_000_000 },
+	Europe: { countries: 44, population: 745_000_000 },
+	'North America': { countries: 23, population: 604_000_000 },
+	'South America': { countries: 12, population: 439_000_000 },
+	Oceania: { countries: 14, population: 46_000_000 },
+	Antarctica: { countries: 0 }
+};
+
 /** @type {Record<string, Fact>} */
 export const countryFacts = {
 	ALB: {

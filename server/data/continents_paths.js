@@ -43,11 +43,11 @@ export const answers = {
 };
 
 export const info = {
-	0: {"areaKm2":29969381,"funFact":{"en":"The second-largest continent and home to the Sahara, the largest hot desert on Earth.","de":"Der zweitgrößte Kontinent und Heimat der Sahara, der größten Heißwüste der Erde."}},
-	1: {"areaKm2":12163280,"funFact":{"en":"The coldest, windiest and driest continent — about 98% of it is covered by ice.","de":"Der kälteste, windigste und trockenste Kontinent — etwa 98 % sind von Eis bedeckt."}},
-	2: {"areaKm2":47378170,"funFact":{"en":"The largest and most populous continent, with both the highest (Everest) and lowest (Dead Sea) points on land.","de":"Der größte und bevölkerungsreichste Kontinent — mit dem höchsten (Everest) und tiefsten (Totes Meer) Punkt an Land."}},
-	3: {"areaKm2":5887453,"funFact":{"en":"The second-smallest continent, yet home to around 50 countries.","de":"Der zweitkleinste Kontinent — und trotzdem Heimat von rund 50 Ländern."}},
-	4: {"areaKm2":23771479,"funFact":{"en":"Stretches from Arctic Canada to tropical Panama and includes the Great Lakes, the largest group of freshwater lakes on Earth.","de":"Reicht von der kanadischen Arktis bis ins tropische Panama und umfasst die Großen Seen, die größte Süßwasserseen-Gruppe der Erde."}},
-	5: {"areaKm2":8422678,"funFact":{"en":"The smallest continent by land area, dominated by Australia and thousands of Pacific islands.","de":"Der flächenmäßig kleinste Kontinent, geprägt von Australien und tausenden Pazifikinseln."}},
-	6: {"areaKm2":17568823,"funFact":{"en":"Home to the Amazon rainforest and the Andes, the longest mountain range in the world.","de":"Heimat des Amazonas-Regenwaldes und der Anden, dem längsten Gebirge der Welt."}}
+	0: {"countries":54,"population":1520000000,"areaKm2":29969381,"funFact":{"en":"The second-largest continent and home to the Sahara, the largest hot desert on Earth.","de":"Der zweitgrößte Kontinent und Heimat der Sahara, der größten Heißwüste der Erde."}},
+	1: {"countries":0,"areaKm2":12163280,"funFact":{"en":"The coldest, windiest and driest continent — about 98% of it is covered by ice.","de":"Der kälteste, windigste und trockenste Kontinent — etwa 98 % sind von Eis bedeckt."}},
+	2: {"countries":48,"population":4800000000,"areaKm2":47378170,"funFact":{"en":"The largest and most populous continent, with both the highest (Everest) and lowest (Dead Sea) points on land.","de":"Der größte und bevölkerungsreichste Kontinent — mit dem höchsten (Everest) und tiefsten (Totes Meer) Punkt an Land."}},
+	3: {"countries":44,"population":745000000,"areaKm2":5887453,"funFact":{"en":"The second-smallest continent, yet home to around 50 countries.","de":"Der zweitkleinste Kontinent — und trotzdem Heimat von rund 50 Ländern."}},
+	4: {"countries":23,"population":604000000,"areaKm2":23771479,"funFact":{"en":"Stretches from Arctic Canada to tropical Panama and includes the Great Lakes, the largest group of freshwater lakes on Earth.","de":"Reicht von der kanadischen Arktis bis ins tropische Panama und umfasst die Großen Seen, die größte Süßwasserseen-Gruppe der Erde."}},
+	5: {"countries":14,"population":46000000,"areaKm2":8422678,"funFact":{"en":"The smallest continent by land area, dominated by Australia and thousands of Pacific islands.","de":"Der flächenmäßig kleinste Kontinent, geprägt von Australien und tausenden Pazifikinseln."}},
+	6: {"countries":12,"population":439000000,"areaKm2":17568823,"funFact":{"en":"Home to the Amazon rainforest and the Andes, the longest mountain range in the world.","de":"Heimat des Amazonas-Regenwaldes und der Anden, dem längsten Gebirge der Welt."}}
 };

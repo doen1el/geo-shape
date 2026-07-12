@@ -137,6 +137,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'game.resultsIn': 'Ergebnis in {seconds}s',
 
 	'info.capital': 'Hauptstadt',
+	'info.countries': 'Länder',
 	'info.population': 'Einwohner',
 	'info.area': 'Fläche',
 	'info.didYouKnow': 'Schon gewusst?',

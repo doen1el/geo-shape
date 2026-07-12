@@ -15,6 +15,7 @@
 	const cells = $derived(
 		[
 			capital && { label: t('info.capital'), value: capital },
+			info.countries != null && { label: t('info.countries'), value: cf.format(info.countries) },
 			info.population && { label: t('info.population'), value: cf.format(info.population) },
 			info.areaKm2 && { label: t('info.area'), value: `${cf.format(info.areaKm2)} km²` }
 		].filter((c): c is { label: string; value: string } => !!c)

@@ -25,7 +25,7 @@ import {
 import { topology } from 'topojson-server';
 import { presimplify, simplify as topoSimplify, quantile } from 'topojson-simplify';
 import { merge, feature } from 'topojson-client';
-import { germanStateInfo, continentFacts, countryFacts, usStateFacts } from './fun-facts.js';
+import { germanStateInfo, continentFacts, continentStats, countryFacts, usStateFacts } from './fun-facts.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -207,7 +207,11 @@ const CATEGORIES = {
 		projection: 'naturalEarth',
 		minRatio: 0.0008, // keep major islands (Japan, Greenland, NZ, British Isles)
 		label: (p) => CONTINENTS[p.CONTINENT],
-		info: (shape, p) => ({ areaKm2: areaKm2(shape), funFact: continentFacts[p.CONTINENT] })
+		info: (shape, p) => ({
+			...continentStats[p.CONTINENT],
+			areaKm2: areaKm2(shape),
+			funFact: continentFacts[p.CONTINENT]
+		})
 	},
 
 	europe: {

@@ -135,6 +135,7 @@ export const en = {
 	'game.resultsIn': 'Results in {seconds}s',
 
 	'info.capital': 'Capital',
+	'info.countries': 'Countries',
 	'info.population': 'Population',
 	'info.area': 'Area',
 	'info.didYouKnow': 'Did you know?',
