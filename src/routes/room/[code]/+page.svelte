@@ -350,8 +350,7 @@
 				<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-[1fr_300px]">
 					<div class="flex min-h-0 flex-col gap-3">
 						{#if revealing}
-							<!-- Reveal: shape shrinks to make room for the answer + info -->
-							<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+							<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 pb-1">
 								<div class="min-h-[16svh] flex-1">
 									<ShapeCanvas
 										round={game.round}
