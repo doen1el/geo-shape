@@ -15,5 +15,9 @@ services:
       GEOSHAPE_DB: "/data/geoshape.db"
       GEOSHAPE_ALLOWED_ORIGINS: "https://geoshape.example.com"
 
+      # Set to "1" when a reverse proxy sits in front, so the per-IP connection cap
+      # reads x-forwarded-for instead of seeing every player as the proxy's address.
+      # GEOSHAPE_TRUST_PROXY: "1"
+
     volumes:
       - "/data:/data"

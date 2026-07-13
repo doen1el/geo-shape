@@ -52,6 +52,7 @@ export const en = {
 	'solo.again': 'Play again',
 
 	'error.connect': 'Could not connect to the server.',
+	'error.reconnecting': 'Connection lost — reconnecting…',
 
 	'rejoin.banner': 'You were in room {code} — it’s still open.',
 	'rejoin.go': 'Rejoin',

@@ -30,13 +30,18 @@ export const RECONNECT_GRACE_MS = 120000;
 export const MAX_MESSAGE_BYTES = 16 * 1024;
 
 /** @param {string} name @param {number} fallback */
-const envMs = (name, fallback) => Number(process.env[name]) || fallback;
+const envNum = (name, fallback) => Number(process.env[name]) || fallback;
 
-export const HEARTBEAT_MS = envMs('GEOSHAPE_HEARTBEAT_MS', 30000);
-export const ROOM_IDLE_MS = envMs('GEOSHAPE_ROOM_IDLE_MS', 30 * 60 * 1000);
-export const ROOM_SWEEP_MS = envMs('GEOSHAPE_ROOM_SWEEP_MS', 60000);
+export const HEARTBEAT_MS = envNum('GEOSHAPE_HEARTBEAT_MS', 30000);
+export const ROOM_IDLE_MS = envNum('GEOSHAPE_ROOM_IDLE_MS', 30 * 60 * 1000);
+export const ROOM_SWEEP_MS = envNum('GEOSHAPE_ROOM_SWEEP_MS', 60000);
 
 export const SHUTDOWN_GRACE_MS = 1500;
+
+export const MAX_CONNECTIONS = envNum('GEOSHAPE_MAX_CONNECTIONS', 2000);
+export const MAX_CONNECTIONS_PER_IP = envNum('GEOSHAPE_MAX_CONNECTIONS_PER_IP', 12);
+
+export const TRUST_PROXY = process.env.GEOSHAPE_TRUST_PROXY === '1';
 
 /**
  * Per-connection sliding-window rate limits: `max` actions per `windowMs`.

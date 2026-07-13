@@ -24,7 +24,10 @@ import {
 	HEARTBEAT_MS,
 	ROOM_IDLE_MS,
 	ROOM_SWEEP_MS,
-	SHUTDOWN_GRACE_MS
+	SHUTDOWN_GRACE_MS,
+	MAX_CONNECTIONS,
+	MAX_CONNECTIONS_PER_IP,
+	TRUST_PROXY
 } from './config.js';
 import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
 
@@ -36,6 +39,29 @@ const ATTACHED = Symbol.for('geoshape.wss.attached');
  * @type {WeakSet<import('ws').WebSocket>}
  */
 const alive = new WeakSet();
+
+const perIp = new Map();
+let totalConnections = 0;
+
+/** Live WebSocket connections, for /healthz. */
+export function connectionCount() {
+	return totalConnections;
+}
+
+/**
+ * @param {import('http').IncomingMessage} req
+ * @returns {string}
+ */
+function clientIp(req) {
+	if (TRUST_PROXY) {
+		const forwarded = req.headers['x-forwarded-for'];
+		const first = (Array.isArray(forwarded) ? forwarded[0] : (forwarded ?? ''))
+			.split(',')[0]
+			.trim();
+		if (first) return first;
+	}
+	return req.socket.remoteAddress ?? 'unknown';
+}
 
 /**
  * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
@@ -61,7 +87,25 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 			socket.destroy();
 			return;
 		}
-		wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+
+		const ip = clientIp(req);
+		if (totalConnections >= MAX_CONNECTIONS || (perIp.get(ip) ?? 0) >= MAX_CONNECTIONS_PER_IP) {
+			socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
+			socket.destroy();
+			return;
+		}
+
+		wss.handleUpgrade(req, socket, head, (ws) => {
+			totalConnections++;
+			perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
+			ws.on('close', () => {
+				totalConnections--;
+				const left = (perIp.get(ip) ?? 1) - 1;
+				if (left > 0) perIp.set(ip, left);
+				else perIp.delete(ip);
+			});
+			wss.emit('connection', ws, req);
+		});
 	});
 
 	wss.on('connection', (ws) => {

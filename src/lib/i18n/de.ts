@@ -54,6 +54,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'solo.again': 'Nochmal',
 
 	'error.connect': 'Verbindung zum Server fehlgeschlagen.',
+	'error.reconnecting': 'Verbindung verloren — verbinde neu …',
 
 	'rejoin.banner': 'Du warst in Raum {code} — er ist noch offen.',
 	'rejoin.go': 'Zurück',
@@ -91,7 +92,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'visibility.private': 'Privat',
 	'visibility.public': 'Öffentlich',
 	'visibility.private.desc': 'Nur mit Raum-Code beitretbar.',
-	'visibility.public.desc': 'Erscheint auf der Startseite — jede/r kann beitreten, auch mitten im Spiel.',
+	'visibility.public.desc':
+		'Erscheint auf der Startseite — jede/r kann beitreten, auch mitten im Spiel.',
 	'settings.difficulty': 'Schwierigkeit',
 	'difficulty.easy': 'Einfach',
 	'difficulty.hard': 'Schwer',

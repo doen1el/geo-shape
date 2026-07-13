@@ -5,6 +5,7 @@
 	import { scale, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
+	import { game } from '$lib/ws.svelte';
 	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -23,6 +24,18 @@
 		}
 	}
 </script>
+
+{#if game.reconnecting}
+	<!-- Floats just above the room's action row; the header carries the logo and room code. -->
+	<div class="fixed inset-x-0 bottom-20 z-50 flex justify-center px-4" transition:fade>
+		<div
+			class="flex items-center gap-2 rounded-base border-2 border-border bg-surface px-4 py-2 text-sm font-extrabold shadow-shadow"
+		>
+			<span class="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500"></span>
+			{t('error.reconnecting')}
+		</div>
+	</div>
+{/if}
 
 <div class="flex h-svh flex-col items-center justify-center">
 	<div class="flex h-full max-h-[900px] w-full max-w-3xl flex-col overflow-hidden px-4 py-4">
