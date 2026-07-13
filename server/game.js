@@ -4,6 +4,7 @@ import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from '.
 import { judgeGuess } from './match.js';
 import { recordGameResult } from './db.js';
 import { cleanText } from './moderation.js';
+import { safeTimeout } from './safety.js';
 import {
 	ROUND_END_PAUSE_MS,
 	COUNTDOWN_MS,
@@ -78,7 +79,10 @@ function randomizePathStart(d) {
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
-	if (typeof settings.categoryId === 'number' && PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)) {
+	if (
+		typeof settings.categoryId === 'number' &&
+		PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)
+	) {
 		room.categoryId = settings.categoryId;
 	}
 
@@ -142,11 +146,17 @@ export function startGame(room, player) {
 		durationMs: COUNTDOWN_MS,
 		startsAt: Date.now()
 	});
-	console.log(`[game] ${room.code} starting — category ${room.categoryId}, ${room.maxRounds} rounds`);
-	room.pauseTimer = setTimeout(() => {
-		if (!isAlive(room)) return cleanupRoom(room);
-		startRound(room);
-	}, COUNTDOWN_MS);
+	console.log(
+		`[game] ${room.code} starting — category ${room.categoryId}, ${room.maxRounds} rounds`
+	);
+	room.pauseTimer = safeTimeout(
+		`countdown ${room.code}`,
+		() => {
+			if (!isAlive(room)) return cleanupRoom(room);
+			startRound(room);
+		},
+		COUNTDOWN_MS
+	);
 }
 
 /**
@@ -174,7 +184,11 @@ export function resumeGame(room, player) {
 	if (room.hostId !== player.id || !room.paused) return;
 	room.paused = false;
 	room.roundEndsAt = Date.now() + room.pauseRemainingMs;
-	room.roundTimer = setTimeout(() => endRound(room), room.pauseRemainingMs);
+	room.roundTimer = safeTimeout(
+		`endRound ${room.code}`,
+		() => endRound(room),
+		room.pauseRemainingMs
+	);
 	roomManager.broadcast(room, { type: ServerMsg.RESUMED, endsAt: room.roundEndsAt });
 	console.log(`[game] ${room.code} resumed`);
 }
@@ -281,7 +295,11 @@ function startRound(room) {
 	roomManager.broadcastState(room);
 	console.log(`[game] ${room.code} round ${room.round}/${room.maxRounds}: answer = ${shape.name}`);
 
-	room.roundTimer = setTimeout(() => endRound(room), room.roundDurationSec * 1000);
+	room.roundTimer = safeTimeout(
+		`endRound ${room.code}`,
+		() => endRound(room),
+		room.roundDurationSec * 1000
+	);
 }
 
 /**
@@ -375,11 +393,15 @@ function endRound(room) {
 
 	if (!isAlive(room)) return cleanupRoom(room);
 
-	room.pauseTimer = setTimeout(() => {
-		if (!isAlive(room)) return cleanupRoom(room);
-		if (isLast) endGame(room);
-		else startRound(room);
-	}, ROUND_END_PAUSE_MS);
+	room.pauseTimer = safeTimeout(
+		`nextRound ${room.code}`,
+		() => {
+			if (!isAlive(room)) return cleanupRoom(room);
+			if (isLast) endGame(room);
+			else startRound(room);
+		},
+		ROUND_END_PAUSE_MS
+	);
 }
 
 /**
@@ -402,7 +424,9 @@ export function endGame(room) {
 		isTie,
 		players: finalPlayers
 	});
-	console.log(`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`);
+	console.log(
+		`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`
+	);
 
 	if (!room.solo) {
 		const winnerIds = new Set(winners.map((w) => w.id));

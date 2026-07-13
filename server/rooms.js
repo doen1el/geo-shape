@@ -7,6 +7,7 @@ import {
 } from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
 import { getPlayerStats, touchPlayer } from './db.js';
+import { safeTimeout } from './safety.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 4;
@@ -50,6 +51,7 @@ let playerSeq = 0;
  * @property {number} categoryId
  * @property {number} roundDurationSec
  * @property {number} createdAt
+ * @property {number} lastActivityAt
  * @property {Set<number>} usedShapeIds
  * @property {Shape | null} currentShape
  * @property {string} roundPath
@@ -108,6 +110,7 @@ export class RoomManager {
 			categoryId: PLAYABLE_CATEGORY_IDS.includes(1) ? 1 : (PLAYABLE_CATEGORY_IDS[0] ?? 0),
 			roundDurationSec: ROUND_DURATION_SEC,
 			createdAt: Date.now(),
+			lastActivityAt: Date.now(),
 			usedShapeIds: new Set(),
 			currentShape: null,
 			roundPath: '',
@@ -261,7 +264,47 @@ export class RoomManager {
 	 * @param {Room} room
 	 */
 	broadcastState(room) {
+		this.touch(room);
 		this.broadcast(room, { type: ServerMsg.ROOM_STATE, room: this.toPublic(room) });
+		this.publishLobby();
+	}
+
+	/**
+	 * Marks the room as alive for the idle sweeper.
+	 * @param {Room} room
+	 */
+	touch(room) {
+		room.lastActivityAt = Date.now();
+	}
+
+	/**
+	 * Rooms with no activity for `idleMs`.
+	 *
+	 * @param {number} idleMs
+	 * @returns {Room[]}
+	 */
+	findStale(idleMs) {
+		const now = Date.now();
+		const cutoff = now - idleMs;
+		return [...this.rooms.values()].filter((room) => {
+			if (room.lastActivityAt >= cutoff) return false;
+			const midRound = room.roundActive && !room.paused && room.roundEndsAt > now;
+			return !midRound;
+		});
+	}
+
+	/**
+	 * Drops a room and disconnects whoever is still in it.
+	 * @param {Room} room
+	 * @param {string} message
+	 */
+	evict(room, message) {
+		this.broadcast(room, { type: ServerMsg.ERROR, message, code: 'closed' });
+		for (const player of room.players.values()) {
+			if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+			player.disconnectTimer = null;
+		}
+		this.rooms.delete(room.code);
 		this.publishLobby();
 	}
 
@@ -305,17 +348,21 @@ export class RoomManager {
 	 */
 	publishLobby() {
 		if (this.lobbyWatchers.size === 0 || this.lobbyPushTimer) return;
-		this.lobbyPushTimer = setTimeout(() => {
-			this.lobbyPushTimer = null;
-			const payload = JSON.stringify({
-				type: ServerMsg.PUBLIC_ROOMS,
-				rooms: this.listPublic()
-			});
-			for (const socket of this.lobbyWatchers) {
-				if (socket.readyState === 1) socket.send(payload);
-				else this.lobbyWatchers.delete(socket);
-			}
-		}, LOBBY_PUSH_MS);
+		this.lobbyPushTimer = safeTimeout(
+			'publishLobby',
+			() => {
+				this.lobbyPushTimer = null;
+				const payload = JSON.stringify({
+					type: ServerMsg.PUBLIC_ROOMS,
+					rooms: this.listPublic()
+				});
+				for (const socket of this.lobbyWatchers) {
+					if (socket.readyState === 1) socket.send(payload);
+					else this.lobbyWatchers.delete(socket);
+				}
+			},
+			LOBBY_PUSH_MS
+		);
 	}
 
 	/**
@@ -325,6 +372,7 @@ export class RoomManager {
 	 * @param {{kind: string, name?: string, text?: string, playerId?: string, points?: number, variant?: string, round?: number}} entry
 	 */
 	chat(room, entry) {
+		this.touch(room);
 		room.chatLog.push(entry);
 		if (room.chatLog.length > 50) room.chatLog.shift();
 		this.broadcast(room, { type: ServerMsg.CHAT, ...entry });

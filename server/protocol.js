@@ -38,6 +38,7 @@ export const ServerMsg = /** @type {const} */ ({
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
 	PONG: 'pong',
+	SERVER_SHUTDOWN: 'server_shutdown',
 	ERROR: 'error'
 });
 

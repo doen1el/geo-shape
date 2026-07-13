@@ -13,6 +13,7 @@ function getDb() {
 		mkdirSync(dirname(DB_PATH), { recursive: true });
 		db = new DatabaseSync(DB_PATH);
 		db.exec('PRAGMA journal_mode = WAL;');
+		db.exec('PRAGMA busy_timeout = 5000;');
 		db.exec(`
 			CREATE TABLE IF NOT EXISTS players (
 				client_id     TEXT PRIMARY KEY,
@@ -31,6 +32,16 @@ function getDb() {
 		console.error('[db] failed to open:', e instanceof Error ? e.message : e);
 		return null;
 	}
+}
+
+export function closeDb() {
+	if (!db) return;
+	try {
+		db.close();
+	} catch (e) {
+		console.error('[db] close failed:', e instanceof Error ? e.message : e);
+	}
+	db = null;
 }
 
 /**

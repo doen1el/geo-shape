@@ -143,10 +143,14 @@ export function getLastRoom(): string | null {
 	}
 }
 
+const MAX_RECONNECT_DELAY_MS = 15_000;
+
 class GameSocket {
 	room = $state<PublicRoom | null>(null);
 	playerId = $state<string | null>(null);
 	connected = $state(false);
+
+	reconnecting = $state(false);
 	error = $state<string | null>(null);
 	errorCode = $state<string | null>(null);
 
@@ -170,6 +174,14 @@ class GameSocket {
 	#ws: WebSocket | null = null;
 	#openPromise: Promise<void> | null = null;
 	#pendingAck: { resolve: (code: string) => void; reject: (err: Error) => void } | null = null;
+
+	#lastJoin: { code: string; profile: Profile } | null = null;
+	#reconnectAttempt = 0;
+	#reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+	constructor() {
+		if (browser) window.addEventListener('online', () => this.#reconnectNow());
+	}
 
 	#serverOffset = 0;
 	#bestRtt = Infinity;
@@ -209,7 +221,10 @@ class GameSocket {
 		this.#openPromise = new Promise((resolve, reject) => {
 			ws.addEventListener('open', () => {
 				this.connected = true;
+				this.reconnecting = false;
+				this.#reconnectAttempt = 0;
 				this.#startClockSync();
+				this.#rejoin();
 				resolve();
 			});
 			ws.addEventListener('error', () => reject(new Error('WebSocket error')));
@@ -221,9 +236,53 @@ class GameSocket {
 				clearInterval(this.#clockTimer);
 				this.#clockTimer = null;
 			}
+			this.#scheduleReconnect();
 		});
 		ws.addEventListener('message', (ev) => this.#onMessage(ev));
 		return this.#openPromise;
+	}
+
+	/**
+	 * Re-enters the room we were in.
+	 */
+	#rejoin(): void {
+		if (!this.#lastJoin) return;
+		const { code, profile } = this.#lastJoin;
+		this.#send({ type: ClientMsg.JOIN, code, profile });
+	}
+
+	#scheduleReconnect(): void {
+		if (!browser || this.#reconnectTimer || !this.#lastJoin) return;
+
+		const base = Math.min(500 * 2 ** this.#reconnectAttempt++, MAX_RECONNECT_DELAY_MS);
+		this.reconnecting = true;
+		this.#reconnectTimer = setTimeout(
+			() => {
+				this.#reconnectTimer = null;
+				this.#ws = null;
+				this.#openPromise = null;
+				this.connect().catch(() => {
+				});
+			},
+			base * (0.7 + Math.random() * 0.6)
+		);
+	}
+
+	#reconnectNow(): void {
+		if (this.#ws?.readyState === 1 || !this.#lastJoin) return;
+		if (this.#reconnectTimer) clearTimeout(this.#reconnectTimer);
+		this.#reconnectTimer = null;
+		this.#reconnectAttempt = 0;
+		this.#ws = null;
+		this.#openPromise = null;
+		this.connect().catch(() => {});
+	}
+
+	#stopReconnecting(): void {
+		this.#lastJoin = null;
+		if (this.#reconnectTimer) clearTimeout(this.#reconnectTimer);
+		this.#reconnectTimer = null;
+		this.reconnecting = false;
 	}
 
 	#onMessage(ev: MessageEvent): void {
@@ -363,10 +422,17 @@ class GameSocket {
 				}
 				break;
 			}
+			case ServerMsg.SERVER_SHUTDOWN:
+				this.reconnecting = true;
+				break;
 			case ServerMsg.ERROR: {
 				const message = typeof msg.message === 'string' ? msg.message : 'Unknown error';
 				this.error = message;
 				this.errorCode = typeof msg.code === 'string' ? msg.code : null;
+				if (this.errorCode === 'not_found' || this.errorCode === 'closed') {
+					this.#stopReconnecting();
+					forgetRoom();
+				}
 				this.#pendingAck?.reject(new Error(message));
 				this.#pendingAck = null;
 				break;
@@ -395,6 +461,7 @@ class GameSocket {
 			this.#pendingAck = {
 				resolve: (code) => {
 					if (!solo) rememberRoom(code);
+					this.#lastJoin = { code, profile };
 					resolve(code);
 				},
 				reject
@@ -411,6 +478,7 @@ class GameSocket {
 			this.#pendingAck = {
 				resolve: (c) => {
 					rememberRoom(c);
+					this.#lastJoin = { code: c, profile };
 					resolve(c);
 				},
 				reject
@@ -489,6 +557,7 @@ class GameSocket {
 
 	leave(): void {
 		forgetRoom();
+		this.#stopReconnecting();
 		this.#send({ type: ClientMsg.LEAVE });
 		this.room = null;
 		this.playerId = null;

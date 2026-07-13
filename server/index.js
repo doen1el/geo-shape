@@ -12,18 +12,34 @@ import {
 	abortGame,
 	syncJoiner
 } from './game.js';
-import { getLeaderboard, getPlayerStats } from './db.js';
+import { getLeaderboard, getPlayerStats, closeDb } from './db.js';
 import { cleanText } from './moderation.js';
 import { isAvatarStyle, DEFAULT_AVATAR } from './avatars.js';
 import { createRateLimiter } from './ratelimit.js';
-import { RATE_LIMITS, MAX_ROOMS, MAX_MESSAGE_BYTES, RECONNECT_GRACE_MS } from './config.js';
+import {
+	RATE_LIMITS,
+	MAX_ROOMS,
+	MAX_MESSAGE_BYTES,
+	RECONNECT_GRACE_MS,
+	HEARTBEAT_MS,
+	ROOM_IDLE_MS,
+	ROOM_SWEEP_MS,
+	SHUTDOWN_GRACE_MS
+} from './config.js';
+import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
 
 const WS_PATH = '/ws';
 const ATTACHED = Symbol.for('geoshape.wss.attached');
 
 /**
+ * Sockets that have answered our last ping.
+ * @type {WeakSet<import('ws').WebSocket>}
+ */
+const alive = new WeakSet();
+
+/**
  * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
- * @param {{ dev?: boolean }} [options] `dev` disables the Origin check (local dev).
+ * @param {{ dev?: boolean }} [options]
  * @returns {WebSocketServer}
  */
 export function attachWebSocketServer(httpServer, { dev = false } = {}) {
@@ -48,11 +64,94 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 		wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 	});
 
-	wss.on('connection', (ws) => handleConnection(/** @type {any} */ (ws)));
+	wss.on('connection', (ws) => {
+		alive.add(ws);
+		ws.on('pong', () => alive.add(ws));
+		handleConnection(ws);
+	});
+
+	const timers = [
+		safeInterval('heartbeat', () => dropDeadSockets(wss), HEARTBEAT_MS),
+		safeInterval('roomSweeper', sweepStaleRooms, ROOM_SWEEP_MS)
+	];
+
+	if (!dev) {
+		const shutdown = createShutdown(httpServer, wss, timers);
+		installProcessGuards({ onFatal: () => shutdown('uncaughtException', 1) });
+		process.once('SIGTERM', () => shutdown('SIGTERM', 0));
+		process.once('SIGINT', () => shutdown('SIGINT', 0));
+	}
 
 	/** @type {any} */ (httpServer)[ATTACHED] = wss;
 	console.log(`[ws] WebSocket server attached on ${WS_PATH}`);
 	return wss;
+}
+
+/**
+ * Terminates sockets that missed the last ping, then pings the rest.
+ * @param {WebSocketServer} wss
+ */
+function dropDeadSockets(wss) {
+	for (const ws of wss.clients) {
+		if (!alive.has(ws)) {
+			ws.terminate();
+			continue;
+		}
+		alive.delete(ws);
+		guard('ping', () => ws.ping());
+	}
+}
+
+function sweepStaleRooms() {
+	for (const room of roomManager.findStale(ROOM_IDLE_MS)) {
+		const idleMin = Math.round((Date.now() - room.lastActivityAt) / 60000);
+		console.log(`[ws] closing idle room ${room.code} (${idleMin}m, ${room.players.size} players)`);
+		cleanupRoom(room);
+		roomManager.evict(room, 'Room closed after a long period of inactivity.');
+	}
+}
+
+/**
+ * Graceful shutdown: tell clients we are going away so they reconnect on their own
+ * instead of hanging, stop the timers, flush the DB, then close.
+
+ * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
+ * @param {WebSocketServer} wss
+ * @param {ReturnType<typeof setInterval>[]} timers
+ */
+function createShutdown(httpServer, wss, timers) {
+	let shuttingDown = false;
+
+	return function shutdown(/** @type {string} */ reason, /** @type {number} */ exitCode) {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		console.log(`[ws] shutting down (${reason}) — ${roomManager.rooms.size} rooms open`);
+
+		for (const timer of timers) clearInterval(timer);
+		for (const room of roomManager.rooms.values()) guard('cleanupRoom', () => cleanupRoom(room));
+
+		const notice = JSON.stringify({ type: ServerMsg.SERVER_SHUTDOWN });
+		for (const ws of wss.clients) {
+			if (ws.readyState === 1) guard('shutdownNotice', () => ws.send(notice));
+		}
+
+		// Force-exit if a socket or the listener refuses to close in time.
+		const hardExit = safeTimeout('hardExit', () => process.exit(exitCode), SHUTDOWN_GRACE_MS * 4);
+		hardExit.unref?.();
+
+		safeTimeout(
+			'closeSockets',
+			() => {
+				for (const ws of wss.clients) ws.close(1012, 'Server restarting');
+				wss.close();
+				httpServer.close(() => {
+					closeDb();
+					process.exit(exitCode);
+				});
+			},
+			SHUTDOWN_GRACE_MS
+		);
+	};
 }
 
 /**
@@ -108,6 +207,16 @@ function handleConnection(ws) {
 			return send({ type: ServerMsg.ERROR, message: 'Invalid message' });
 		}
 
+		try {
+			dispatch(msg);
+		} catch (err) {
+			logError(`message:${String(msg?.type)}`, err);
+			send({ type: ServerMsg.ERROR, message: 'Something went wrong.' });
+		}
+	});
+
+	/** @param {any} msg */
+	function dispatch(msg) {
 		switch (msg.type) {
 			case ClientMsg.PING:
 				return send({ type: ServerMsg.PONG, t0: msg.t0, serverTime: Date.now() });
@@ -118,7 +227,10 @@ function handleConnection(ws) {
 				const profile = sanitizeProfile(msg.profile);
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
 				if (roomManager.rooms.size >= MAX_ROOMS)
-					return send({ type: ServerMsg.ERROR, message: 'Server is at capacity, try again later.' });
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'Server is at capacity, try again later.'
+					});
 				const room = roomManager.createRoom({ solo: !!msg.solo, difficulty: msg.difficulty });
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
@@ -279,9 +391,9 @@ function handleConnection(ws) {
 			}
 
 			default:
-				send({ type: ServerMsg.ERROR, message: `Unknown message type: ${msg.type}` });
+				send({ type: ServerMsg.ERROR, message: `Unknown message type: ${String(msg.type)}` });
 		}
-	});
+	}
 
 	ws.on('close', () => {
 		roomManager.unwatchLobby(ws);
@@ -313,7 +425,11 @@ function handleConnection(ws) {
 
 		player.connected = false;
 		if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
-		player.disconnectTimer = setTimeout(() => finalizeRemoval(room, playerId), RECONNECT_GRACE_MS);
+		player.disconnectTimer = safeTimeout(
+			`finalizeRemoval ${room.code}`,
+			() => finalizeRemoval(room, playerId),
+			RECONNECT_GRACE_MS
+		);
 
 		if (room.hostId === playerId) {
 			const next = [...room.players.values()].find((p) => p.connected && p.id !== playerId);
@@ -365,6 +481,8 @@ function sanitizeProfile(raw) {
 	if (name.length === 0) return null;
 	const avatar = isAvatarStyle(raw.avatar) ? raw.avatar : DEFAULT_AVATAR;
 	const clientId =
-		typeof raw.clientId === 'string' ? raw.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) : '';
+		typeof raw.clientId === 'string'
+			? raw.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+			: '';
 	return { name, avatar, clientId };
 }
