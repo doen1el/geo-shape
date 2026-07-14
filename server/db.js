@@ -26,6 +26,21 @@ function getDb() {
 				last_seen     INTEGER NOT NULL
 			);
 		`);
+		db.exec(`
+			CREATE TABLE IF NOT EXISTS games (
+				id           INTEGER PRIMARY KEY AUTOINCREMENT,
+				code         TEXT NOT NULL,
+				category_id  INTEGER NOT NULL,
+				difficulty   TEXT NOT NULL,
+				rounds       INTEGER NOT NULL,
+				players      INTEGER NOT NULL,
+				solo         INTEGER NOT NULL DEFAULT 0,
+				winner_name  TEXT,
+				top_score    INTEGER NOT NULL DEFAULT 0,
+				finished_at  INTEGER NOT NULL
+			);
+			CREATE INDEX IF NOT EXISTS idx_games_finished_at ON games (finished_at DESC);
+		`);
 		console.log(`[db] sqlite ready at ${DB_PATH}`);
 		return db;
 	} catch (e) {
@@ -128,6 +143,139 @@ export function getLeaderboard(limit = 10) {
 	} catch (e) {
 		console.error('[db] getLeaderboard failed:', e instanceof Error ? e.message : e);
 		return [];
+	}
+}
+
+/**
+ * One finished game. Unlike the player stats this also records solo games
+ * @param {{ code: string, categoryId: number, difficulty: string, rounds: number,
+ *   players: number, solo: boolean, winnerName: string | null, topScore: number }} game
+ */
+export function recordGame(game) {
+	const conn = getDb();
+	if (!conn) return;
+	try {
+		conn
+			.prepare(
+				`INSERT INTO games
+					(code, category_id, difficulty, rounds, players, solo, winner_name, top_score, finished_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			)
+			.run(
+				game.code,
+				game.categoryId,
+				game.difficulty,
+				game.rounds,
+				game.players,
+				game.solo ? 1 : 0,
+				game.winnerName,
+				game.topScore,
+				Date.now()
+			);
+	} catch (e) {
+		console.error('[db] recordGame failed:', e instanceof Error ? e.message : e);
+	}
+}
+
+/**
+ * Most recently finished games, newest first.
+ * @param {number} [limit]
+ */
+export function getRecentGames(limit = 20) {
+	const conn = getDb();
+	if (!conn) return [];
+	try {
+		const rows = conn
+			.prepare(
+				`SELECT code, category_id, difficulty, rounds, players, solo, winner_name, top_score, finished_at
+				 FROM games ORDER BY finished_at DESC LIMIT ?`
+			)
+			.all(limit);
+		return rows.map((r) => ({
+			code: String(r.code),
+			categoryId: Number(r.category_id),
+			difficulty: String(r.difficulty),
+			rounds: Number(r.rounds),
+			players: Number(r.players),
+			solo: Number(r.solo) === 1,
+			winnerName: r.winner_name == null ? null : String(r.winner_name),
+			topScore: Number(r.top_score),
+			finishedAt: Number(r.finished_at)
+		}));
+	} catch (e) {
+		console.error('[db] getRecentGames failed:', e instanceof Error ? e.message : e);
+		return [];
+	}
+}
+
+/** Headline numbers for the admin dashboard. */
+export function getTotals() {
+	const conn = getDb();
+	if (!conn) return { players: 0, games: 0, gamesToday: 0 };
+	try {
+		const dayAgo = Date.now() - 86_400_000;
+		const num = (/** @type {string} */ sql, /** @type {any[]} */ args = []) =>
+			Number(conn.prepare(sql).get(...args)?.n ?? 0);
+		return {
+			players: num('SELECT COUNT(*) AS n FROM players'),
+			games: num('SELECT COUNT(*) AS n FROM games'),
+			gamesToday: num('SELECT COUNT(*) AS n FROM games WHERE finished_at >= ?', [dayAgo])
+		};
+	} catch (e) {
+		console.error('[db] getTotals failed:', e instanceof Error ? e.message : e);
+		return { players: 0, games: 0, gamesToday: 0 };
+	}
+}
+
+/**
+ * Player lookup for the admin view.
+ * @param {string} query
+ * @param {number} [limit]
+ */
+export function searchPlayers(query, limit = 25) {
+	const conn = getDb();
+	if (!conn) return [];
+	try {
+		const rows = conn
+			.prepare(
+				`SELECT client_id, name, avatar, games_played, games_won, total_score, best_score, last_seen
+				 FROM players
+				 WHERE (? = '' OR name LIKE ? OR client_id LIKE ?)
+				 ORDER BY last_seen DESC
+				 LIMIT ?`
+			)
+			.all(query, `%${query}%`, `%${query}%`, limit);
+		return rows.map((r) => ({
+			clientId: String(r.client_id),
+			name: String(r.name),
+			avatar: String(r.avatar),
+			gamesPlayed: Number(r.games_played),
+			gamesWon: Number(r.games_won),
+			totalScore: Number(r.total_score),
+			bestScore: Number(r.best_score),
+			lastSeen: Number(r.last_seen)
+		}));
+	} catch (e) {
+		console.error('[db] searchPlayers failed:', e instanceof Error ? e.message : e);
+		return [];
+	}
+}
+
+/**
+ * Erases a player's stored record (deletion requests).
+ * @param {string} clientId
+ * @returns {boolean}
+ */
+export function deletePlayer(clientId) {
+	if (!clientId) return false;
+	const conn = getDb();
+	if (!conn) return false;
+	try {
+		conn.prepare('DELETE FROM players WHERE client_id = ?').run(clientId);
+		return true;
+	} catch (e) {
+		console.error('[db] deletePlayer failed:', e instanceof Error ? e.message : e);
+		return false;
 	}
 }
 

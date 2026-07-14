@@ -151,6 +151,8 @@ class GameSocket {
 	connected = $state(false);
 
 	reconnecting = $state(false);
+
+	notice = $state<string | null>(null);
 	error = $state<string | null>(null);
 	errorCode = $state<string | null>(null);
 
@@ -178,6 +180,7 @@ class GameSocket {
 	#lastJoin: { code: string; profile: Profile } | null = null;
 	#reconnectAttempt = 0;
 	#reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+	#noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor() {
 		if (browser) window.addEventListener('online', () => this.#reconnectNow());
@@ -261,8 +264,7 @@ class GameSocket {
 				this.#reconnectTimer = null;
 				this.#ws = null;
 				this.#openPromise = null;
-				this.connect().catch(() => {
-				});
+				this.connect().catch(() => {});
 			},
 			base * (0.7 + Math.random() * 0.6)
 		);
@@ -420,6 +422,13 @@ class GameSocket {
 					this.#bestRtt = rtt;
 					this.#serverOffset = msg.serverTime + rtt / 2 - Date.now();
 				}
+				break;
+			}
+			case ServerMsg.NOTICE: {
+				if (typeof msg.text !== 'string') break;
+				this.notice = msg.text;
+				if (this.#noticeTimer) clearTimeout(this.#noticeTimer);
+				this.#noticeTimer = setTimeout(() => (this.notice = null), 12_000);
 				break;
 			}
 			case ServerMsg.SERVER_SHUTDOWN:

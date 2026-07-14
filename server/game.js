@@ -2,7 +2,7 @@ import { ServerMsg, Verdict } from './protocol.js';
 import { roomManager } from './rooms.js';
 import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
 import { judgeGuess } from './match.js';
-import { recordGameResult } from './db.js';
+import { recordGameResult, recordGame } from './db.js';
 import { cleanText } from './moderation.js';
 import { safeTimeout } from './safety.js';
 import {
@@ -438,6 +438,17 @@ export function endGame(room) {
 			);
 		}
 	}
+
+	recordGame({
+		code: room.code,
+		categoryId: room.categoryId,
+		difficulty: room.difficulty,
+		rounds: room.round,
+		players: room.players.size,
+		solo: room.solo,
+		winnerName: !isTie && winners.length === 1 ? winners[0].name : null,
+		topScore: maxScore
+	});
 
 	room.status = 'lobby';
 	room.round = 0;

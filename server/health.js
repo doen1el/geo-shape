@@ -1,5 +1,5 @@
 import { roomManager } from './rooms.js';
-import { connectionCount } from './index.js';
+import { connectionCount } from './metrics.js';
 
 export function healthSnapshot() {
 	const rooms = [...roomManager.rooms.values()];

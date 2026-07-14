@@ -16,7 +16,22 @@ export const ClientMsg = /** @type {const} */ ({
 	UNLIST_ROOMS: 'unlist_rooms',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats',
-	PING: 'ping'
+	PING: 'ping',
+
+	ADMIN_AUTH: 'admin_auth',
+	ADMIN_WATCH: 'admin_watch',
+	ADMIN_UNWATCH: 'admin_unwatch',
+	ADMIN_ACTION: 'admin_action',
+	ADMIN_SEARCH: 'admin_search'
+});
+
+/** Operator actions available from the admin dashboard. */
+export const AdminAction = /** @type {const} */ ({
+	CLOSE_ROOM: 'close_room',
+	KICK_PLAYER: 'kick_player',
+	ANNOUNCE: 'announce',
+	MAINTENANCE: 'maintenance',
+	DELETE_PLAYER: 'delete_player'
 });
 
 /** Message types the server sends to the client. */
@@ -39,6 +54,10 @@ export const ServerMsg = /** @type {const} */ ({
 	STATS: 'stats',
 	PONG: 'pong',
 	SERVER_SHUTDOWN: 'server_shutdown',
+	NOTICE: 'notice',
+	ADMIN_OK: 'admin_ok',
+	ADMIN_STATE: 'admin_state',
+	ADMIN_PLAYERS: 'admin_players',
 	ERROR: 'error'
 });
 

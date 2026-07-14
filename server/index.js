@@ -30,6 +30,19 @@ import {
 	TRUST_PROXY
 } from './config.js';
 import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
+import { addConnection, removeConnection, connectionCount, connectionsFrom } from './metrics.js';
+import {
+	adminEnabled,
+	verifyToken,
+	watchAdmin,
+	unwatchAdmin,
+	adminSnapshot,
+	publishAdmin,
+	startAdminPush,
+	runAdminAction,
+	runAdminSearch,
+	inMaintenance
+} from './admin.js';
 
 const WS_PATH = '/ws';
 const ATTACHED = Symbol.for('geoshape.wss.attached');
@@ -39,14 +52,6 @@ const ATTACHED = Symbol.for('geoshape.wss.attached');
  * @type {WeakSet<import('ws').WebSocket>}
  */
 const alive = new WeakSet();
-
-const perIp = new Map();
-let totalConnections = 0;
-
-/** Live WebSocket connections, for /healthz. */
-export function connectionCount() {
-	return totalConnections;
-}
 
 /**
  * @param {import('http').IncomingMessage} req
@@ -89,21 +94,15 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 		}
 
 		const ip = clientIp(req);
-		if (totalConnections >= MAX_CONNECTIONS || (perIp.get(ip) ?? 0) >= MAX_CONNECTIONS_PER_IP) {
+		if (connectionCount() >= MAX_CONNECTIONS || connectionsFrom(ip) >= MAX_CONNECTIONS_PER_IP) {
 			socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
 			socket.destroy();
 			return;
 		}
 
 		wss.handleUpgrade(req, socket, head, (ws) => {
-			totalConnections++;
-			perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
-			ws.on('close', () => {
-				totalConnections--;
-				const left = (perIp.get(ip) ?? 1) - 1;
-				if (left > 0) perIp.set(ip, left);
-				else perIp.delete(ip);
-			});
+			addConnection(ip);
+			ws.on('close', () => removeConnection(ip));
 			wss.emit('connection', ws, req);
 		});
 	});
@@ -118,6 +117,8 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 		safeInterval('heartbeat', () => dropDeadSockets(wss), HEARTBEAT_MS),
 		safeInterval('roomSweeper', sweepStaleRooms, ROOM_SWEEP_MS)
 	];
+	startAdminPush(timers);
+	if (adminEnabled()) console.log('[admin] dashboard enabled at /admin');
 
 	if (!dev) {
 		const shutdown = createShutdown(httpServer, wss, timers);
@@ -230,6 +231,8 @@ function handleConnection(ws) {
 	/** @type {{ room: import('./rooms.js').Room, playerId: string } | null} */
 	let session = null;
 
+	let isAdmin = false;
+
 	const limiter = createRateLimiter();
 	/** @param {string} key @returns {boolean} true when the action is rate-limited */
 	const limited = (key) => {
@@ -270,6 +273,12 @@ function handleConnection(ws) {
 					return send({ type: ServerMsg.ERROR, message: 'Too many rooms — slow down.' });
 				const profile = sanitizeProfile(msg.profile);
 				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				if (inMaintenance())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'The server is in maintenance — no new rooms right now.',
+						code: 'maintenance'
+					});
 				if (roomManager.rooms.size >= MAX_ROOMS)
 					return send({
 						type: ServerMsg.ERROR,
@@ -434,17 +443,69 @@ function handleConnection(ws) {
 				break;
 			}
 
+			case ClientMsg.ADMIN_AUTH: {
+				if (limited('admin_auth'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts.', code: 'denied' });
+				if (!adminEnabled())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'Admin is disabled (no GEOSHAPE_ADMIN_TOKEN set).',
+						code: 'denied'
+					});
+				if (!verifyToken(msg.token)) {
+					console.warn('[admin] rejected auth attempt');
+					return send({ type: ServerMsg.ERROR, message: 'Invalid token.', code: 'denied' });
+				}
+				isAdmin = true;
+				console.log('[admin] authenticated');
+				send({ type: ServerMsg.ADMIN_OK });
+				break;
+			}
+
+			case ClientMsg.ADMIN_WATCH: {
+				if (!isAdmin) return denyAdmin();
+				watchAdmin(ws);
+				send({ type: ServerMsg.ADMIN_STATE, state: adminSnapshot() });
+				break;
+			}
+
+			case ClientMsg.ADMIN_UNWATCH: {
+				unwatchAdmin(ws);
+				break;
+			}
+
+			case ClientMsg.ADMIN_ACTION: {
+				if (!isAdmin) return denyAdmin();
+				const result = runAdminAction(msg);
+				console.log(`[admin] ${result}`);
+				send({ type: ServerMsg.NOTICE, text: result, admin: true });
+				publishAdmin();
+				break;
+			}
+
+			case ClientMsg.ADMIN_SEARCH: {
+				if (!isAdmin) return denyAdmin();
+				send({ type: ServerMsg.ADMIN_PLAYERS, players: runAdminSearch(msg) });
+				break;
+			}
+
 			default:
 				send({ type: ServerMsg.ERROR, message: `Unknown message type: ${String(msg.type)}` });
 		}
 	}
 
+	function denyAdmin() {
+		send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+	}
+
 	ws.on('close', () => {
 		roomManager.unwatchLobby(ws);
+		unwatchAdmin(ws);
 		leaveCurrent(false);
 	});
 	ws.on('error', () => {
 		roomManager.unwatchLobby(ws);
+		unwatchAdmin(ws);
 		leaveCurrent(false);
 	});
 

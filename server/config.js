@@ -44,6 +44,12 @@ export const MAX_CONNECTIONS_PER_IP = envNum('GEOSHAPE_MAX_CONNECTIONS_PER_IP', 
 export const TRUST_PROXY = process.env.GEOSHAPE_TRUST_PROXY === '1';
 
 /**
+ * Admin dashboard. With no token set the whole admin surface is disabled
+ */
+export const ADMIN_TOKEN = process.env.GEOSHAPE_ADMIN_TOKEN || '';
+export const ADMIN_PUSH_MS = envNum('GEOSHAPE_ADMIN_PUSH_MS', 2000);
+
+/**
  * Per-connection sliding-window rate limits: `max` actions per `windowMs`.
  * @type {Record<string, { max: number, windowMs: number }>}
  */
@@ -55,5 +61,6 @@ export const RATE_LIMITS = {
 	guess: { max: 15, windowMs: 4000 },
 	react: { max: 8, windowMs: 4000 },
 	check_room: { max: 30, windowMs: 10000 },
-	list_rooms: { max: 20, windowMs: 10000 }
+	list_rooms: { max: 20, windowMs: 10000 },
+	admin_auth: { max: 5, windowMs: 60000 }
 };
