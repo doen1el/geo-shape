@@ -113,7 +113,7 @@
 			const newCode = await game.create(profile.toJSON());
 			await goto(`/room/${newCode}`);
 		} catch {
-			errorMsg = t('error.connect');
+			errorMsg = game.errorCode ? '' : t('error.connect');
 		} finally {
 			busy = false;
 		}
@@ -141,7 +141,7 @@
 			soloOpen = false;
 			await goto(`/room/${newCode}?solo=1`);
 		} catch {
-			errorMsg = t('error.connect');
+			errorMsg = game.errorCode ? '' : t('error.connect');
 		} finally {
 			busy = false;
 		}

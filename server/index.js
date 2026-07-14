@@ -112,7 +112,7 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 	wss.on('connection', (ws) => {
 		alive.add(ws);
 		ws.on('pong', () => alive.add(ws));
-		handleConnection(ws);
+		handleConnection(ws, wss);
 	});
 
 	const timers = [
@@ -229,8 +229,9 @@ function isAllowedOrigin(req, dev) {
 /**
  * Per-connection state and message dispatch.
  * @param {import('ws').WebSocket} ws
+ * @param {WebSocketServer} wss Needed by admin actions that address every client.
  */
-function handleConnection(ws) {
+function handleConnection(ws, wss) {
 	/** @type {{ room: import('./rooms.js').Room, playerId: string } | null} */
 	let session = null;
 
@@ -491,7 +492,7 @@ function handleConnection(ws) {
 
 			case ClientMsg.ADMIN_ACTION: {
 				if (!isAdmin) return denyAdmin();
-				const result = runAdminAction(msg);
+				const result = runAdminAction(msg, wss);
 				console.log(`[admin] ${result}`);
 				send({ type: ServerMsg.NOTICE, text: result, admin: true });
 				publishAdmin();

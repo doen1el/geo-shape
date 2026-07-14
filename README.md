@@ -66,7 +66,7 @@ npm install
 
 Run the development server:
 ```bash
-pnpm dev
+GEOSHAPE_ADMIN_TOKEN=dev-token pnpm dev 
 ```
 
 ## 📜 Credits

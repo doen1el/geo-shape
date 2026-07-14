@@ -8,9 +8,11 @@ export const buttonVariants = tv({
 			secondary: 'bg-secondary text-ink shadow-shadow',
 			danger: 'bg-danger text-ink shadow-shadow',
 			neutral: 'bg-surface text-ink shadow-shadow',
-			ghost: 'border-transparent shadow-none hover:translate-x-0 hover:translate-y-0 hover:bg-black/5'
+			ghost:
+				'border-transparent shadow-none hover:translate-x-0 hover:translate-y-0 hover:bg-black/5'
 		},
 		size: {
+			pill: 'h-7 px-2.5 text-xs',
 			sm: 'h-9 px-3 text-sm',
 			default: 'h-11 px-5 text-base',
 			lg: 'h-14 px-8 text-lg',

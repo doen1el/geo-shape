@@ -13,9 +13,6 @@
 	const inRoom = $derived(page.url.pathname.startsWith('/room/'));
 	const isSolo = $derived(page.url.searchParams.get('solo') === '1');
 	const roomCode = $derived((page.params.code ?? '').toUpperCase());
-
-	// The admin dashboard is an ops surface, not part of the game: it needs to scroll
-	// and go wide, so it skips the fixed no-scroll app shell entirely.
 	const isAdmin = $derived(page.url.pathname.startsWith('/admin'));
 
 	let copied = $state(false);
@@ -42,12 +39,16 @@
 				{t('error.reconnecting')}
 			</div>
 		</div>
-	{:else if game.notice}
+	{:else if game.toast}
 		<div class="fixed inset-x-0 bottom-20 z-50 flex justify-center px-4" transition:fade>
 			<div
-				class="flex items-center gap-2 rounded-base border-2 border-border bg-main px-4 py-2 text-sm font-extrabold shadow-shadow"
+				class="flex items-center gap-2 rounded-base border-2 border-border px-4 py-2 text-center text-sm font-extrabold shadow-shadow {game
+					.toast.kind === 'error'
+					? 'bg-red-400'
+					: 'bg-main'}"
 			>
-				📣 {game.notice}
+				{game.toast.kind === 'error' ? '⚠️' : '📣'}
+				{game.toast.text}
 			</div>
 		</div>
 	{/if}

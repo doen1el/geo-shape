@@ -102,9 +102,10 @@ export function startAdminPush(timers) {
 /**
  * Runs an operator action. Returns a short result line for the dashboard log.
  * @param {any} msg
+ * @param {import('ws').WebSocketServer} wss 
  * @returns {string}
  */
-export function runAdminAction(msg) {
+export function runAdminAction(msg, wss) {
 	switch (msg.action) {
 		case AdminAction.CLOSE_ROOM: {
 			const room = roomManager.getRoom(String(msg.code ?? ''));
@@ -142,17 +143,15 @@ export function runAdminAction(msg) {
 				.trim()
 				.slice(0, 200);
 			if (!text) return 'Nothing to announce';
+
 			const payload = JSON.stringify({ type: ServerMsg.NOTICE, text });
 			let sent = 0;
-			for (const room of roomManager.rooms.values()) {
-				for (const player of room.players.values()) {
-					if (player.connected && player.socket.readyState === 1) {
-						player.socket.send(payload);
-						sent++;
-					}
-				}
+			for (const client of wss.clients) {
+				if (client.readyState !== 1) continue;
+				client.send(payload);
+				sent++;
 			}
-			return `Announced to ${sent} player(s)`;
+			return `Announced to ${sent} client(s)`;
 		}
 
 		case AdminAction.MAINTENANCE: {

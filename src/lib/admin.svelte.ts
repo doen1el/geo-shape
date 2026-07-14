@@ -72,6 +72,7 @@ class AdminSocket {
 
 	#ws: WebSocket | null = null;
 	#token = '';
+	#query = '';
 	#logSeq = 0;
 	#retry: ReturnType<typeof setTimeout> | null = null;
 
@@ -123,6 +124,7 @@ class AdminSocket {
 					sessionStorage.setItem(TOKEN_KEY, this.#token);
 				} catch {}
 				this.#send({ type: ClientMsg.ADMIN_WATCH });
+				this.search('');
 				break;
 			case ServerMsg.ADMIN_STATE:
 				this.state = msg.state;
@@ -167,11 +169,14 @@ class AdminSocket {
 	}
 	deletePlayer(clientId: string) {
 		this.#action(AdminAction.DELETE_PLAYER, { clientId });
+
+		setTimeout(() => this.search(this.#query), 200);
 	}
 	backup() {
 		this.#action(AdminAction.BACKUP);
 	}
 	search(query: string) {
+		this.#query = query;
 		this.#send({ type: ClientMsg.ADMIN_SEARCH, query });
 	}
 

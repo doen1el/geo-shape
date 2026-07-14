@@ -152,7 +152,8 @@ class GameSocket {
 
 	reconnecting = $state(false);
 
-	notice = $state<string | null>(null);
+	/** Transient message shown as a toast: an admin announcement, or a refusal from the server. */
+	toast = $state<{ text: string; kind: 'info' | 'error' } | null>(null);
 	error = $state<string | null>(null);
 	errorCode = $state<string | null>(null);
 
@@ -180,7 +181,7 @@ class GameSocket {
 	#lastJoin: { code: string; profile: Profile } | null = null;
 	#reconnectAttempt = 0;
 	#reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-	#noticeTimer: ReturnType<typeof setTimeout> | null = null;
+	#toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 	constructor() {
 		if (browser) window.addEventListener('online', () => this.#reconnectNow());
@@ -278,6 +279,12 @@ class GameSocket {
 		this.#ws = null;
 		this.#openPromise = null;
 		this.connect().catch(() => {});
+	}
+
+	#showToast(text: string, kind: 'info' | 'error'): void {
+		this.toast = { text, kind };
+		if (this.#toastTimer) clearTimeout(this.#toastTimer);
+		this.#toastTimer = setTimeout(() => (this.toast = null), 10_000);
 	}
 
 	#stopReconnecting(): void {
@@ -432,9 +439,7 @@ class GameSocket {
 				break;
 			case ServerMsg.NOTICE: {
 				if (typeof msg.text !== 'string') break;
-				this.notice = msg.text;
-				if (this.#noticeTimer) clearTimeout(this.#noticeTimer);
-				this.#noticeTimer = setTimeout(() => (this.notice = null), 12_000);
+				this.#showToast(msg.text, 'info');
 				break;
 			}
 			case ServerMsg.SERVER_SHUTDOWN:
@@ -444,6 +449,8 @@ class GameSocket {
 				const message = typeof msg.message === 'string' ? msg.message : 'Unknown error';
 				this.error = message;
 				this.errorCode = typeof msg.code === 'string' ? msg.code : null;
+
+				if (this.errorCode === 'maintenance') this.#showToast(message, 'error');
 				if (this.errorCode === 'not_found' || this.errorCode === 'closed') {
 					this.#stopReconnecting();
 					forgetRoom();
@@ -472,6 +479,8 @@ class GameSocket {
 
 	async create(profile: Profile, solo = false, difficulty?: Difficulty): Promise<string> {
 		await this.connect();
+		this.error = null;
+		this.errorCode = null;
 		return new Promise((resolve, reject) => {
 			this.#pendingAck = {
 				resolve: (code) => {

@@ -155,8 +155,9 @@ export function recordGameResult(player, result) {
 }
 
 /**
- * Refreshes the display name/avatar of an existing leaderboard record so the
- * board reflects the player's current profile.
+ * Records the player as seen: creates the account on first contact, and afterwards
+ * keeps its name/avatar in step with their profile.
+ *
  * @param {{ clientId: string, name: string, avatar: string }} player
  */
 export function touchPlayer(player) {
@@ -165,8 +166,15 @@ export function touchPlayer(player) {
 	if (!conn) return;
 	try {
 		conn
-			.prepare(`UPDATE players SET name = ?, avatar = ?, last_seen = ? WHERE client_id = ?`)
-			.run(player.name, player.avatar, Date.now(), player.clientId);
+			.prepare(
+				`INSERT INTO players (client_id, name, avatar, last_seen)
+				 VALUES (?, ?, ?, ?)
+				 ON CONFLICT(client_id) DO UPDATE SET
+					name      = excluded.name,
+					avatar    = excluded.avatar,
+					last_seen = excluded.last_seen`
+			)
+			.run(player.clientId, player.name, player.avatar, Date.now());
 	} catch (e) {
 		console.error('[db] touchPlayer failed:', e instanceof Error ? e.message : e);
 	}
@@ -174,6 +182,10 @@ export function touchPlayer(player) {
 
 /**
  * Top players for the leaderboard. Never exposes the clientId.
+ *
+ * Accounts with no finished game are excluded: everyone who ever joined now has a
+ * record, and a board padded with 0/0 entries would be worthless.
+ *
  * @param {number} [limit]
  * @returns {Array<{ name: string, avatar: string, gamesWon: number, gamesPlayed: number, totalScore: number, bestScore: number }>}
  */
@@ -185,6 +197,7 @@ export function getLeaderboard(limit = 10) {
 			.prepare(
 				`SELECT name, avatar, games_won, games_played, total_score, best_score
 				 FROM players
+				 WHERE games_played > 0
 				 ORDER BY games_won DESC, total_score DESC
 				 LIMIT ?`
 			)

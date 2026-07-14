@@ -94,7 +94,6 @@ test('the dashboard sees live rooms and a finished game lands in the games table
 		'both players are listed'
 	);
 
-	// Play one round to completion. The answer is in the server's own log.
 	alice.send({ type: 'settings', maxRounds: 1, roundDurationSec: 30 });
 	alice.send({ type: 'start' });
 	await alice.wait((m) => m.type === 'round_start', { label: 'round_start' });
@@ -127,9 +126,16 @@ test('announce, maintenance, kick and close-room work', async () => {
 	player.send({ type: 'create', profile: profile('Pat') });
 	const { code } = await player.wait((m) => m.type === 'created', { label: 'created' });
 
+	const browsing = connect(server.wsUrl);
+	await browsing.opened;
+
 	admin.send({ type: 'admin_action', action: 'announce', text: 'Restart in 5 minutes' });
 	const notice = await player.wait((m) => m.type === 'notice', { label: 'notice' });
 	assert.equal(notice.text, 'Restart in 5 minutes');
+
+	const alsoHeard = await browsing.wait((m) => m.type === 'notice', { label: 'notice (no room)' });
+	assert.equal(alsoHeard.text, 'Restart in 5 minutes', 'reaches clients outside any room');
+	browsing.close();
 
 	admin.send({ type: 'admin_action', action: 'maintenance', on: true });
 	await sleep(300);
