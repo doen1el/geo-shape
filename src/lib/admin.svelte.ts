@@ -38,6 +38,7 @@ export type AdminGame = {
 
 export type AdminState = {
 	maintenance: boolean;
+	lastBackupAt: number | null;
 	uptimeSec: number;
 	connections: number;
 	addresses: number;
@@ -166,6 +167,9 @@ class AdminSocket {
 	}
 	deletePlayer(clientId: string) {
 		this.#action(AdminAction.DELETE_PLAYER, { clientId });
+	}
+	backup() {
+		this.#action(AdminAction.BACKUP);
 	}
 	search(query: string) {
 		this.#send({ type: ClientMsg.ADMIN_SEARCH, query });

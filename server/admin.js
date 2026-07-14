@@ -4,6 +4,7 @@ import { roomManager } from './rooms.js';
 import { cleanupRoom } from './game.js';
 import { getRecentGames, getTotals, searchPlayers, deletePlayer } from './db.js';
 import { connectionCount, uniqueAddresses } from './metrics.js';
+import { runBackup, lastBackup } from './backup.js';
 import { ADMIN_TOKEN, ADMIN_PUSH_MS } from './config.js';
 import { safeInterval } from './safety.js';
 
@@ -71,6 +72,7 @@ export function adminSnapshot() {
 
 	return {
 		maintenance,
+		lastBackupAt: lastBackup(),
 		uptimeSec: Math.round(process.uptime()),
 		connections: connectionCount(),
 		addresses: uniqueAddresses(),
@@ -161,6 +163,11 @@ export function runAdminAction(msg) {
 		case AdminAction.DELETE_PLAYER: {
 			const clientId = String(msg.clientId ?? '');
 			return deletePlayer(clientId) ? `Deleted record ${clientId}` : 'Delete failed';
+		}
+
+		case AdminAction.BACKUP: {
+			const file = runBackup();
+			return file ? `Backup written to ${file}` : 'Backup failed or disabled';
 		}
 
 		default:

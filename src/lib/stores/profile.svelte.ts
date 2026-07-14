@@ -45,18 +45,14 @@ export const AVATAR_STYLES = [
 
 const DEFAULT_STYLE = AVATAR_STYLES[0];
 
-function uuid(): string {
-	if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-	return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-export type Profile = { name: string; avatar: string; clientId: string };
+export type Profile = { name: string; avatar: string; clientId: string; clientSig: string };
 type StoredProfile = Profile;
 
 class ProfileStore {
 	name = $state('');
 	avatar = $state<string>(DEFAULT_STYLE);
-	clientId = $state(uuid());
+	clientId = $state('');
+	clientSig = $state('');
 
 	constructor() {
 		if (!browser) return;
@@ -66,11 +62,17 @@ class ProfileStore {
 				const parsed = JSON.parse(raw) as Partial<StoredProfile>;
 				this.name = parsed.name ?? '';
 				this.avatar = isStyle(parsed.avatar) ? parsed.avatar : DEFAULT_STYLE;
-				this.clientId = parsed.clientId || uuid();
+				this.clientId = parsed.clientId ?? '';
+				this.clientSig = parsed.clientSig ?? '';
 			}
 			this.persist();
-		} catch {
-		}
+		} catch {}
+	}
+
+	setIdentity(clientId: string, clientSig: string): void {
+		this.clientId = clientId;
+		this.clientSig = clientSig;
+		this.persist();
 	}
 
 	get isComplete(): boolean {
@@ -89,7 +91,12 @@ class ProfileStore {
 	}
 
 	toJSON(): StoredProfile {
-		return { name: this.name.trim(), avatar: this.avatar, clientId: this.clientId };
+		return {
+			name: this.name.trim(),
+			avatar: this.avatar,
+			clientId: this.clientId,
+			clientSig: this.clientSig
+		};
 	}
 
 	private persist(): void {

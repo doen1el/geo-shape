@@ -31,6 +31,8 @@ import {
 } from './config.js';
 import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
 import { addConnection, removeConnection, connectionCount, connectionsFrom } from './metrics.js';
+import { resolveIdentity, verify as verifyIdentity } from './identity.js';
+import { startBackups } from './backup.js';
 import {
 	adminEnabled,
 	verifyToken,
@@ -118,6 +120,7 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 		safeInterval('roomSweeper', sweepStaleRooms, ROOM_SWEEP_MS)
 	];
 	startAdminPush(timers);
+	startBackups(timers);
 	if (adminEnabled()) console.log('[admin] dashboard enabled at /admin');
 
 	if (!dev) {
@@ -244,6 +247,16 @@ function handleConnection(ws) {
 		if (ws.readyState === 1) ws.send(JSON.stringify(msg));
 	};
 
+	/**
+	 * Hands a freshly minted identity back to the client so it can store the signed
+	 * pair.
+	 * @param {{ clientId: string, sig: string, minted: boolean }} identity
+	 */
+	const issueIdentity = (identity) => {
+		if (!identity.minted) return;
+		send({ type: ServerMsg.IDENTITY, clientId: identity.clientId, sig: identity.sig });
+	};
+
 	ws.on('message', (data) => {
 		if (!limiter.allow('__global', RATE_LIMITS.default.max, RATE_LIMITS.default.windowMs)) return;
 
@@ -271,8 +284,10 @@ function handleConnection(ws) {
 			case ClientMsg.CREATE: {
 				if (limited('create'))
 					return send({ type: ServerMsg.ERROR, message: 'Too many rooms — slow down.' });
-				const profile = sanitizeProfile(msg.profile);
-				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
 				if (inMaintenance())
 					return send({
 						type: ServerMsg.ERROR,
@@ -296,8 +311,10 @@ function handleConnection(ws) {
 			case ClientMsg.JOIN: {
 				if (limited('join'))
 					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
-				const profile = sanitizeProfile(msg.profile);
-				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
 				const room = roomManager.getRoom(msg.code);
 
 				const reconnecting =
@@ -435,11 +452,9 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.GET_STATS: {
-				const clientId =
-					typeof msg.clientId === 'string'
-						? msg.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
-						: '';
-				send({ type: ServerMsg.STATS, stats: getPlayerStats(clientId) });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				const stats = verifyIdentity(clientId, msg.sig) ? getPlayerStats(clientId) : null;
+				send({ type: ServerMsg.STATS, stats });
 				break;
 			}
 
@@ -570,9 +585,11 @@ function finalizeRemoval(room, playerId) {
 }
 
 /**
- * Validates, normalizes and moderates an incoming profile.
+ * Validates, normalizes and moderates an incoming profile, and settles its identity.
+ *
  * @param {any} raw
- * @returns {import('./protocol.js').Profile | null}
+ * @returns {{ profile: import('./protocol.js').Profile,
+ *   identity: { clientId: string, sig: string, minted: boolean } } | null}
  */
 function sanitizeProfile(raw) {
 	if (!raw || typeof raw.name !== 'string') return null;
@@ -585,9 +602,6 @@ function sanitizeProfile(raw) {
 	).trim();
 	if (name.length === 0) return null;
 	const avatar = isAvatarStyle(raw.avatar) ? raw.avatar : DEFAULT_AVATAR;
-	const clientId =
-		typeof raw.clientId === 'string'
-			? raw.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
-			: '';
-	return { name, avatar, clientId };
+	const identity = resolveIdentity(raw);
+	return { profile: { name, avatar, clientId: identity.clientId }, identity };
 }

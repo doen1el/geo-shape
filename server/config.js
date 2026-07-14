@@ -1,3 +1,5 @@
+import { dirname, join } from 'node:path';
+
 export const ROUND_DURATION_SEC = 90;
 export const MIN_ROUND_DURATION_SEC = 30;
 export const MAX_ROUND_DURATION_SEC = 180;
@@ -48,6 +50,17 @@ export const TRUST_PROXY = process.env.GEOSHAPE_TRUST_PROXY === '1';
  */
 export const ADMIN_TOKEN = process.env.GEOSHAPE_ADMIN_TOKEN || '';
 export const ADMIN_PUSH_MS = envNum('GEOSHAPE_ADMIN_PUSH_MS', 2000);
+
+export const DB_PATH = process.env.GEOSHAPE_DB || './data/geoshape.db';
+
+/**
+ * Database snapshots. Set the interval to 0 to switch them off.
+ */
+export const BACKUP_DIR = process.env.GEOSHAPE_BACKUP_DIR || join(dirname(DB_PATH), 'backups');
+export const BACKUP_INTERVAL_MS = Number(
+	process.env.GEOSHAPE_BACKUP_INTERVAL_MS ?? 24 * 3600 * 1000
+);
+export const BACKUP_KEEP = envNum('GEOSHAPE_BACKUP_KEEP', 7);
 
 /**
  * Per-connection sliding-window rate limits: `max` actions per `windowMs`.

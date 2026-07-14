@@ -1,8 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-
-const DB_PATH = process.env.GEOSHAPE_DB || './data/geoshape.db';
+import { DB_PATH } from './config.js';
 
 /** @type {DatabaseSync | null} */
 let db = null;
@@ -24,6 +23,12 @@ function getDb() {
 				total_score   INTEGER NOT NULL DEFAULT 0,
 				best_score    INTEGER NOT NULL DEFAULT 0,
 				last_seen     INTEGER NOT NULL
+			);
+		`);
+		db.exec(`
+			CREATE TABLE IF NOT EXISTS meta (
+				key   TEXT PRIMARY KEY,
+				value TEXT NOT NULL
 			);
 		`);
 		db.exec(`
@@ -57,6 +62,58 @@ export function closeDb() {
 		console.error('[db] close failed:', e instanceof Error ? e.message : e);
 	}
 	db = null;
+}
+
+/**
+ * Small key/value store for things that must outlive a restart
+ *
+ * @param {string} key
+ * @returns {string | null}
+ */
+export function getMeta(key) {
+	const conn = getDb();
+	if (!conn) return null;
+	try {
+		const row = conn.prepare('SELECT value FROM meta WHERE key = ?').get(key);
+		return row ? String(row.value) : null;
+	} catch (e) {
+		console.error('[db] getMeta failed:', e instanceof Error ? e.message : e);
+		return null;
+	}
+}
+
+/** @param {string} key @param {string} value */
+export function setMeta(key, value) {
+	const conn = getDb();
+	if (!conn) return;
+	try {
+		conn
+			.prepare(
+				`INSERT INTO meta (key, value) VALUES (?, ?)
+				 ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+			)
+			.run(key, value);
+	} catch (e) {
+		console.error('[db] setMeta failed:', e instanceof Error ? e.message : e);
+	}
+}
+
+/**
+ * Writes a consistent copy of the database to `path`.
+ *
+ * @param {string} path Must not already exist.
+ * @returns {boolean}
+ */
+export function backupTo(path) {
+	const conn = getDb();
+	if (!conn) return false;
+	try {
+		conn.prepare('VACUUM INTO ?').run(path);
+		return true;
+	} catch (e) {
+		console.error('[db] backup failed:', e instanceof Error ? e.message : e);
+		return false;
+	}
 }
 
 /**

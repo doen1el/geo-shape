@@ -99,9 +99,11 @@
 					>
 						{s.maintenance ? 'End maintenance' : 'Maintenance mode'}
 					</Button>
+					<Button variant="neutral" onclick={() => admin.backup()}>Back up now</Button>
 				</div>
 				<p class="text-xs font-bold text-ink/50">
-					Maintenance blocks new rooms; running games finish undisturbed.
+					Maintenance blocks new rooms; running games finish undisturbed. Last backup:
+					{s.lastBackupAt ? ago(s.lastBackupAt) : 'not yet this run'}.
 				</p>
 				{#if admin.log.length}
 					<div class="flex flex-col gap-1 border-t-2 border-border/20 pt-2">

@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { ClientMsg, ServerMsg } from '../../server/protocol.js';
-import type { Profile } from './stores/profile.svelte';
+import { profile as profileStore, type Profile } from './stores/profile.svelte';
 
 export { REACTION_EMOJIS, CONFETTI_EMOJI } from '../../server/protocol.js';
 
@@ -424,6 +424,12 @@ class GameSocket {
 				}
 				break;
 			}
+			case ServerMsg.IDENTITY:
+				if (typeof msg.clientId === 'string' && typeof msg.sig === 'string') {
+					profileStore.setIdentity(msg.clientId, msg.sig);
+					if (this.#lastJoin) this.#lastJoin.profile = profileStore.toJSON();
+				}
+				break;
 			case ServerMsg.NOTICE: {
 				if (typeof msg.text !== 'string') break;
 				this.notice = msg.text;
@@ -470,7 +476,8 @@ class GameSocket {
 			this.#pendingAck = {
 				resolve: (code) => {
 					if (!solo) rememberRoom(code);
-					this.#lastJoin = { code, profile };
+
+					this.#lastJoin = { code, profile: profileStore.toJSON() };
 					resolve(code);
 				},
 				reject
@@ -487,7 +494,7 @@ class GameSocket {
 			this.#pendingAck = {
 				resolve: (c) => {
 					rememberRoom(c);
-					this.#lastJoin = { code: c, profile };
+					this.#lastJoin = { code: c, profile: profileStore.toJSON() };
 					resolve(c);
 				},
 				reject
@@ -555,9 +562,14 @@ class GameSocket {
 		this.#send({ type: ClientMsg.GET_LEADERBOARD });
 	}
 
-	async requestStats(clientId: string): Promise<void> {
+	async requestStats(): Promise<void> {
 		await this.connect();
-		this.#send({ type: ClientMsg.GET_STATS, clientId });
+		if (!profileStore.clientId) return;
+		this.#send({
+			type: ClientMsg.GET_STATS,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig
+		});
 	}
 
 	dismissGameOver(): void {

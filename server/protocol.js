@@ -31,7 +31,8 @@ export const AdminAction = /** @type {const} */ ({
 	KICK_PLAYER: 'kick_player',
 	ANNOUNCE: 'announce',
 	MAINTENANCE: 'maintenance',
-	DELETE_PLAYER: 'delete_player'
+	DELETE_PLAYER: 'delete_player',
+	BACKUP: 'backup'
 });
 
 /** Message types the server sends to the client. */
@@ -55,6 +56,7 @@ export const ServerMsg = /** @type {const} */ ({
 	PONG: 'pong',
 	SERVER_SHUTDOWN: 'server_shutdown',
 	NOTICE: 'notice',
+	IDENTITY: 'identity',
 	ADMIN_OK: 'admin_ok',
 	ADMIN_STATE: 'admin_state',
 	ADMIN_PLAYERS: 'admin_players',

@@ -284,12 +284,15 @@ export class RoomManager {
 	 * @returns {Room[]}
 	 */
 	findStale(idleMs) {
-		const now = Date.now();
-		const cutoff = now - idleMs;
+		const cutoff = Date.now() - idleMs;
 		return [...this.rooms.values()].filter((room) => {
 			if (room.lastActivityAt >= cutoff) return false;
-			const midRound = room.roundActive && !room.paused && room.roundEndsAt > now;
-			return !midRound;
+			// A pending timer means the game loop is still ticking — a running round, the
+			// pre-game countdown, or the pause between rounds — and none of those record
+			// activity while they run. A room stuck in `playing` with no timer left has no
+			// loop to tick, and that is exactly the leak worth collecting.
+			const gameRunning = room.roundTimer !== null || room.pauseTimer !== null;
+			return !gameRunning;
 		});
 	}
 

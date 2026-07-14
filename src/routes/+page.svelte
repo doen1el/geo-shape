@@ -64,7 +64,7 @@
 	);
 
 	onMount(() => {
-		game.requestStats(profile.clientId);
+		game.requestStats();
 		game.watchRooms();
 		const last = getLastRoom();
 		if (last && last !== game.room?.code) {
