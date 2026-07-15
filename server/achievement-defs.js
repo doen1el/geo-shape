@@ -73,6 +73,3 @@ export const ACHIEVEMENT_DEFS = [
 
 /** @type {Map<string, AchievementDef>} */
 export const DEF_BY_ID = new Map(ACHIEVEMENT_DEFS.map((d) => [d.id, d]));
-
-/** How many badges a player may show next to their name. */
-export const MAX_PINNED = 3;

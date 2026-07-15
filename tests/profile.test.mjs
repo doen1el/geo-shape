@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, connect, sleep, solveRound, identifiedProfile, until } from './helpers.mjs';
+import { startServer, connect, sleep, solveRound, identifiedProfile } from './helpers.mjs';
 
 let server;
 before(
@@ -74,8 +74,7 @@ test('going private hides the stats but keeps the name', async () => {
 		type: 'set_profile_prefs',
 		clientId: me.clientId,
 		sig: me.clientSig,
-		isPrivate: true,
-		pinned: []
+		isPrivate: true
 	});
 	await client.wait((m) => m.type === 'my_profile' && m.profile.isPrivate, { label: 'saved' });
 
@@ -93,26 +92,6 @@ test('going private hides the stats but keeps the name', async () => {
 	visitor.close();
 });
 
-test('you can only pin badges you actually earned', async () => {
-	const { me, client, profile } = await playerWithBadge('Pinner');
-	const earned = profile.achievements[0].id;
-
-	// playerWithBadge already pulled a my_profile — wait for a *fresh* one, not that.
-	const mark = client.ofType('my_profile').length;
-	client.send({
-		type: 'set_profile_prefs',
-		clientId: me.clientId,
-		sig: me.clientSig,
-		isPrivate: false,
-		pinned: [earned, 'collect_world', 'not_even_a_badge']
-	});
-	await until(() => client.ofType('my_profile').length > mark, { label: 'saved' });
-
-	const saved = client.last('my_profile');
-	assert.deepEqual(saved.profile.pinned, [earned], 'the unearned ones are dropped');
-	client.close();
-});
-
 test('an unsigned caller gets nothing and changes nothing', async () => {
 	const { me, client, profile } = await playerWithBadge('Victim');
 	client.close();
@@ -128,8 +107,7 @@ test('an unsigned caller gets nothing and changes nothing', async () => {
 		type: 'set_profile_prefs',
 		clientId: me.clientId,
 		sig: 'forged',
-		isPrivate: true,
-		pinned: []
+		isPrivate: true
 	});
 	const err = await mallory.wait((m) => m.type === 'error', { label: 'denied' });
 	assert.equal(err.code, 'denied');

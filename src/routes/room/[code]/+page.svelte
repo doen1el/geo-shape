@@ -17,7 +17,6 @@
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
-	import BadgeChips from '$lib/components/ui/BadgeChips.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { DEF_BY_ID } from '$lib/badges';
@@ -462,7 +461,6 @@
 										class="rounded-base border-2 border-border bg-surface"
 									/>
 									<span class="truncate font-bold">{p.name}</span>
-									<BadgeChips ids={p.badges ?? []} class="shrink-0" />
 									{#if p.wins > 0}
 										<span
 										class="flex items-center gap-1 text-xs font-bold text-ink/50"

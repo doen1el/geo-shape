@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import BadgeChips from '$lib/components/ui/BadgeChips.svelte';
 	import type { PublicPlayer } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
@@ -30,7 +29,6 @@
 					class="shrink-0 rounded-base border-2 border-border bg-surface"
 				/>
 				<span class="truncate font-bold">{p.name}</span>
-				<BadgeChips ids={p.badges ?? []} class="shrink-0" />
 				{#if p.isHost}
 					<span class="rounded border border-border bg-secondary px-1 text-[10px] font-extrabold">
 						{t('lobby.host')}

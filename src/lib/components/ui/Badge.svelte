@@ -31,7 +31,6 @@
 	};
 
 	const Icon = $derived(badgeIcon(id).icon);
-	const color = $derived(badgeIcon(id).color);
 	const title = $derived(t(`achievement.${id}.title` as 'achievement.blitz.title'));
 	const desc = $derived(t(`achievement.${id}.desc` as 'achievement.blitz.desc'));
 	const pct = $derived(
@@ -48,7 +47,11 @@
 		className
 	)}
 >
-	<Icon size={size === 'sm' ? 22 : 30} class={locked ? 'text-ink/25' : color} aria-hidden="true" />
+	<Icon
+		size={size === 'sm' ? 22 : 30}
+		class={locked ? 'text-ink opacity-30' : 'text-ink'}
+		aria-hidden="true"
+	/>
 	<span class={cn('text-[11px] leading-tight font-extrabold', locked && 'text-ink/40')}>
 		{title}
 	</span>
@@ -63,9 +66,9 @@
 	{/if}
 
 	<div
-		class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[min(16rem,80vw)] -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-3 py-2 text-[11px] leading-relaxed font-bold text-ink opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"
+		class="badge-tip pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[min(16rem,80vw)] -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-3 py-2 text-[11px] leading-relaxed font-bold text-ink opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"
 	>
-		{locked ? `${t('profile.locked')} — ${desc}` : desc}
+		{desc}
 		{#if !locked && rarity != null}
 			<span class="mt-1 block text-ink/60">{t('badge.rarity', { pct: String(rarity) })}</span>
 		{/if}

@@ -111,7 +111,6 @@ export const CONFETTI_KEY = 'party';
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
- * @property {string[]} badges
  * @property {string} publicId
  * @property {boolean} isHost
  * @property {boolean} connected

@@ -59,6 +59,15 @@ export const Counter = /** @type {const} */ ({
 const all = (/** @type {number} */ id) => CATEGORY_SIZES[id] ?? Infinity;
 
 /**
+ * Counter-based badges that show a progress bar (no category to fill).
+ * Keep the target in sync with the matching predicate in CHECKS.
+ * @type {Record<string, { counter: string, target: number }>}
+ */
+const COUNT_TARGETS = {
+	explorer: { counter: Counter.SOLVES, target: 25 }
+};
+
+/**
  * One predicate per badge id. A collection badge just needs its category filled.
  * @type {Record<string, (ctx: Ctx) => boolean>}
  */
@@ -179,6 +188,7 @@ export function catalogueFor(unlocked) {
 		tier: a.tier,
 		group: a.group,
 		categoryId: a.categoryId ?? null,
-		target: a.categoryId != null ? all(a.categoryId) : null
+		target: a.categoryId != null ? all(a.categoryId) : (COUNT_TARGETS[a.id]?.target ?? null),
+		counter: a.categoryId != null ? null : (COUNT_TARGETS[a.id]?.counter ?? null)
 	}));
 }

@@ -11,7 +11,6 @@ export type PublicPlayer = {
 	score: number;
 	roundPoints: number;
 	wins: number;
-	badges: string[];
 	publicId: string;
 	isHost: boolean;
 	connected: boolean;
@@ -124,6 +123,7 @@ export type AchievementDef = {
 	group: string;
 	categoryId: number | null;
 	target: number | null;
+	counter?: string | null;
 };
 
 export type Unlocked = { id: string; unlockedAt: number };
@@ -133,7 +133,6 @@ export type PlayerProfile = {
 	name: string;
 	avatar: string;
 	isPrivate: boolean;
-	pinned?: string[];
 	gamesPlayed?: number;
 	gamesWon?: number;
 	totalScore?: number;
@@ -143,6 +142,7 @@ export type PlayerProfile = {
 	lastSeen?: number;
 	achievements?: Unlocked[];
 	progress?: Record<number, number>;
+	counters?: Record<string, number>;
 	catalogue?: AchievementDef[];
 	rarity?: Record<string, number>;
 };
@@ -690,15 +690,14 @@ class GameSocket {
 		this.#send({ type: ClientMsg.GET_PROFILE, publicId });
 	}
 
-	async saveProfilePrefs(isPrivate: boolean, pinned: string[]): Promise<void> {
+	async saveProfilePrefs(isPrivate: boolean): Promise<void> {
 		await this.connect();
 		if (!profileStore.clientId) return;
 		this.#send({
 			type: ClientMsg.SET_PROFILE_PREFS,
 			clientId: profileStore.clientId,
 			sig: profileStore.clientSig,
-			isPrivate,
-			pinned
+			isPrivate
 		});
 	}
 

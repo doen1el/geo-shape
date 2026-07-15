@@ -6,7 +6,7 @@ import {
 	LOBBY_PUSH_MS
 } from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
-import { getPlayerStats, touchPlayer, getPinned, getPublicId } from './db.js';
+import { getPlayerStats, touchPlayer, getPublicId } from './db.js';
 import { safeTimeout } from './safety.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -28,7 +28,6 @@ let playerSeq = 0;
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
- * @property {string[]} badges
  * @property {string} publicId
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
@@ -175,7 +174,6 @@ export class RoomManager {
 		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
 
 		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
-		const badges = getPinned(profile.clientId);
 		const publicId = getPublicId(profile.clientId);
 		/** @type {Player} */
 		const player = {
@@ -184,7 +182,6 @@ export class RoomManager {
 			score: 0,
 			roundPoints: 0,
 			wins,
-			badges,
 			publicId,
 			connected: true,
 			socket,
@@ -254,7 +251,6 @@ export class RoomManager {
 				score: p.score,
 				roundPoints: p.roundPoints,
 				wins: p.wins,
-				badges: p.badges,
 				publicId: p.publicId,
 				isHost: p.id === room.hostId,
 				connected: p.connected,

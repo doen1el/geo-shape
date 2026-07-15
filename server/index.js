@@ -16,7 +16,6 @@ import {
 	getLeaderboard,
 	getPlayerStats,
 	closeDb,
-	getUnlocked,
 	setProfilePrefs,
 	getFullProfile,
 	getFullProfileByPublicId,
@@ -26,7 +25,6 @@ import {
 	claimDaily,
 	getAchievementRarity
 } from './db.js';
-import { MAX_PINNED } from './achievement-defs.js';
 import { catalogueFor } from './achievements.js';
 import { dailyKey, dailyPlan } from './daily.js';
 import { cleanText } from './moderation.js';
@@ -499,12 +497,7 @@ function handleConnection(ws, wss) {
 				if (!verifyIdentity(clientId, msg.sig))
 					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
 
-				const unlocked = new Set(getUnlocked(clientId));
-				const pinned = (Array.isArray(msg.pinned) ? msg.pinned : [])
-					.filter((/** @type {unknown} */ id) => typeof id === 'string' && unlocked.has(id))
-					.slice(0, MAX_PINNED);
-
-				setProfilePrefs(clientId, { isPrivate: msg.isPrivate === true, pinned });
+				setProfilePrefs(clientId, { isPrivate: msg.isPrivate === true });
 				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
 				break;
 			}

@@ -3,7 +3,6 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DB_PATH } from './config.js';
-import { MAX_PINNED } from './achievement-defs.js';
 
 /** @type {DatabaseSync | null} */
 let db = null;
@@ -42,7 +41,6 @@ function getDb() {
 		`);
 		addColumn(db, 'players', 'public_id', 'TEXT');
 		addColumn(db, 'players', 'is_private', 'INTEGER NOT NULL DEFAULT 0');
-		addColumn(db, 'players', 'pinned', 'TEXT');
 		addColumn(db, 'players', 'daily_streak', 'INTEGER NOT NULL DEFAULT 0');
 		addColumn(db, 'players', 'daily_best_streak', 'INTEGER NOT NULL DEFAULT 0');
 		addColumn(db, 'players', 'daily_last_day', 'TEXT');
@@ -861,7 +859,6 @@ export function bumpDailyStreak(clientId, day, yesterday) {
  * @property {string} name
  * @property {string} avatar
  * @property {boolean} isPrivate
- * @property {string[]} pinned
  * @property {number} gamesPlayed
  * @property {number} gamesWon
  * @property {number} totalScore
@@ -873,18 +870,11 @@ export function bumpDailyStreak(clientId, day, yesterday) {
 
 /** @param {any} r @returns {PlayerProfile} */
 function toProfile(r) {
-	/** @type {string[]} */
-	let pinned = [];
-	try {
-		const parsed = r.pinned ? JSON.parse(String(r.pinned)) : [];
-		if (Array.isArray(parsed)) pinned = parsed.map(String).slice(0, MAX_PINNED);
-	} catch {}
 	return {
 		publicId: r.public_id ? String(r.public_id) : '',
 		name: String(r.name),
 		avatar: String(r.avatar),
 		isPrivate: Number(r.is_private) === 1,
-		pinned,
 		gamesPlayed: Number(r.games_played),
 		gamesWon: Number(r.games_won),
 		totalScore: Number(r.total_score),
@@ -895,7 +885,7 @@ function toProfile(r) {
 	};
 }
 
-const PROFILE_COLS = `public_id, name, avatar, is_private, pinned, games_played, games_won,
+const PROFILE_COLS = `public_id, name, avatar, is_private, games_played, games_won,
 	total_score, best_score, daily_streak, daily_best_streak, last_seen`;
 
 /**
@@ -935,7 +925,7 @@ export function getProfileByClientId(clientId) {
 
 /**
  * @param {string} clientId
- * @param {{ isPrivate: boolean, pinned: string[] }} prefs
+ * @param {{ isPrivate: boolean }} prefs
  */
 export function setProfilePrefs(clientId, prefs) {
 	if (!clientId) return;
@@ -943,20 +933,11 @@ export function setProfilePrefs(clientId, prefs) {
 	if (!conn) return;
 	try {
 		conn
-			.prepare('UPDATE players SET is_private = ?, pinned = ? WHERE client_id = ?')
-			.run(prefs.isPrivate ? 1 : 0, JSON.stringify(prefs.pinned.slice(0, MAX_PINNED)), clientId);
+			.prepare('UPDATE players SET is_private = ? WHERE client_id = ?')
+			.run(prefs.isPrivate ? 1 : 0, clientId);
 	} catch (e) {
 		console.error('[db] setProfilePrefs failed:', e instanceof Error ? e.message : e);
 	}
-}
-
-/**
- * The badges a player shows next to their name in a room. Looked up on join.
- * @param {string} clientId
- * @returns {string[]}
- */
-export function getPinned(clientId) {
-	return getProfileByClientId(clientId)?.pinned ?? [];
 }
 
 /**
@@ -981,7 +962,8 @@ function clientIdByPublicId(publicId) {
 /**
  * @typedef {PlayerProfile & {
  *   achievements: Array<{ id: string, unlockedAt: number }>,
- *   progress: Record<number, number>
+ *   progress: Record<number, number>,
+ *   counters: Record<string, number>
  * }} FullProfile
  */
 
@@ -997,7 +979,8 @@ export function getFullProfile(clientId) {
 	return {
 		...base,
 		achievements: getUnlockedWithDates(clientId),
-		progress: getCategoryProgress(clientId)
+		progress: getCategoryProgress(clientId),
+		counters: getCounters(clientId)
 	};
 }
 

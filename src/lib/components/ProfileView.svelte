@@ -36,7 +36,13 @@
 
 <div class="flex flex-col gap-4">
 	<Card class="flex items-center gap-4 p-4">
-		<Avatar style={profile.avatar} seed={profile.name} size={64} alt={profile.name} />
+		<Avatar
+			style={profile.avatar}
+			seed={profile.name}
+			size={64}
+			alt={profile.name}
+			class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow"
+		/>
 		<div class="min-w-0 flex-1">
 			<h1 class="truncate text-2xl font-extrabold">{profile.name}</h1>
 			<p class="text-sm font-bold text-ink/50">
@@ -75,19 +81,50 @@
 			<h2 class="mb-3 text-sm font-extrabold tracking-wide uppercase">
 				{t(`badge.group.${group}` as 'badge.group.speed')}
 			</h2>
-			<div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+			<div class="badge-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
 				{#each items as a (a.id)}
+					{@const have =
+						a.categoryId != null
+							? (profile.progress?.[a.categoryId] ?? 0)
+							: a.counter
+								? (profile.counters?.[a.counter] ?? 0)
+								: 0}
 					<Badge
 						id={a.id}
 						tier={a.tier}
 						locked={!unlockedIds.has(a.id)}
 						rarity={unlockedIds.has(a.id) ? (profile.rarity?.[a.id] ?? null) : null}
-						progress={a.categoryId != null && a.target
-							? { have: profile.progress?.[a.categoryId] ?? 0, target: a.target }
-							: null}
+						progress={a.target ? { have, target: a.target } : null}
 					/>
 				{/each}
 			</div>
 		</Card>
 	{/each}
 </div>
+
+<style>
+	@media (max-width: 639px) {
+		.badge-grid > :global(:nth-child(3n + 1) .badge-tip) {
+			left: 0;
+			right: auto;
+			translate: none;
+		}
+		.badge-grid > :global(:nth-child(3n) .badge-tip) {
+			left: auto;
+			right: 0;
+			translate: none;
+		}
+	}
+	@media (min-width: 640px) {
+		.badge-grid > :global(:nth-child(4n + 1) .badge-tip) {
+			left: 0;
+			right: auto;
+			translate: none;
+		}
+		.badge-grid > :global(:nth-child(4n) .badge-tip) {
+			left: auto;
+			right: 0;
+			translate: none;
+		}
+	}
+</style>
