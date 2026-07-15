@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { game, CONFETTI_EMOJI } from '$lib/ws.svelte';
+	import { game, CONFETTI_KEY } from '$lib/ws.svelte';
+	import { REACTION_ICON } from '$lib/reactions';
 
 	const CONFETTI_PIECES = Array.from({ length: 14 }, (_, i) => i);
 	const COLORS = [
@@ -20,8 +21,15 @@
 <div class="pointer-events-none absolute inset-0 z-30 overflow-hidden">
 	{#each game.reactions as r (r.id)}
 		{@const drift = (rand(r.id * 3) - 0.5) * 32}
+		{@const Icon = REACTION_ICON[r.reaction]?.icon ?? REACTION_ICON.fire.icon}
 		<div class="floater" style="--drift: {drift}px;">
-			<span class="text-3xl drop-shadow-sm">{r.emoji}</span>
+			<span
+				class="flex h-9 w-9 items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow {REACTION_ICON[
+					r.reaction
+				]?.color ?? 'text-ink'}"
+			>
+				<Icon size={22} aria-hidden="true" />
+			</span>
 			<span
 				class="mt-0.5 max-w-20 truncate rounded border border-border bg-surface/90 px-1 text-[9px] font-bold text-ink/70"
 			>
@@ -29,7 +37,7 @@
 			</span>
 		</div>
 
-		{#if r.emoji === CONFETTI_EMOJI}
+		{#if r.reaction === CONFETTI_KEY}
 			<div class="burst">
 				{#each CONFETTI_PIECES as i (i)}
 					{@const a = rand(r.id * 100 + i)}

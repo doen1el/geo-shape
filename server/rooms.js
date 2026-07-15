@@ -6,7 +6,7 @@ import {
 	LOBBY_PUSH_MS
 } from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
-import { getPlayerStats, touchPlayer } from './db.js';
+import { getPlayerStats, touchPlayer, getPinned, getPublicId } from './db.js';
 import { safeTimeout } from './safety.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -28,9 +28,15 @@ let playerSeq = 0;
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
+ * @property {string[]} badges
+ * @property {string} publicId
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
- * @property {ReturnType<typeof setTimeout> | null} disconnectTimer Pending grace-period removal, or null.
+ * @property {ReturnType<typeof setTimeout> | null} disconnectTimer
+ * @property {import('./achievements.js').Run | null} run
+ * @property {AchState | null} ach
+ *
+ * @typedef {ReturnType<typeof import('./achievements.js').loadPlayerState>} AchState
  */
 
 /**
@@ -39,6 +45,8 @@ let playerSeq = 0;
  * @typedef {Object} Room
  * @property {string} code
  * @property {boolean} solo
+ * @property {string} daily
+ * @property {number[]} dailyShapeIds
  * @property {boolean} isPublic
  * @property {number} maxPlayers
  * @property {'easy' | 'hard'} difficulty
@@ -90,14 +98,16 @@ export class RoomManager {
 
 	/**
 	 * Creates an empty room and returns it.
-	 * @param {{ solo?: boolean, difficulty?: string }} [options]
+	 * @param {{ solo?: boolean, difficulty?: string, daily?: import('./daily.js').DailyPlan }} [options]
 	 * @returns {Room}
 	 */
-	createRoom({ solo = false, difficulty } = {}) {
+	createRoom({ solo = false, difficulty, daily } = {}) {
 		/** @type {Room} */
 		const room = {
 			code: this.generateCode(),
 			solo,
+			daily: daily ? daily.day : '',
+			dailyShapeIds: daily ? daily.shapeIds : [],
 			isPublic: false,
 			maxPlayers: DEFAULT_MAX_PLAYERS,
 			difficulty: difficulty === 'hard' ? 'hard' : 'easy',
@@ -165,6 +175,8 @@ export class RoomManager {
 		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
 
 		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
+		const badges = getPinned(profile.clientId);
+		const publicId = getPublicId(profile.clientId);
 		/** @type {Player} */
 		const player = {
 			id,
@@ -172,9 +184,13 @@ export class RoomManager {
 			score: 0,
 			roundPoints: 0,
 			wins,
+			badges,
+			publicId,
 			connected: true,
 			socket,
-			disconnectTimer: null
+			disconnectTimer: null,
+			run: null,
+			ach: null
 		};
 		room.players.set(id, player);
 		if (!room.hostId) room.hostId = id;
@@ -238,6 +254,8 @@ export class RoomManager {
 				score: p.score,
 				roundPoints: p.roundPoints,
 				wins: p.wins,
+				badges: p.badges,
+				publicId: p.publicId,
 				isHost: p.id === room.hostId,
 				connected: p.connected,
 				solved: room.solved.has(p.id)
@@ -287,10 +305,7 @@ export class RoomManager {
 		const cutoff = Date.now() - idleMs;
 		return [...this.rooms.values()].filter((room) => {
 			if (room.lastActivityAt >= cutoff) return false;
-			// A pending timer means the game loop is still ticking — a running round, the
-			// pre-game countdown, or the pause between rounds — and none of those record
-			// activity while they run. A room stuck in `playing` with no timer left has no
-			// loop to tick, and that is exactly the leak worth collecting.
+
 			const gameRunning = room.roundTimer !== null || room.pauseTimer !== null;
 			return !gameRunning;
 		});

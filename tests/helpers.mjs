@@ -96,6 +96,56 @@ export function connect(wsUrl, options = {}) {
 	};
 }
 
+/** Polls until `pred()` is true. */
+export async function until(pred, { timeout = 8000, label = 'condition' } = {}) {
+	const deadline = Date.now() + timeout;
+	while (Date.now() < deadline) {
+		if (pred()) return true;
+		await sleep(25);
+	}
+	throw new Error(`timed out waiting for ${label}`);
+}
+
+/**
+ * The answer the server just picked, scraped from its log.
+ *
+ * Polled, not read once: `startRound` logs the answer *after* it broadcasts `round_start`,
+ * and the child process's stdout reaches us asynchronously on top of that — so the line is
+ * routinely still missing at the moment the client sees the round begin.
+ */
+export async function answerFor(server, code, round, { from = 0, timeout = 5000 } = {}) {
+	const pattern = `${code} round ${round}/\\d+: answer = (.+)$`;
+	let answer;
+	await until(
+		() => (answer = [...server.log().slice(from).matchAll(new RegExp(pattern, 'gm'))].pop()?.[1]),
+		{ timeout, label: `logged answer for ${code} round ${round}` }
+	);
+	return answer;
+}
+
+/**
+ * Waits for round `round`, then guesses it correctly.
+ *
+ * `from` is the log offset the game started at — take it with `server.log().length` right
+ * before sending `start`. Replaying a room logs "round 1" all over again, so without it a
+ * second game would scrape the *first* game's answer. It must mark the start of the game,
+ * not the moment this is called: a second player enters here only after the first has
+ * already solved, by which point the answer is long since logged.
+ */
+export async function solveRound(client, server, code, round, from = 0) {
+	await client.wait((m) => m.type === 'round_start' && m.round === round, {
+		label: `round_start ${round}`,
+		timeout: 15000
+	});
+	const correct = () => client.ofType('guess_result').filter((m) => m.verdict === 'correct').length;
+
+	// Count from a mark: `seen` keeps every earlier round's verdict, so "a correct result
+	// exists" would match instantly and hide a wrong guess.
+	const mark = correct();
+	client.send({ type: 'guess', text: await answerFor(server, code, round, { from }) });
+	await until(() => correct() > mark, { label: `correct guess in round ${round}` });
+}
+
 /** A profile whose identity the server has already signed. */
 export async function identifiedProfile(wsUrl, name) {
 	const client = connect(wsUrl);

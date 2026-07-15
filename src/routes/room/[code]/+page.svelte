@@ -16,12 +16,17 @@
 	import Podium from '$lib/components/game/Podium.svelte';
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import BadgeChips from '$lib/components/ui/BadgeChips.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
+	import { DEF_BY_ID } from '$lib/badges';
 	import { i18n, t } from '$lib/i18n/index.svelte';
+	import { Trophy } from '@lucide/svelte';
 
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
+	const daily = page.url.searchParams.get('daily') === '1';
 
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
@@ -316,9 +321,29 @@
 					<Scoreboard players={game.gameOver.players} playerId={game.playerId} />
 				</div>
 
+				{#if game.gameBadges.length}
+					<div class="w-full">
+						<p class="mb-2 text-xs font-bold tracking-wide text-ink/50 uppercase">
+							{t('game.unlocked')}
+						</p>
+						<div class="flex flex-wrap justify-center gap-2">
+							{#each game.gameBadges as id (id)}
+								{@const def = DEF_BY_ID.get(id)}
+								{#if def}
+									<Badge {id} tier={def.tier} size="sm" class="w-24" />
+								{/if}
+							{/each}
+						</div>
+					</div>
+				{/if}
+
 				<div class="flex gap-3">
 					<Button variant="neutral" onclick={requestLeave}>{t('lobby.leave')}</Button>
-					<Button onclick={playAgain}>{solo ? t('solo.again') : t('game.playAgain')}</Button>
+					{#if daily}
+						<Button href="/daily">{t('daily.title')}</Button>
+					{:else}
+						<Button onclick={playAgain}>{solo ? t('solo.again') : t('game.playAgain')}</Button>
+					{/if}
 				</div>
 			</Card>
 		</div>
@@ -437,8 +462,15 @@
 										class="rounded-base border-2 border-border bg-surface"
 									/>
 									<span class="truncate font-bold">{p.name}</span>
+									<BadgeChips ids={p.badges ?? []} class="shrink-0" />
 									{#if p.wins > 0}
-										<span class="text-xs font-bold text-ink/50" title="Wins">🏆 {p.wins}</span>
+										<span
+										class="flex items-center gap-1 text-xs font-bold text-ink/50"
+										title="Wins"
+									>
+										<Trophy size={13} aria-hidden="true" />
+										{p.wins}
+									</span>
 									{/if}
 									<span class="ml-auto flex items-center gap-2">
 										{#if p.isHost}

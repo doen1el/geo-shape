@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { ClientMsg, ServerMsg } from '../../server/protocol.js';
 import { profile as profileStore, type Profile } from './stores/profile.svelte';
 
-export { REACTION_EMOJIS, CONFETTI_EMOJI } from '../../server/protocol.js';
+export { REACTION_KEYS, CONFETTI_KEY } from '../../server/protocol.js';
 
 export type PublicPlayer = {
 	id: string;
@@ -11,6 +11,8 @@ export type PublicPlayer = {
 	score: number;
 	roundPoints: number;
 	wins: number;
+	badges: string[];
+	publicId: string;
 	isHost: boolean;
 	connected: boolean;
 	solved: boolean;
@@ -99,6 +101,7 @@ export type ChatEntry = {
 };
 
 export type LeaderboardEntry = {
+	publicId: string;
 	name: string;
 	avatar: string;
 	gamesWon: number;
@@ -113,10 +116,63 @@ export type PlayerStats = {
 	bestScore: number;
 };
 
+export type Tier = 'bronze' | 'silver' | 'gold';
+
+export type AchievementDef = {
+	id: string;
+	tier: Tier;
+	group: string;
+	categoryId: number | null;
+	target: number | null;
+};
+
+export type Unlocked = { id: string; unlockedAt: number };
+
+export type PlayerProfile = {
+	publicId: string;
+	name: string;
+	avatar: string;
+	isPrivate: boolean;
+	pinned?: string[];
+	gamesPlayed?: number;
+	gamesWon?: number;
+	totalScore?: number;
+	bestScore?: number;
+	dailyStreak?: number;
+	dailyBestStreak?: number;
+	lastSeen?: number;
+	achievements?: Unlocked[];
+	progress?: Record<number, number>;
+	catalogue?: AchievementDef[];
+	rarity?: Record<string, number>;
+};
+
+export type DailyEntry = {
+	publicId: string;
+	name: string;
+	avatar: string;
+	score: number;
+	solved: number;
+	totalMs: number;
+};
+
+export type Daily = {
+	day: string;
+	categoryId: number;
+	rounds: number;
+	board: DailyEntry[];
+	attempted?: boolean;
+	result?: { score: number; solved: number; totalMs: number; finishedAt: number } | null;
+	rank?: number;
+	streak?: number;
+	bestStreak?: number;
+};
+
 let chatSeq = 0;
 let reactSeq = 0;
+let badgeSeq = 0;
 
-export type Reaction = { id: number; emoji: string; playerId: string; name: string };
+export type Reaction = { id: number; reaction: string; playerId: string; name: string };
 
 const LAST_ROOM_KEY = 'geoshape:lastRoom';
 
@@ -170,6 +226,13 @@ class GameSocket {
 	// --- persistence-backed views ---
 	leaderboard = $state<LeaderboardEntry[]>([]);
 	stats = $state<PlayerStats | null>(null);
+	myProfile = $state<PlayerProfile | null>(null);
+	viewedProfile = $state<PlayerProfile | null | undefined>(undefined);
+	daily = $state<Daily | null>(null);
+
+	badgeToasts = $state<{ id: number; achievement: string }[]>([]);
+
+	gameBadges = $state<string[]>([]);
 
 	roomCheck = $state<{ code: string; exists: boolean; full: boolean } | null>(null);
 	publicRooms = $state<PublicRoomSummary[]>([]);
@@ -287,6 +350,14 @@ class GameSocket {
 		this.#toastTimer = setTimeout(() => (this.toast = null), 10_000);
 	}
 
+	#pushBadge(achievement: string): void {
+		const id = ++badgeSeq;
+		this.badgeToasts = [...this.badgeToasts, { id, achievement }];
+		setTimeout(() => {
+			this.badgeToasts = this.badgeToasts.filter((b) => b.id !== id);
+		}, 6000);
+	}
+
 	#stopReconnecting(): void {
 		this.#lastJoin = null;
 		if (this.#reconnectTimer) clearTimeout(this.#reconnectTimer);
@@ -324,6 +395,7 @@ class GameSocket {
 				this.gameOver = null;
 				this.roundResult = null;
 				this.paused = null;
+				this.gameBadges = [];
 				this.countdown = { until: this.#toLocal(msg.startsAt + msg.durationMs) };
 				break;
 			case ServerMsg.ROUND_START:
@@ -404,7 +476,7 @@ class GameSocket {
 				const id = ++reactSeq;
 				this.reactions = [
 					...this.reactions.slice(-29),
-					{ id, emoji: msg.emoji, playerId: msg.playerId, name: msg.name }
+					{ id, reaction: msg.reaction, playerId: msg.playerId, name: msg.name }
 				];
 				setTimeout(() => {
 					this.reactions = this.reactions.filter((r) => r.id !== id);
@@ -423,6 +495,23 @@ class GameSocket {
 			case ServerMsg.STATS:
 				this.stats = msg.stats ?? null;
 				break;
+			case ServerMsg.MY_PROFILE:
+				this.myProfile = msg.profile ?? null;
+				break;
+			case ServerMsg.PROFILE:
+				this.viewedProfile = msg.profile ?? null;
+				break;
+			case ServerMsg.DAILY:
+				this.daily = msg.daily ?? null;
+				break;
+			case ServerMsg.ACHIEVEMENT: {
+				const ids: string[] = Array.isArray(msg.ids) ? msg.ids : [];
+				this.gameBadges = [...this.gameBadges, ...ids];
+				ids.forEach((achievement, i) => {
+					setTimeout(() => this.#pushBadge(achievement), i * 400);
+				});
+				break;
+			}
 			case ServerMsg.PONG: {
 				const rtt = Date.now() - msg.t0;
 				if (rtt <= this.#bestRtt) {
@@ -471,6 +560,7 @@ class GameSocket {
 		this.reactions = [];
 		this.countdown = null;
 		this.paused = null;
+		this.gameBadges = [];
 	}
 
 	#send(data: object): void {
@@ -548,8 +638,8 @@ class GameSocket {
 		this.#send({ type: ClientMsg.SAY, text });
 	}
 
-	react(emoji: string): void {
-		this.#send({ type: ClientMsg.REACT, emoji });
+	react(reaction: string): void {
+		this.#send({ type: ClientMsg.REACT, reaction });
 	}
 
 	async checkRoom(code: string): Promise<void> {
@@ -578,6 +668,62 @@ class GameSocket {
 			type: ClientMsg.GET_STATS,
 			clientId: profileStore.clientId,
 			sig: profileStore.clientSig
+		});
+	}
+
+	async requestMyProfile(): Promise<void> {
+		await this.connect();
+		if (!profileStore.clientId) {
+			this.myProfile = null;
+			return;
+		}
+		this.#send({
+			type: ClientMsg.GET_MY_PROFILE,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig
+		});
+	}
+
+	async requestProfile(publicId: string): Promise<void> {
+		await this.connect();
+		this.viewedProfile = undefined;
+		this.#send({ type: ClientMsg.GET_PROFILE, publicId });
+	}
+
+	async saveProfilePrefs(isPrivate: boolean, pinned: string[]): Promise<void> {
+		await this.connect();
+		if (!profileStore.clientId) return;
+		this.#send({
+			type: ClientMsg.SET_PROFILE_PREFS,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig,
+			isPrivate,
+			pinned
+		});
+	}
+
+	async requestDaily(): Promise<void> {
+		await this.connect();
+		this.#send({
+			type: ClientMsg.GET_DAILY,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig
+		});
+	}
+
+	async startDaily(profile: Profile): Promise<string> {
+		await this.connect();
+		this.error = null;
+		this.errorCode = null;
+		return new Promise((resolve, reject) => {
+			this.#pendingAck = {
+				resolve: (code) => {
+					this.#lastJoin = { code, profile: profileStore.toJSON() };
+					resolve(code);
+				},
+				reject
+			};
+			this.#send({ type: ClientMsg.START_DAILY, profile });
 		});
 	}
 

@@ -18,6 +18,12 @@ export const ClientMsg = /** @type {const} */ ({
 	GET_STATS: 'get_stats',
 	PING: 'ping',
 
+	GET_PROFILE: 'get_profile',
+	GET_MY_PROFILE: 'get_my_profile',
+	SET_PROFILE_PREFS: 'set_profile_prefs',
+	GET_DAILY: 'get_daily',
+	START_DAILY: 'start_daily',
+
 	ADMIN_AUTH: 'admin_auth',
 	ADMIN_WATCH: 'admin_watch',
 	ADMIN_UNWATCH: 'admin_unwatch',
@@ -57,6 +63,10 @@ export const ServerMsg = /** @type {const} */ ({
 	SERVER_SHUTDOWN: 'server_shutdown',
 	NOTICE: 'notice',
 	IDENTITY: 'identity',
+	ACHIEVEMENT: 'achievement',
+	PROFILE: 'profile',
+	MY_PROFILE: 'my_profile',
+	DAILY: 'daily',
 	ADMIN_OK: 'admin_ok',
 	ADMIN_STATE: 'admin_state',
 	ADMIN_PLAYERS: 'admin_players',
@@ -70,9 +80,21 @@ export const Verdict = /** @type {const} */ ({
 	WRONG: 'wrong'
 });
 
-export const REACTION_EMOJIS = /** @type {const} */ (['🔥', '😂', '😮', '👏', '💀', '🎉']);
+/**
+ * Reaction identifiers carried over the wire. Each side maps a key to its own icon
+ * (`src/lib/reactions.ts` on the client)
+ */
+export const REACTION_KEYS = /** @type {const} */ ([
+	'fire',
+	'laugh',
+	'thumbs',
+	'heart',
+	'skull',
+	'party'
+]);
 
-export const CONFETTI_EMOJI = '🎉';
+/** The one reaction that also rains confetti. */
+export const CONFETTI_KEY = 'party';
 
 /**
  * @typedef {Object} Profile
@@ -89,6 +111,8 @@ export const CONFETTI_EMOJI = '🎉';
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
+ * @property {string[]} badges
+ * @property {string} publicId
  * @property {boolean} isHost
  * @property {boolean} connected
  * @property {boolean} solved

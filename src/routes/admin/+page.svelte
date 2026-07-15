@@ -4,6 +4,7 @@
 	import { t } from '$lib/i18n/index.svelte';
 	import type { MessageKey } from '$lib/i18n/en';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { ChevronRight, Crown } from '@lucide/svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
@@ -138,7 +139,10 @@
 					{#if admin.log.length}
 						<div class="flex flex-col gap-1 border-t-2 border-border/20 pt-2">
 							{#each admin.log as entry (entry.id)}
-								<div class="truncate text-xs font-bold text-ink/60">→ {entry.text}</div>
+								<div class="flex items-center gap-1 truncate text-xs font-bold text-ink/60">
+									<ChevronRight size={12} class="shrink-0" aria-hidden="true" />
+									{entry.text}
+								</div>
 							{/each}
 						</div>
 					{/if}
@@ -190,7 +194,7 @@
 										class:opacity-40={!p.connected}
 									>
 										{#if p.isHost}
-											<span class="text-[10px] leading-none text-ink/35">★</span>
+											<Crown size={11} class="text-ink/35" aria-hidden="true" />
 										{/if}
 										<span class="leading-none">{p.name}</span>
 										<span class="leading-none text-ink/35">{p.score}</span>

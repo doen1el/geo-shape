@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { ClientMsg, ServerMsg, REACTION_EMOJIS } from './protocol.js';
+import { ClientMsg, ServerMsg, REACTION_KEYS } from './protocol.js';
 import { roomManager } from './rooms.js';
 import {
 	startGame,
@@ -12,7 +12,23 @@ import {
 	abortGame,
 	syncJoiner
 } from './game.js';
-import { getLeaderboard, getPlayerStats, closeDb } from './db.js';
+import {
+	getLeaderboard,
+	getPlayerStats,
+	closeDb,
+	getUnlocked,
+	setProfilePrefs,
+	getFullProfile,
+	getFullProfileByPublicId,
+	getDailyResult,
+	getDailyLeaderboard,
+	getDailyRank,
+	claimDaily,
+	getAchievementRarity
+} from './db.js';
+import { MAX_PINNED } from './achievement-defs.js';
+import { catalogueFor } from './achievements.js';
+import { dailyKey, dailyPlan } from './daily.js';
 import { cleanText } from './moderation.js';
 import { isAvatarStyle, DEFAULT_AVATAR } from './avatars.js';
 import { createRateLimiter } from './ratelimit.js';
@@ -27,7 +43,9 @@ import {
 	SHUTDOWN_GRACE_MS,
 	MAX_CONNECTIONS,
 	MAX_CONNECTIONS_PER_IP,
-	TRUST_PROXY
+	TRUST_PROXY,
+	DAILY_DIFFICULTY,
+	DAILY_ROUND_DURATION_SEC
 } from './config.js';
 import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
 import { addConnection, removeConnection, connectionCount, connectionsFrom } from './metrics.js';
@@ -411,10 +429,10 @@ function handleConnection(ws, wss) {
 				if (!session || limited('react')) break;
 				const player = session.room.players.get(session.playerId);
 
-				if (player && REACTION_EMOJIS.includes(msg.emoji)) {
+				if (player && REACTION_KEYS.includes(msg.reaction)) {
 					roomManager.broadcast(session.room, {
 						type: ServerMsg.REACTION,
-						emoji: msg.emoji,
+						reaction: msg.reaction,
 						playerId: player.id,
 						name: player.profile.name
 					});
@@ -456,6 +474,87 @@ function handleConnection(ws, wss) {
 				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
 				const stats = verifyIdentity(clientId, msg.sig) ? getPlayerStats(clientId) : null;
 				send({ type: ServerMsg.STATS, stats });
+				break;
+			}
+
+			case ClientMsg.GET_PROFILE: {
+				if (limited('get_profile')) break;
+				const publicId = typeof msg.publicId === 'string' ? msg.publicId.slice(0, 32) : '';
+				send({ type: ServerMsg.PROFILE, profile: publicProfile(publicId) });
+				break;
+			}
+
+			case ClientMsg.GET_MY_PROFILE: {
+				if (limited('get_my_profile')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.MY_PROFILE, profile: null });
+				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
+				break;
+			}
+
+			case ClientMsg.SET_PROFILE_PREFS: {
+				if (limited('set_profile_prefs')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				const unlocked = new Set(getUnlocked(clientId));
+				const pinned = (Array.isArray(msg.pinned) ? msg.pinned : [])
+					.filter((/** @type {unknown} */ id) => typeof id === 'string' && unlocked.has(id))
+					.slice(0, MAX_PINNED);
+
+				setProfilePrefs(clientId, { isPrivate: msg.isPrivate === true, pinned });
+				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
+				break;
+			}
+
+			case ClientMsg.GET_DAILY: {
+				if (limited('get_daily')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				send({ type: ServerMsg.DAILY, daily: dailyStatus(clientId, msg.sig) });
+				break;
+			}
+
+			case ClientMsg.START_DAILY: {
+				if (limited('start_daily'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
+				if (inMaintenance())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'The server is in maintenance — no new rooms right now.',
+						code: 'maintenance'
+					});
+
+				const day = dailyKey();
+
+				if (!claimDaily(day, profile.clientId))
+					return send({
+						type: ServerMsg.ERROR,
+						message: "You've already played today's challenge.",
+						code: 'daily_done'
+					});
+
+				const plan = dailyPlan(day);
+				const room = roomManager.createRoom({
+					solo: true,
+					difficulty: DAILY_DIFFICULTY,
+					daily: plan
+				});
+				room.categoryId = plan.categoryId;
+				room.maxRounds = plan.shapeIds.length;
+				room.roundDurationSec = DAILY_ROUND_DURATION_SEC;
+
+				const player = roomManager.addPlayer(room, profile, ws);
+				session = { room, playerId: player.id };
+				console.log(`[ws] ${profile.name} started the daily (${day}) in ${room.code}`);
+				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
+				roomManager.broadcastState(room);
+				startGame(room, player);
 				break;
 			}
 
@@ -605,4 +704,62 @@ function sanitizeProfile(raw) {
 	const avatar = isAvatarStyle(raw.avatar) ? raw.avatar : DEFAULT_AVATAR;
 	const identity = resolveIdentity(raw);
 	return { profile: { name, avatar, clientId: identity.clientId }, identity };
+}
+
+/**
+ * A profile as a *visitor* sees it.
+ *
+ * @param {string} publicId
+ */
+function publicProfile(publicId) {
+	const p = getFullProfileByPublicId(publicId);
+	if (!p) return null;
+	if (p.isPrivate) return { publicId: p.publicId, name: p.name, avatar: p.avatar, isPrivate: true };
+	return {
+		...p,
+		catalogue: catalogueFor(new Set(p.achievements.map((a) => a.id))),
+		rarity: getAchievementRarity()
+	};
+}
+
+/**
+ * Your own profile: same payload, never masked, plus the handle you can share.
+ * @param {string} clientId
+ */
+function ownProfile(clientId) {
+	const p = getFullProfile(clientId);
+	if (!p) return null;
+	return {
+		...p,
+		catalogue: catalogueFor(new Set(p.achievements.map((a) => a.id))),
+		rarity: getAchievementRarity()
+	};
+}
+
+/**
+ * Today's challenge as the landing page needs it.
+ *
+ * @param {string} clientId
+ * @param {unknown} sig
+ */
+function dailyStatus(clientId, sig) {
+	const day = dailyKey();
+	const plan = dailyPlan(day);
+	const board = getDailyLeaderboard(day, 10);
+	const me = verifyIdentity(clientId, sig) ? clientId : '';
+	if (!me) return { day, categoryId: plan.categoryId, rounds: plan.shapeIds.length, board };
+
+	const result = getDailyResult(day, me);
+	const profile = getFullProfile(me);
+	return {
+		day,
+		categoryId: plan.categoryId,
+		rounds: plan.shapeIds.length,
+		board,
+		attempted: !!result,
+		result: result && result.finishedAt > 0 ? result : null,
+		rank: getDailyRank(day, me),
+		streak: profile?.dailyStreak ?? 0,
+		bestStreak: profile?.dailyBestStreak ?? 0
+	};
 }

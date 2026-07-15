@@ -3,7 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import ReactionButton from '$lib/components/game/ReactionButton.svelte';
 	import ReactionOverlay from '$lib/components/game/ReactionOverlay.svelte';
-	import { Send } from '@lucide/svelte';
+	import { Send, Check, PartyPopper, Flame } from '@lucide/svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { playerColor } from '$lib/playerColors';
@@ -63,8 +63,9 @@
 					<span class="h-0.5 flex-1 rounded bg-border/50"></span>
 				</div>
 			{:else if entry.kind === 'solved'}
-				<p class="text-center font-bold text-main-accent">
-					✓ {t('game.solvedBy', { name: entry.name ?? '' })}
+				<p class="flex items-center justify-center gap-1 font-bold text-main-accent">
+					<Check size={15} aria-hidden="true" />
+					{t('game.solvedBy', { name: entry.name ?? '' })}
 				</p>
 			{:else}
 				{@const mine = entry.playerId != null && entry.playerId === game.playerId}
@@ -85,12 +86,18 @@
 
 	{#if banner}
 		<p
-			class="rounded-base border-2 border-border px-3 py-1 text-center font-extrabold {banner.kind ===
+			class="flex items-center justify-center gap-1.5 rounded-base border-2 border-border px-3 py-1 text-center font-extrabold {banner.kind ===
 			'correct'
 				? 'bg-main'
 				: 'bg-[var(--color-main-accent)]/40'}"
 		>
-			{banner.kind === 'correct' ? t('game.correct') : t('game.close')}
+			{#if banner.kind === 'correct'}
+				<PartyPopper size={16} aria-hidden="true" />
+				{t('game.correct')}
+			{:else}
+				<Flame size={16} class="text-orange-600" aria-hidden="true" />
+				{t('game.close')}
+			{/if}
 		</p>
 	{/if}
 

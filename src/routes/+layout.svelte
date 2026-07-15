@@ -6,12 +6,17 @@
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
 	import { game } from '$lib/ws.svelte';
+	import { DEF_BY_ID } from '$lib/badges';
+	import { badgeIcon } from '$lib/badgeIcons';
+	import { Trophy, User, Megaphone, TriangleAlert, Check } from '@lucide/svelte';
 	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	const inRoom = $derived(page.url.pathname.startsWith('/room/'));
-	const isSolo = $derived(page.url.searchParams.get('solo') === '1');
+	const isSolo = $derived(
+		page.url.searchParams.get('solo') === '1' || page.url.searchParams.get('daily') === '1'
+	);
 	const roomCode = $derived((page.params.code ?? '').toUpperCase());
 	const isAdmin = $derived(page.url.pathname.startsWith('/admin'));
 
@@ -47,9 +52,41 @@
 					? 'bg-red-400'
 					: 'bg-main'}"
 			>
-				{game.toast.kind === 'error' ? '⚠️' : '📣'}
+				{#if game.toast.kind === 'error'}
+					<TriangleAlert size={18} class="shrink-0 text-ink" aria-hidden="true" />
+				{:else}
+					<Megaphone size={18} class="shrink-0 text-ink" aria-hidden="true" />
+				{/if}
 				{game.toast.text}
 			</div>
+		</div>
+	{/if}
+
+	{#if game.badgeToasts.length}
+		<div
+			class="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col-reverse items-center gap-2 px-4"
+		>
+			{#each game.badgeToasts as badge (badge.id)}
+				{@const def = DEF_BY_ID.get(badge.achievement)}
+				{@const Icon = badgeIcon(badge.achievement).icon}
+				{#if def}
+					<div
+						class="flex items-center gap-3 rounded-base border-2 border-border bg-main px-4 py-2 shadow-shadow-lg"
+						in:scale={{ start: 0.8, duration: 250, easing: backOut }}
+						out:fade={{ duration: 150 }}
+					>
+						<Icon size={28} class="text-ink" aria-hidden="true" />
+						<span class="text-left">
+							<span class="block text-[11px] font-bold tracking-wide uppercase">
+								{t('badge.new')}
+							</span>
+							<span class="block text-sm font-extrabold">
+								{t(`achievement.${def.id}.title` as 'achievement.blitz.title')}
+							</span>
+						</span>
+					</div>
+				{/if}
+			{/each}
 		</div>
 	{/if}
 
@@ -76,15 +113,29 @@
 						title={roomCode}
 						class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
 					>
-						<span class="mr-1 text-ink/40">{copied ? '✓' : '#'}</span>{roomCode}
+						<span class="mr-1 flex items-center text-ink/40">
+							{#if copied}<Check size={16} aria-hidden="true" />{:else}#{/if}
+						</span>{roomCode}
 					</button>
 				{:else}
-					<a
-						href="/leaderboard"
-						class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
-					>
-						{t('nav.leaderboard')}
-					</a>
+					<nav class="flex items-center gap-2">
+						<a
+							href="/leaderboard"
+							title={t('nav.leaderboard')}
+							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+						>
+							<Trophy size={18} aria-hidden="true" />
+							<span class="hidden sm:inline">{t('nav.leaderboard')}</span>
+						</a>
+						<a
+							href="/profile"
+							title={t('nav.profile')}
+							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+						>
+							<User size={18} aria-hidden="true" />
+							<span class="hidden sm:inline">{t('nav.profile')}</span>
+						</a>
+					</nav>
 				{/if}
 			</header>
 

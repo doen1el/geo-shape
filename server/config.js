@@ -1,11 +1,14 @@
 import { dirname, join } from 'node:path';
 
+/** @param {string} name @param {number} fallback */
+const envNum = (name, fallback) => Number(process.env[name]) || fallback;
+
 export const ROUND_DURATION_SEC = 90;
 export const MIN_ROUND_DURATION_SEC = 30;
 export const MAX_ROUND_DURATION_SEC = 180;
-export const ROUND_END_PAUSE_MS = 15000;
 
-export const COUNTDOWN_MS = 3000;
+export const ROUND_END_PAUSE_MS = envNum('GEOSHAPE_ROUND_END_PAUSE_MS', 15000);
+export const COUNTDOWN_MS = envNum('GEOSHAPE_COUNTDOWN_MS', 3000);
 
 export const DEFAULT_MAX_ROUNDS = 5;
 export const MIN_ROUNDS = 1;
@@ -30,9 +33,6 @@ export const LOBBY_PUSH_MS = 400;
 export const RECONNECT_GRACE_MS = 120000;
 
 export const MAX_MESSAGE_BYTES = 16 * 1024;
-
-/** @param {string} name @param {number} fallback */
-const envNum = (name, fallback) => Number(process.env[name]) || fallback;
 
 export const HEARTBEAT_MS = envNum('GEOSHAPE_HEARTBEAT_MS', 30000);
 export const ROOM_IDLE_MS = envNum('GEOSHAPE_ROOM_IDLE_MS', 30 * 60 * 1000);
@@ -75,5 +75,19 @@ export const RATE_LIMITS = {
 	react: { max: 8, windowMs: 4000 },
 	check_room: { max: 30, windowMs: 10000 },
 	list_rooms: { max: 20, windowMs: 10000 },
-	admin_auth: { max: 5, windowMs: 60000 }
+	admin_auth: { max: 5, windowMs: 60000 },
+	get_profile: { max: 20, windowMs: 10000 },
+	get_my_profile: { max: 20, windowMs: 10000 },
+	set_profile_prefs: { max: 10, windowMs: 60000 },
+	get_daily: { max: 20, windowMs: 10000 },
+	start_daily: { max: 6, windowMs: 60000 }
 };
+
+/**
+ * The daily challenge: the same five shapes for everyone, one attempt per day.
+ */
+export const DAILY_ROUNDS = 5;
+export const DAILY_ROUND_DURATION_SEC = envNum('GEOSHAPE_DAILY_ROUND_SEC', 60);
+export const DAILY_DIFFICULTY = /** @type {'easy' | 'hard'} */ (
+	process.env.GEOSHAPE_DAILY_DIFFICULTY === 'hard' ? 'hard' : 'easy'
+);
