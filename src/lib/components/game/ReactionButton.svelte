@@ -68,7 +68,13 @@
 						: 'border-transparent hover:border-border hover:bg-main'}"
 					onclick={() => pick(key)}
 				>
-					<Icon size={20} class={REACTION_ICON[key].color} aria-hidden="true" />
+					<Icon
+						size={20}
+						fill={REACTION_ICON[key].fill ?? 'currentColor'}
+						fill-opacity={REACTION_ICON[key].fillOpacity ?? 0.35}
+						class={REACTION_ICON[key].color}
+						aria-hidden="true"
+					/>
 				</button>
 			{/each}
 		</div>
@@ -92,7 +98,13 @@
 			open = true;
 		}}
 	>
-		<SelectedIcon size={22} class={REACTION_ICON[selected].color} aria-hidden="true" />
+		<SelectedIcon
+			size={22}
+			fill={REACTION_ICON[selected].fill ?? 'currentColor'}
+			fill-opacity={REACTION_ICON[selected].fillOpacity ?? 0.35}
+			class={REACTION_ICON[selected].color}
+			aria-hidden="true"
+		/>
 		<ChevronDown
 			class="pointer-events-none absolute right-0.5 bottom-0.5 text-ink"
 			size={12}

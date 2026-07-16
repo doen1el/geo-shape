@@ -74,6 +74,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'lobby.players': 'Spieler',
 	'lobby.host': 'HOST',
 	'lobby.you': '(du)',
+	'lobby.viewProfile': 'Profil ansehen',
 	'lobby.leave': 'Verlassen',
 	'lobby.waitingHost': 'Warte auf den Host…',
 	'lobby.start': 'Spiel starten',

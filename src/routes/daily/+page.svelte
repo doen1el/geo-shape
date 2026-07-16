@@ -88,12 +88,6 @@
 			{/if}
 			<p class="mt-3 text-center text-sm font-bold text-ink/50">{t('daily.comeBack')}</p>
 		{:else}
-			<p
-				class="mt-4 flex items-center gap-2 rounded-base border-2 border-border bg-secondary px-3 py-2 text-sm font-bold"
-			>
-				<TriangleAlert size={18} class="shrink-0 text-ink" aria-hidden="true" />
-				{t('daily.warning')}
-			</p>
 			<Button
 				class="mt-3 w-full"
 				disabled={!profile.isComplete || starting}

@@ -72,6 +72,7 @@ export const en = {
 	'lobby.players': 'Players',
 	'lobby.host': 'HOST',
 	'lobby.you': '(you)',
+	'lobby.viewProfile': 'View profile',
 	'lobby.leave': 'Leave',
 	'lobby.waitingHost': 'Waiting for the host…',
 	'lobby.start': 'Start game',

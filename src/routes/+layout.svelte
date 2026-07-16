@@ -72,10 +72,10 @@
 				{#if def}
 					<div
 						class="flex items-center gap-3 rounded-base border-2 border-border bg-main px-4 py-2 shadow-shadow-lg"
-						in:scale={{ start: 0.8, duration: 250, easing: backOut }}
+						in:scale={{ start: 0.55, duration: 340, easing: backOut }}
 						out:fade={{ duration: 150 }}
 					>
-						<Icon size={28} class="text-ink" aria-hidden="true" />
+						<Icon size={28} class="badge-pop text-ink" aria-hidden="true" />
 						<span class="text-left">
 							<span class="block text-[11px] font-bold tracking-wide uppercase">
 								{t('badge.new')}
@@ -91,7 +91,9 @@
 	{/if}
 
 	<div class="flex h-svh flex-col items-center justify-center">
-		<div class="flex h-full max-h-[900px] w-full max-w-3xl flex-col overflow-hidden px-4 py-4">
+		<div
+			class="flex h-full max-h-[900px] w-full max-w-3xl flex-col overflow-x-visible overflow-y-clip px-4 py-4"
+		>
 			<header class="mb-4 flex shrink-0 items-center justify-between">
 				<a href="/" class="flex items-center gap-2">
 					<span

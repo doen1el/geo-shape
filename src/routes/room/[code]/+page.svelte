@@ -460,7 +460,19 @@
 										alt={p.name}
 										class="rounded-base border-2 border-border bg-surface"
 									/>
-									<span class="truncate font-bold">{p.name}</span>
+									{#if p.publicId}
+										<a
+											href="/p/{p.publicId}"
+											target="_blank"
+											rel="noopener"
+											class="truncate font-bold hover:underline"
+											title={t('lobby.viewProfile')}
+										>
+											{p.name}
+										</a>
+									{:else}
+										<span class="truncate font-bold">{p.name}</span>
+									{/if}
 									{#if p.wins > 0}
 										<span
 										class="flex items-center gap-1 text-xs font-bold text-ink/50"

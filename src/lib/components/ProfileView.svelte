@@ -81,7 +81,7 @@
 			<h2 class="mb-3 text-sm font-extrabold tracking-wide uppercase">
 				{t(`badge.group.${group}` as 'badge.group.speed')}
 			</h2>
-			<div class="badge-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
+			<div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
 				{#each items as a (a.id)}
 					{@const have =
 						a.categoryId != null
@@ -101,30 +101,3 @@
 		</Card>
 	{/each}
 </div>
-
-<style>
-	@media (max-width: 639px) {
-		.badge-grid > :global(:nth-child(3n + 1) .badge-tip) {
-			left: 0;
-			right: auto;
-			translate: none;
-		}
-		.badge-grid > :global(:nth-child(3n) .badge-tip) {
-			left: auto;
-			right: 0;
-			translate: none;
-		}
-	}
-	@media (min-width: 640px) {
-		.badge-grid > :global(:nth-child(4n + 1) .badge-tip) {
-			left: 0;
-			right: auto;
-			translate: none;
-		}
-		.badge-grid > :global(:nth-child(4n) .badge-tip) {
-			left: auto;
-			right: 0;
-			translate: none;
-		}
-	}
-</style>

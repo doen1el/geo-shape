@@ -28,7 +28,12 @@
 					r.reaction
 				]?.color ?? 'text-ink'}"
 			>
-				<Icon size={22} aria-hidden="true" />
+				<Icon
+					size={22}
+					fill={REACTION_ICON[r.reaction]?.fill ?? 'currentColor'}
+					fill-opacity={REACTION_ICON[r.reaction]?.fillOpacity ?? 0.35}
+					aria-hidden="true"
+				/>
 			</span>
 			<span
 				class="mt-0.5 max-w-20 truncate rounded border border-border bg-surface/90 px-1 text-[9px] font-bold text-ink/70"

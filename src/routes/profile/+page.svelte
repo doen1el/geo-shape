@@ -28,7 +28,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col gap-4 overflow-x-hidden overflow-y-auto pr-2 pb-4">
+<div class="-mx-12 flex h-full flex-col gap-4 overflow-x-hidden overflow-y-auto px-12 pb-4">
 	<Button href="/" variant="neutral" class="h-10 shrink-0 self-start gap-2 px-4">
 		<ArrowLeft size={18} aria-hidden="true" />
 		{t('common.back')}
