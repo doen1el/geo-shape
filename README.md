@@ -1,7 +1,7 @@
 <p align="center">
     <img src="docs/icon/icon_white.png" alt="App Icon" width="100" />
     <br>
-    v1.3.0
+    v1.4.0
 </p>
 
 ## GeoShape
@@ -11,6 +11,7 @@ A browser multiplayer guessing game. Name the country, continent or state from i
 ## 💪 Features
 
 - **Solo & multiplayer** — play alone or share a 4-letter room code with friends
+- **Daily challenge** — a new challenge every day, with a global leaderboard
 - **Four categories** — German states, European countries, continents and US states
 - **Easy & hard** difficulty
 - **Persistent stats & global leaderboard** — wins, games played and best scores (SQLite)
