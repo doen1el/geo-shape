@@ -92,10 +92,10 @@
 				: 'bg-[var(--color-main-accent)]/40'}"
 		>
 			{#if banner.kind === 'correct'}
-				<PartyPopper size={16} aria-hidden="true" />
+				<PartyPopper size={20} aria-hidden="true" />
 				{t('game.correct')}
 			{:else}
-				<Flame size={16} class="text-orange-600" aria-hidden="true" />
+				<Flame size={16} class="text-orange-600" fill="currentColor" aria-hidden="true" />
 				{t('game.close')}
 			{/if}
 		</p>

@@ -82,7 +82,8 @@ export const RATE_LIMITS = {
 	get_daily: { max: 20, windowMs: 10000 },
 	start_daily: { max: 6, windowMs: 60000 },
 	create_transfer: { max: 5, windowMs: 60000 },
-	redeem_transfer: { max: 8, windowMs: 60000 }
+	redeem_transfer: { max: 8, windowMs: 60000 },
+	delete_profile: { max: 3, windowMs: 60000 }
 };
 
 /**

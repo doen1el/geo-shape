@@ -6,11 +6,9 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import RankMedal from '$lib/components/ui/RankMedal.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { ArrowLeft, Lock } from '@lucide/svelte';
+	import { ArrowLeft } from '@lucide/svelte';
 
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
-
-	const fig = $derived((v: number | null) => (v === null ? '—' : nf.format(v)));
 
 	let tab = $state<'all' | 'daily'>('all');
 
@@ -65,23 +63,18 @@
 									alt={p.name}
 									class="rounded-base border-2 border-border bg-surface"
 								/>
-								<span class="flex min-w-0 flex-1 items-center gap-1.5">
-									<span class="truncate font-bold">{p.name}</span>
-									{#if p.isPrivate}
-										<Lock size={13} class="shrink-0 text-ink/40" aria-label={t('leaderboard.hidden')} />
-									{/if}
-								</span>
+								<span class="flex-1 truncate font-bold">{p.name}</span>
 								<div class="flex gap-4 text-right text-sm font-bold tabular-nums">
 									<div>
-										<div class="text-base">{fig(p.gamesWon)}</div>
+										<div class="text-base">{p.gamesWon}</div>
 										<div class="text-[10px] text-ink/50 uppercase">{t('leaderboard.wins')}</div>
 									</div>
 									<div>
-										<div class="text-base">{fig(p.totalScore)}</div>
+										<div class="text-base">{nf.format(p.totalScore)}</div>
 										<div class="text-[10px] text-ink/50 uppercase">{t('leaderboard.score')}</div>
 									</div>
 									<div class="hidden sm:block">
-										<div class="text-base">{fig(p.gamesPlayed)}</div>
+										<div class="text-base">{p.gamesPlayed}</div>
 										<div class="text-[10px] text-ink/50 uppercase">{t('leaderboard.games')}</div>
 									</div>
 								</div>
@@ -108,14 +101,9 @@
 								alt={p.name}
 								class="rounded-base border-2 border-border bg-surface"
 							/>
-							<span class="flex min-w-0 flex-1 items-center gap-1.5">
-								<span class="truncate font-bold">{p.name}</span>
-								{#if p.isPrivate}
-									<Lock size={13} class="shrink-0 text-ink/40" aria-label={t('leaderboard.hidden')} />
-								{/if}
-							</span>
+							<span class="flex-1 truncate font-bold">{p.name}</span>
 							<div class="text-right text-sm font-bold tabular-nums">
-								<div class="text-base">{fig(p.score)}</div>
+								<div class="text-base">{nf.format(p.score)}</div>
 								<div class="text-[10px] text-ink/50 uppercase">{t('leaderboard.score')}</div>
 							</div>
 						</a>

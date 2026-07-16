@@ -92,7 +92,7 @@ test('going private hides the stats but keeps the name', async () => {
 	const seen = await visitor.wait((m) => m.type === 'profile', { label: 'profile' });
 
 	assert.equal(seen.profile.isPrivate, true);
-	assert.equal(seen.profile.name, 'Hermit', 'the name stays — it is on the leaderboard anyway');
+	assert.equal(seen.profile.name, 'Hermit', 'the name stays — it is what the link is for');
 	assert.equal(seen.profile.achievements, undefined, 'the badges do not');
 	assert.equal(seen.profile.gamesPlayed, undefined, 'nor the stats');
 
@@ -129,24 +129,66 @@ async function playerOnBoard(name) {
 	return { me, client };
 }
 
-test('going private also hides the figures on the leaderboard', async () => {
+test('going private takes you off the leaderboard entirely', async () => {
 	const { me, client } = await playerOnBoard('Shy');
-	client.send({ type: 'set_profile_prefs', clientId: me.clientId, sig: me.clientSig, isPrivate: true });
-	await client.wait((m) => m.type === 'my_profile' && m.profile.isPrivate, { label: 'saved' });
 
 	const visitor = connect(server.wsUrl);
 	await visitor.opened;
 	visitor.send({ type: 'get_leaderboard' });
-	const board = await visitor.wait((m) => m.type === 'leaderboard', { label: 'leaderboard' });
-	
-	const row = board.players.find((p) => p.name === 'Shy');
-	assert.ok(row, 'a private player keeps their place and name on the board');
-	assert.equal(row.isPrivate, true, 'and is marked as private so the UI can say so');
-	for (const field of ['gamesWon', 'gamesPlayed', 'totalScore', 'bestScore'])
-		assert.equal(row[field], null, `${field} is masked`);
+	const before = await visitor.wait((m) => m.type === 'leaderboard', { label: 'leaderboard' });
+	assert.ok(
+		before.players.some((p) => p.name === 'Shy'),
+		'a public player is on the board to begin with'
+	);
+
+	client.send({
+		type: 'set_profile_prefs',
+		clientId: me.clientId,
+		sig: me.clientSig,
+		isPrivate: true
+	});
+	await client.wait((m) => m.type === 'my_profile' && m.profile.isPrivate, { label: 'saved' });
+
+	const mark = visitor.ofType('leaderboard').length;
+	visitor.send({ type: 'get_leaderboard' });
+	await until(() => visitor.ofType('leaderboard').length > mark, { label: 'a fresh board' });
+	const after = visitor.last('leaderboard');
+	assert.ok(!after.players.some((p) => p.name === 'Shy'), 'and gone from it once private');
+	assert.ok(!JSON.stringify(after).includes(me.clientId), 'still no clientId anywhere');
 
 	client.close();
 	visitor.close();
+});
+
+test('you can delete your own profile, and only your own', async () => {
+	const { me, client, profile } = await playerWithBadge('Regretful');
+
+	const mallory = connect(server.wsUrl);
+	await mallory.opened;
+	mallory.send({ type: 'delete_profile', clientId: me.clientId, sig: 'forged' });
+	const denied = await mallory.wait((m) => m.type === 'error', { label: 'denied' });
+	assert.equal(denied.code, 'denied');
+
+	mallory.send({ type: 'get_profile', publicId: profile.publicId });
+	const survived = await mallory.wait((m) => m.type === 'profile', { label: 'profile' });
+	assert.equal(survived.profile.name, 'Regretful', 'the forged delete did not land');
+
+	client.send({ type: 'delete_profile', clientId: me.clientId, sig: me.clientSig });
+	await client.wait((m) => m.type === 'profile_deleted', { label: 'deleted' });
+
+	const mark = mallory.ofType('profile').length;
+	mallory.send({ type: 'get_profile', publicId: profile.publicId });
+	await until(() => mallory.ofType('profile').length > mark, { label: 'a fresh lookup' });
+	assert.equal(mallory.last('profile').profile, null, 'the public profile is gone');
+
+	client.send({ type: 'get_my_profile', clientId: me.clientId, sig: me.clientSig });
+	const mine = await client.wait((m) => m.type === 'my_profile' && m.profile === null, {
+		label: 'own profile gone'
+	});
+	assert.equal(mine.profile, null, 'and so is the owner view — badges and all');
+
+	client.close();
+	mallory.close();
 });
 
 test('an unsigned caller gets nothing and changes nothing', async () => {

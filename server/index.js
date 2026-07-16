@@ -20,6 +20,7 @@ import {
 	getFullProfile,
 	getFullProfileByPublicId,
 	getProfileByClientId,
+	deletePlayer,
 	getDailyResult,
 	getDailyLeaderboard,
 	getDailyRank,
@@ -588,6 +589,19 @@ function handleConnection(ws, wss) {
 					name: stored?.name ?? '',
 					avatar: stored?.avatar ?? ''
 				});
+				break;
+			}
+
+			case ClientMsg.DELETE_PROFILE: {
+				if (limited('delete_profile'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				deletePlayer(clientId);
+				console.log('[ws] a player deleted their profile');
+				send({ type: ServerMsg.PROFILE_DELETED });
 				break;
 			}
 

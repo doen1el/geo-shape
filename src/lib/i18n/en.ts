@@ -10,7 +10,6 @@ export const en = {
 	'leaderboard.wins': 'Wins',
 	'leaderboard.games': 'Games',
 	'leaderboard.score': 'Score',
-	'leaderboard.hidden': 'Private profile — figures hidden',
 
 	'stats.title': 'Your stats',
 	'stats.games': 'Games',
@@ -189,6 +188,17 @@ export const en = {
 	'account.title': 'Account',
 	'account.link': 'Profile link',
 	'account.linkHint': 'Anyone with the link can see your public profile.',
+
+	'delete.title': 'Delete profile',
+	'delete.hint': 'Erases your stats, badges and streak from the server.',
+	'delete.button': 'Delete',
+	'delete.confirmTitle': 'Delete your profile?',
+	'delete.warning':
+		'Your stats, badges, collection and daily streak are erased from the server for good. This cannot be undone.',
+	'delete.transferNote':
+		'Any other browser you transferred this profile to loses it as well. You can keep playing — your next game simply starts a fresh profile.',
+	'delete.confirm': 'Delete permanently',
+	'delete.working': 'Deleting…',
 
 	'transfer.title': 'Play on another browser',
 	'transfer.hint':

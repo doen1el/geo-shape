@@ -12,7 +12,6 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'leaderboard.wins': 'Siege',
 	'leaderboard.games': 'Spiele',
 	'leaderboard.score': 'Punkte',
-	'leaderboard.hidden': 'Privates Profil — Zahlen verborgen',
 
 	'stats.title': 'Deine Statistik',
 	'stats.games': 'Spiele',
@@ -192,6 +191,17 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'account.title': 'Account',
 	'account.link': 'Profil-Link',
 	'account.linkHint': 'Wer den Link hat, sieht dein öffentliches Profil.',
+
+	'delete.title': 'Profil löschen',
+	'delete.hint': 'Löscht deine Statistiken, Abzeichen und Serie vom Server.',
+	'delete.button': 'Löschen',
+	'delete.confirmTitle': 'Profil wirklich löschen?',
+	'delete.warning':
+		'Deine Statistiken, Abzeichen, Sammlung und Tages-Serie werden endgültig vom Server gelöscht. Das lässt sich nicht rückgängig machen.',
+	'delete.transferNote':
+		'Jeder andere Browser, auf den du dieses Profil übertragen hast, verliert es ebenfalls. Weiterspielen kannst du trotzdem — dein nächstes Spiel legt einfach ein neues Profil an.',
+	'delete.confirm': 'Endgültig löschen',
+	'delete.working': 'Wird gelöscht…',
 
 	'transfer.title': 'Auf anderem Browser spielen',
 	'transfer.hint':

@@ -2,11 +2,9 @@
 	import { cn } from '$lib/utils';
 	import { t } from '$lib/i18n/index.svelte';
 	import { badgeIcon } from '$lib/badgeIcons';
-	import type { Tier } from '$lib/ws.svelte';
 
 	type Props = {
 		id: string;
-		tier: Tier;
 		locked?: boolean;
 		progress?: { have: number; target: number } | null;
 		rarity?: number | null;
@@ -16,19 +14,12 @@
 
 	let {
 		id,
-		tier,
 		locked = false,
 		progress = null,
 		rarity = null,
 		size = 'default',
 		class: className
 	}: Props = $props();
-
-	const TIER_BG: Record<Tier, string> = {
-		bronze: 'bg-sand',
-		silver: 'bg-surface',
-		gold: 'bg-main'
-	};
 
 	const Icon = $derived(badgeIcon(id).icon);
 	const title = $derived(t(`achievement.${id}.title` as 'achievement.blitz.title'));
@@ -43,7 +34,7 @@
 <div
 	class={cn(
 		'group relative flex flex-col items-center gap-1 rounded-base border-2 border-border p-2 text-center',
-		locked ? 'bg-bg' : `${TIER_BG[tier]} shadow-shadow`,
+		locked ? 'bg-bg' : 'bg-main shadow-shadow',
 		className
 	)}
 >

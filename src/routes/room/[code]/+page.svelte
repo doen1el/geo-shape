@@ -327,9 +327,8 @@
 						</p>
 						<div class="flex flex-wrap justify-center gap-2">
 							{#each game.gameBadges as id (id)}
-								{@const def = DEF_BY_ID.get(id)}
-								{#if def}
-									<Badge {id} tier={def.tier} size="sm" class="w-24" />
+								{#if DEF_BY_ID.has(id)}
+									<Badge {id} size="sm" class="w-24" />
 								{/if}
 							{/each}
 						</div>

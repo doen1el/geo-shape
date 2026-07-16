@@ -4,7 +4,7 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 	import { Flame } from '@lucide/svelte';
-	import type { PlayerProfile } from '$lib/ws.svelte';
+	import type { PlayerProfile, Tier } from '$lib/ws.svelte';
 
 	type Props = {
 		profile: PlayerProfile;
@@ -19,10 +19,14 @@
 	const catalogue = $derived(profile.catalogue ?? []);
 
 	const GROUPS = ['basics', 'speed', 'streak', 'competition', 'collection', 'daily', 'hidden'];
+
+	const TIER_RANK: Record<Tier, number> = { bronze: 0, silver: 1, gold: 2 };
 	const grouped = $derived(
 		GROUPS.map((group) => ({
 			group,
-			items: catalogue.filter((a) => a.group === group)
+			items: catalogue
+				.filter((a) => a.group === group)
+				.sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier])
 		})).filter((g) => g.items.length > 0)
 	);
 
@@ -91,7 +95,6 @@
 								: 0}
 					<Badge
 						id={a.id}
-						tier={a.tier}
 						locked={!unlockedIds.has(a.id)}
 						rarity={unlockedIds.has(a.id) ? (profile.rarity?.[a.id] ?? null) : null}
 						progress={a.target ? { have, target: a.target } : null}

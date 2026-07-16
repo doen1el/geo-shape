@@ -75,6 +75,12 @@ class ProfileStore {
 		this.persist();
 	}
 
+	clearIdentity(): void {
+		this.clientId = '';
+		this.clientSig = '';
+		this.persist();
+	}
+
 	get isComplete(): boolean {
 		return this.name.trim().length > 0;
 	}

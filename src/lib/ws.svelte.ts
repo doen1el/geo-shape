@@ -103,11 +103,10 @@ export type LeaderboardEntry = {
 	publicId: string;
 	name: string;
 	avatar: string;
-	isPrivate: boolean;
-	gamesWon: number | null;
-	gamesPlayed: number | null;
-	totalScore: number | null;
-	bestScore: number | null;
+	gamesWon: number;
+	gamesPlayed: number;
+	totalScore: number;
+	bestScore: number;
 };
 export type PlayerStats = {
 	gamesPlayed: number;
@@ -152,10 +151,9 @@ export type DailyEntry = {
 	publicId: string;
 	name: string;
 	avatar: string;
-	isPrivate: boolean;
-	score: number | null;
-	solved: number | null;
-	totalMs: number | null;
+	score: number;
+	solved: number;
+	totalMs: number;
 };
 
 export type Daily = {
@@ -247,6 +245,7 @@ class GameSocket {
 	#pendingAck: { resolve: (code: string) => void; reject: (err: Error) => void } | null = null;
 
 	#pendingTransfer: { resolve: (name: string) => void; reject: (err: Error) => void } | null = null;
+	#pendingDelete: { resolve: () => void; reject: (err: Error) => void } | null = null;
 
 	#lastJoin: { code: string; profile: Profile } | null = null;
 	#reconnectAttempt = 0;
@@ -514,6 +513,15 @@ class GameSocket {
 			case ServerMsg.TRANSFER_CODE:
 				this.transferCode = { code: msg.code, expiresAt: Date.now() + msg.expiresInMs };
 				break;
+			case ServerMsg.PROFILE_DELETED:
+				profileStore.clearIdentity();
+				this.myProfile = null;
+				this.stats = null;
+				this.daily = null;
+				this.transferCode = null;
+				this.#pendingDelete?.resolve();
+				this.#pendingDelete = null;
+				break;
 			case ServerMsg.TRANSFER_DONE: {
 				profileStore.setIdentity(msg.clientId, msg.sig);
 				if (msg.name) profileStore.set(msg.name);
@@ -571,6 +579,8 @@ class GameSocket {
 				this.#pendingAck = null;
 				this.#pendingTransfer?.reject(new Error(message));
 				this.#pendingTransfer = null;
+				this.#pendingDelete?.reject(new Error(message));
+				this.#pendingDelete = null;
 				break;
 			}
 		}
@@ -746,6 +756,21 @@ class GameSocket {
 		return new Promise((resolve, reject) => {
 			this.#pendingTransfer = { resolve, reject };
 			this.#send({ type: ClientMsg.REDEEM_TRANSFER, code });
+		});
+	}
+
+	async deleteProfile(): Promise<void> {
+		await this.connect();
+		if (!profileStore.clientId) return;
+		this.error = null;
+		this.errorCode = null;
+		return new Promise((resolve, reject) => {
+			this.#pendingDelete = { resolve, reject };
+			this.#send({
+				type: ClientMsg.DELETE_PROFILE,
+				clientId: profileStore.clientId,
+				sig: profileStore.clientSig
+			});
 		});
 	}
 
