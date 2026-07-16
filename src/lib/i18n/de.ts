@@ -12,6 +12,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'leaderboard.wins': 'Siege',
 	'leaderboard.games': 'Spiele',
 	'leaderboard.score': 'Punkte',
+	'leaderboard.hidden': 'Privates Profil — Zahlen verborgen',
 
 	'stats.title': 'Deine Statistik',
 	'stats.games': 'Spiele',
@@ -178,7 +179,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'profile.notFound': 'Dieses Profil gibt es nicht.',
 	'profile.private': 'Dieses Profil ist privat.',
 	'profile.makePrivate': 'Profil privat',
-	'profile.makePrivateHint': 'Verbirgt deine Statistiken und Abzeichen vor anderen.',
+	'profile.makePrivateHint': 'Verbirgt deine Statistiken vor anderen.',
 	'profile.share': 'Profil-Link kopieren',
 	'profile.shared': 'Link kopiert',
 	'profile.badges': 'Abzeichen',
@@ -187,6 +188,34 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'profile.noBadges': 'Noch keine Abzeichen — spiel eine Runde!',
 	'profile.noBadgesOther': 'Noch keine Abzeichen.',
 	'profile.needsGame': 'Spiel eine Runde, um ein Profil anzulegen.',
+
+	'account.title': 'Account',
+	'account.link': 'Profil-Link',
+	'account.linkHint': 'Wer den Link hat, sieht dein öffentliches Profil.',
+
+	'transfer.title': 'Auf anderem Browser spielen',
+	'transfer.hint':
+		'Dein Profil liegt nur in diesem Browser. Mit einem Einmal-Code überträgst du es — danach teilen sich beide Browser dasselbe Profil.',
+	'transfer.get': 'Übertragen',
+	'transfer.enter': 'Code eingeben',
+	'transfer.codeTitle': 'Dein Übertragungscode',
+	'transfer.codeHint':
+		'Öffne GeoShape im anderen Browser, geh dort auf dein Profil und gib diesen Code ein.',
+	'transfer.expiresIn': 'Läuft ab in {time}',
+	'transfer.expired': 'Dieser Code ist abgelaufen.',
+	'transfer.badCode':
+		'Dieser Code stimmt nicht (mehr). Hol dir einen neuen und versuch es nochmal.',
+	'transfer.newCode': 'Neuer Code',
+	'transfer.copy': 'Code kopieren',
+	'transfer.copied': 'Kopiert',
+	'transfer.oneTime': 'Gilt einmal. Noch ein Browser? Hol dir einfach einen neuen Code.',
+	'transfer.enterTitle': 'Übertragungscode eingeben',
+	'transfer.enterHint': 'Gib den Code aus dem Browser ein, auf dem dein Profil liegt.',
+	'transfer.submit': 'Profil übertragen',
+	'transfer.working': 'Wird übertragen…',
+	'transfer.replaceWarning':
+		'Achtung: In diesem Browser gibt es schon ein Profil. Beim Übertragen wird es ersetzt und ist von hier aus nicht mehr erreichbar.',
+	'transfer.done': 'Fertig — dieser Browser ist jetzt {name}.',
 
 	'badge.new': 'Abzeichen freigeschaltet!',
 	'badge.rarity': '{pct}% der Spieler haben das',

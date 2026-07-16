@@ -1,6 +1,14 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, connect, sleep, solveRound, identifiedProfile } from './helpers.mjs';
+import {
+	startServer,
+	connect,
+	sleep,
+	until,
+	answerFor,
+	solveRound,
+	identifiedProfile
+} from './helpers.mjs';
 
 let server;
 before(
@@ -87,6 +95,55 @@ test('going private hides the stats but keeps the name', async () => {
 	assert.equal(seen.profile.name, 'Hermit', 'the name stays — it is on the leaderboard anyway');
 	assert.equal(seen.profile.achievements, undefined, 'the badges do not');
 	assert.equal(seen.profile.gamesPlayed, undefined, 'nor the stats');
+
+	client.close();
+	visitor.close();
+});
+
+async function playerOnBoard(name) {
+	const me = await identifiedProfile(server.wsUrl, name);
+	const client = connect(server.wsUrl);
+	await client.opened;
+	client.send({ type: 'create', profile: me });
+	const { code } = await client.wait((m) => m.type === 'created', { label: 'created' });
+	client.send({ type: 'settings', categoryId: 1, maxRounds: 1, roundDurationSec: 30 });
+
+	const foe = connect(server.wsUrl);
+	await foe.opened;
+	foe.send({ type: 'join', code, profile: await identifiedProfile(server.wsUrl, `${name}Foe`) });
+	await foe.wait((m) => m.type === 'created', { label: 'joined' });
+
+	// Both have to solve, or the round simply runs its full length.
+	const from = server.log().length;
+	client.send({ type: 'start' });
+	await client.wait((m) => m.type === 'round_start', { label: 'round_start', timeout: 15000 });
+	const answer = await answerFor(server, code, 1, { from });
+	client.send({ type: 'guess', text: answer });
+	await until(() => client.ofType('guess_result').some((m) => m.verdict === 'correct'), {
+		label: 'solved'
+	});
+	foe.send({ type: 'guess', text: answer });
+	await client.wait((m) => m.type === 'game_over', { label: 'game_over', timeout: 15000 });
+	await sleep(300);
+	foe.close();
+	return { me, client };
+}
+
+test('going private also hides the figures on the leaderboard', async () => {
+	const { me, client } = await playerOnBoard('Shy');
+	client.send({ type: 'set_profile_prefs', clientId: me.clientId, sig: me.clientSig, isPrivate: true });
+	await client.wait((m) => m.type === 'my_profile' && m.profile.isPrivate, { label: 'saved' });
+
+	const visitor = connect(server.wsUrl);
+	await visitor.opened;
+	visitor.send({ type: 'get_leaderboard' });
+	const board = await visitor.wait((m) => m.type === 'leaderboard', { label: 'leaderboard' });
+	
+	const row = board.players.find((p) => p.name === 'Shy');
+	assert.ok(row, 'a private player keeps their place and name on the board');
+	assert.equal(row.isPrivate, true, 'and is marked as private so the UI can say so');
+	for (const field of ['gamesWon', 'gamesPlayed', 'totalScore', 'bestScore'])
+		assert.equal(row[field], null, `${field} is masked`);
 
 	client.close();
 	visitor.close();

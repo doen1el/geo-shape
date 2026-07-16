@@ -19,6 +19,7 @@ import {
 	setProfilePrefs,
 	getFullProfile,
 	getFullProfileByPublicId,
+	getProfileByClientId,
 	getDailyResult,
 	getDailyLeaderboard,
 	getDailyRank,
@@ -48,6 +49,7 @@ import {
 import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
 import { addConnection, removeConnection, connectionCount, connectionsFrom } from './metrics.js';
 import { resolveIdentity, verify as verifyIdentity } from './identity.js';
+import { createTransfer, redeemTransfer } from './transfer.js';
 import { startBackups } from './backup.js';
 import {
 	adminEnabled,
@@ -548,6 +550,44 @@ function handleConnection(ws, wss) {
 				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
 				roomManager.broadcastState(room);
 				startGame(room, player);
+				break;
+			}
+
+			case ClientMsg.CREATE_TRANSFER: {
+				if (limited('create_transfer'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				const { code, expiresInMs } = createTransfer(clientId);
+
+				console.log(`[ws] issued a profile transfer code (valid ${expiresInMs / 1000}s)`);
+				send({ type: ServerMsg.TRANSFER_CODE, code, expiresInMs });
+				break;
+			}
+
+			case ClientMsg.REDEEM_TRANSFER: {
+				if (limited('redeem_transfer'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+
+				const identity = redeemTransfer(msg.code);
+				if (!identity)
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'That code is not valid any more.',
+						code: 'bad_code'
+					});
+
+				const stored = getProfileByClientId(identity.clientId);
+				console.log(`[ws] a profile transfer was redeemed${stored ? ` (${stored.name})` : ''}`);
+				send({
+					type: ServerMsg.TRANSFER_DONE,
+					clientId: identity.clientId,
+					sig: identity.sig,
+					name: stored?.name ?? '',
+					avatar: stored?.avatar ?? ''
+				});
 				break;
 			}
 

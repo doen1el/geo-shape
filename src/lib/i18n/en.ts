@@ -10,6 +10,7 @@ export const en = {
 	'leaderboard.wins': 'Wins',
 	'leaderboard.games': 'Games',
 	'leaderboard.score': 'Score',
+	'leaderboard.hidden': 'Private profile — figures hidden',
 
 	'stats.title': 'Your stats',
 	'stats.games': 'Games',
@@ -175,7 +176,7 @@ export const en = {
 	'profile.notFound': 'No such profile.',
 	'profile.private': 'This profile is private.',
 	'profile.makePrivate': 'Private profile',
-	'profile.makePrivateHint': 'Hides your stats and badges from other players.',
+	'profile.makePrivateHint': 'Hides your stats from other players.',
 	'profile.share': 'Copy profile link',
 	'profile.shared': 'Link copied',
 	'profile.badges': 'Badges',
@@ -184,6 +185,33 @@ export const en = {
 	'profile.noBadges': 'No badges yet — play a game!',
 	'profile.noBadgesOther': 'No badges yet.',
 	'profile.needsGame': 'Play a game to start a profile.',
+
+	'account.title': 'Account',
+	'account.link': 'Profile link',
+	'account.linkHint': 'Anyone with the link can see your public profile.',
+
+	'transfer.title': 'Play on another browser',
+	'transfer.hint':
+		'Your profile lives in this browser only. Move it over with a one-time code — both browsers then share the same profile.',
+	'transfer.get': 'Transfer',
+	'transfer.enter': 'Enter code',
+	'transfer.codeTitle': 'Your transfer code',
+	'transfer.codeHint':
+		'Open GeoShape in the other browser, go to your profile and enter this code there.',
+	'transfer.expiresIn': 'Expires in {time}',
+	'transfer.expired': 'This code has expired.',
+	'transfer.badCode': 'That code is not valid (any more). Get a fresh one and try again.',
+	'transfer.newCode': 'New code',
+	'transfer.copy': 'Copy code',
+	'transfer.copied': 'Copied',
+	'transfer.oneTime': 'Works once. Need a third browser? Just get another code.',
+	'transfer.enterTitle': 'Enter transfer code',
+	'transfer.enterHint': 'Type the code from the browser your profile is on.',
+	'transfer.submit': 'Transfer profile',
+	'transfer.working': 'Transferring…',
+	'transfer.replaceWarning':
+		'Careful: this browser already has a profile. Transferring replaces it, and it cannot be reached from here afterwards.',
+	'transfer.done': 'Done — this browser is now {name}.',
 
 	'badge.new': 'Badge unlocked!',
 	'badge.rarity': '{pct}% of players have this',

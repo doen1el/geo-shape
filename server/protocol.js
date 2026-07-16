@@ -23,6 +23,8 @@ export const ClientMsg = /** @type {const} */ ({
 	SET_PROFILE_PREFS: 'set_profile_prefs',
 	GET_DAILY: 'get_daily',
 	START_DAILY: 'start_daily',
+	CREATE_TRANSFER: 'create_transfer',
+	REDEEM_TRANSFER: 'redeem_transfer',
 
 	ADMIN_AUTH: 'admin_auth',
 	ADMIN_WATCH: 'admin_watch',
@@ -67,6 +69,8 @@ export const ServerMsg = /** @type {const} */ ({
 	PROFILE: 'profile',
 	MY_PROFILE: 'my_profile',
 	DAILY: 'daily',
+	TRANSFER_CODE: 'transfer_code',
+	TRANSFER_DONE: 'transfer_done',
 	ADMIN_OK: 'admin_ok',
 	ADMIN_STATE: 'admin_state',
 	ADMIN_PLAYERS: 'admin_players',

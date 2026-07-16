@@ -80,8 +80,15 @@ export const RATE_LIMITS = {
 	get_my_profile: { max: 20, windowMs: 10000 },
 	set_profile_prefs: { max: 10, windowMs: 60000 },
 	get_daily: { max: 20, windowMs: 10000 },
-	start_daily: { max: 6, windowMs: 60000 }
+	start_daily: { max: 6, windowMs: 60000 },
+	create_transfer: { max: 5, windowMs: 60000 },
+	redeem_transfer: { max: 8, windowMs: 60000 }
 };
+
+/**
+ * How long a profile transfer code stays redeemable.
+ */
+export const TRANSFER_TTL_MS = envNum('GEOSHAPE_TRANSFER_TTL_MS', 10 * 60 * 1000);
 
 /**
  * The daily challenge: the same five shapes for everyone, one attempt per day.

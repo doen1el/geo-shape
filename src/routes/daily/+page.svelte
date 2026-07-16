@@ -8,11 +8,13 @@
 	import { game } from '$lib/ws.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { ArrowLeft, Flame, TriangleAlert } from '@lucide/svelte';
+	import { ArrowLeft, Flame, Lock, TriangleAlert } from '@lucide/svelte';
 
 	let starting = $state(false);
 
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
+
+	const fig = $derived((v: number | null) => (v === null ? '—' : nf.format(v)));
 	const daily = $derived(game.daily);
 
 	onMount(() => {
@@ -114,8 +116,13 @@
 								<RankMedal rank={i + 1} />
 							</span>
 							<Avatar style={p.avatar} seed={p.name} size={32} alt={p.name} />
-							<span class="min-w-0 flex-1 truncate font-extrabold">{p.name}</span>
-							<span class="font-extrabold tabular-nums">{nf.format(p.score)}</span>
+							<span class="flex min-w-0 flex-1 items-center gap-1.5">
+								<span class="truncate font-extrabold">{p.name}</span>
+								{#if p.isPrivate}
+									<Lock size={13} class="shrink-0 text-ink/40" aria-label={t('leaderboard.hidden')} />
+								{/if}
+							</span>
+							<span class="font-extrabold tabular-nums">{fig(p.score)}</span>
 						</a>
 					</li>
 				{/each}

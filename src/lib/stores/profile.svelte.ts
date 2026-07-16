@@ -84,6 +84,12 @@ class ProfileStore {
 		this.persist();
 	}
 
+	setAvatar(style: string): void {
+		if (!isStyle(style)) return;
+		this.avatar = style;
+		this.persist();
+	}
+
 	cycleAvatar(): void {
 		const i = AVATAR_STYLES.indexOf(this.avatar as (typeof AVATAR_STYLES)[number]);
 		this.avatar = AVATAR_STYLES[(i + 1) % AVATAR_STYLES.length];

@@ -103,10 +103,11 @@ export type LeaderboardEntry = {
 	publicId: string;
 	name: string;
 	avatar: string;
-	gamesWon: number;
-	gamesPlayed: number;
-	totalScore: number;
-	bestScore: number;
+	isPrivate: boolean;
+	gamesWon: number | null;
+	gamesPlayed: number | null;
+	totalScore: number | null;
+	bestScore: number | null;
 };
 export type PlayerStats = {
 	gamesPlayed: number;
@@ -151,9 +152,10 @@ export type DailyEntry = {
 	publicId: string;
 	name: string;
 	avatar: string;
-	score: number;
-	solved: number;
-	totalMs: number;
+	isPrivate: boolean;
+	score: number | null;
+	solved: number | null;
+	totalMs: number | null;
 };
 
 export type Daily = {
@@ -230,6 +232,9 @@ class GameSocket {
 	viewedProfile = $state<PlayerProfile | null | undefined>(undefined);
 	daily = $state<Daily | null>(null);
 
+	/** The one-time code this browser is handing to another one. */
+	transferCode = $state<{ code: string; expiresAt: number } | null>(null);
+
 	badgeToasts = $state<{ id: number; achievement: string }[]>([]);
 
 	gameBadges = $state<string[]>([]);
@@ -240,6 +245,8 @@ class GameSocket {
 	#ws: WebSocket | null = null;
 	#openPromise: Promise<void> | null = null;
 	#pendingAck: { resolve: (code: string) => void; reject: (err: Error) => void } | null = null;
+
+	#pendingTransfer: { resolve: (name: string) => void; reject: (err: Error) => void } | null = null;
 
 	#lastJoin: { code: string; profile: Profile } | null = null;
 	#reconnectAttempt = 0;
@@ -504,6 +511,22 @@ class GameSocket {
 			case ServerMsg.DAILY:
 				this.daily = msg.daily ?? null;
 				break;
+			case ServerMsg.TRANSFER_CODE:
+				this.transferCode = { code: msg.code, expiresAt: Date.now() + msg.expiresInMs };
+				break;
+			case ServerMsg.TRANSFER_DONE: {
+				profileStore.setIdentity(msg.clientId, msg.sig);
+				if (msg.name) profileStore.set(msg.name);
+				if (msg.avatar) profileStore.setAvatar(msg.avatar);
+
+				if (this.#lastJoin) this.#lastJoin.profile = profileStore.toJSON();
+				this.transferCode = null;
+				this.#pendingTransfer?.resolve(profileStore.name);
+				this.#pendingTransfer = null;
+				this.requestMyProfile();
+				this.requestStats();
+				break;
+			}
 			case ServerMsg.ACHIEVEMENT: {
 				const ids: string[] = Array.isArray(msg.ids) ? msg.ids : [];
 				this.gameBadges = [...this.gameBadges, ...ids];
@@ -546,6 +569,8 @@ class GameSocket {
 				}
 				this.#pendingAck?.reject(new Error(message));
 				this.#pendingAck = null;
+				this.#pendingTransfer?.reject(new Error(message));
+				this.#pendingTransfer = null;
 				break;
 			}
 		}
@@ -698,6 +723,29 @@ class GameSocket {
 			clientId: profileStore.clientId,
 			sig: profileStore.clientSig,
 			isPrivate
+		});
+	}
+
+	async createTransfer(): Promise<void> {
+		await this.connect();
+		if (!profileStore.clientId) return;
+		this.transferCode = null;
+		this.error = null;
+		this.errorCode = null;
+		this.#send({
+			type: ClientMsg.CREATE_TRANSFER,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig
+		});
+	}
+
+	async redeemTransfer(code: string): Promise<string> {
+		await this.connect();
+		this.error = null;
+		this.errorCode = null;
+		return new Promise((resolve, reject) => {
+			this.#pendingTransfer = { resolve, reject };
+			this.#send({ type: ClientMsg.REDEEM_TRANSFER, code });
 		});
 	}
 

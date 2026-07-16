@@ -247,33 +247,15 @@ function newPublicId() {
 }
 
 /**
- * The public half of a player's identity, minted on first contact. `COALESCE` in
- * touchPlayer keeps it stable once assigned (and backfills pre-existing rows).
- *
- * @param {string} clientId
- * @returns {string}
- */
-export function getPublicId(clientId) {
-	if (!clientId) return '';
-	const conn = getDb();
-	if (!conn) return '';
-	try {
-		const r = conn.prepare('SELECT public_id FROM players WHERE client_id = ?').get(clientId);
-		return r?.public_id ? String(r.public_id) : '';
-	} catch (e) {
-		console.error('[db] getPublicId failed:', e instanceof Error ? e.message : e);
-		return '';
-	}
-}
-
-/**
  * Top players for the leaderboard. Never exposes the clientId.
  *
  * Accounts with no finished game are excluded: everyone who ever joined now has a
  * record, and a board padded with 0/0 entries would be worthless.
  *
  * @param {number} [limit]
- * @returns {Array<{ publicId: string, name: string, avatar: string, gamesWon: number, gamesPlayed: number, totalScore: number, bestScore: number }>}
+ * @returns {Array<{ publicId: string, name: string, avatar: string, isPrivate: boolean,
+ *   gamesWon: number | null, gamesPlayed: number | null, totalScore: number | null,
+ *   bestScore: number | null }>}
  */
 export function getLeaderboard(limit = 10) {
 	const conn = getDb();
@@ -281,22 +263,26 @@ export function getLeaderboard(limit = 10) {
 	try {
 		const rows = conn
 			.prepare(
-				`SELECT public_id, name, avatar, games_won, games_played, total_score, best_score
+				`SELECT public_id, name, avatar, is_private, games_won, games_played, total_score, best_score
 				 FROM players
 				 WHERE games_played > 0
 				 ORDER BY games_won DESC, total_score DESC
 				 LIMIT ?`
 			)
 			.all(limit);
-		return rows.map((r) => ({
-			publicId: r.public_id ? String(r.public_id) : '',
-			name: String(r.name),
-			avatar: String(r.avatar),
-			gamesWon: Number(r.games_won),
-			gamesPlayed: Number(r.games_played),
-			totalScore: Number(r.total_score),
-			bestScore: Number(r.best_score)
-		}));
+		return rows.map((r) => {
+			const isPrivate = Number(r.is_private) === 1;
+			return {
+				publicId: r.public_id ? String(r.public_id) : '',
+				name: String(r.name),
+				avatar: String(r.avatar),
+				isPrivate,
+				gamesWon: isPrivate ? null : Number(r.games_won),
+				gamesPlayed: isPrivate ? null : Number(r.games_played),
+				totalScore: isPrivate ? null : Number(r.total_score),
+				bestScore: isPrivate ? null : Number(r.best_score)
+			};
+		});
 	} catch (e) {
 		console.error('[db] getLeaderboard failed:', e instanceof Error ? e.message : e);
 		return [];
@@ -754,7 +740,9 @@ export function getDailyResult(day, clientId) {
 }
 
 /**
- * Today's board. Unfinished (abandoned) attempts are excluded.
+ * Today's board. Unfinished (abandoned) attempts are excluded. Private players are masked
+ * exactly as on the all-time board — see `getLeaderboard`.
+ *
  * @param {string} day
  * @param {number} [limit]
  */
@@ -764,21 +752,25 @@ export function getDailyLeaderboard(day, limit = 10) {
 	try {
 		const rows = conn
 			.prepare(
-				`SELECT p.public_id, p.name, p.avatar, d.score, d.solved, d.total_ms
+				`SELECT p.public_id, p.name, p.avatar, p.is_private, d.score, d.solved, d.total_ms
 				 FROM daily_results d JOIN players p ON p.client_id = d.client_id
 				 WHERE d.day = ? AND d.finished_at > 0
 				 ORDER BY d.score DESC, d.total_ms ASC
 				 LIMIT ?`
 			)
 			.all(day, limit);
-		return rows.map((r) => ({
-			publicId: r.public_id ? String(r.public_id) : '',
-			name: String(r.name),
-			avatar: String(r.avatar),
-			score: Number(r.score),
-			solved: Number(r.solved),
-			totalMs: Number(r.total_ms)
-		}));
+		return rows.map((r) => {
+			const isPrivate = Number(r.is_private) === 1;
+			return {
+				publicId: r.public_id ? String(r.public_id) : '',
+				name: String(r.name),
+				avatar: String(r.avatar),
+				isPrivate,
+				score: isPrivate ? null : Number(r.score),
+				solved: isPrivate ? null : Number(r.solved),
+				totalMs: isPrivate ? null : Number(r.total_ms)
+			};
+		});
 	} catch (e) {
 		console.error('[db] getDailyLeaderboard failed:', e instanceof Error ? e.message : e);
 		return [];

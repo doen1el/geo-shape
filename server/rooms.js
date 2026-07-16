@@ -6,7 +6,7 @@ import {
 	LOBBY_PUSH_MS
 } from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
-import { getPlayerStats, touchPlayer, getPublicId } from './db.js';
+import { touchPlayer, getProfileByClientId } from './db.js';
 import { safeTimeout } from './safety.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -171,10 +171,12 @@ export class RoomManager {
 		}
 
 		const id = `p${++playerSeq}`;
-		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
 
 		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
-		const publicId = getPublicId(profile.clientId);
+
+		const stored = getProfileByClientId(profile.clientId);
+		const publicId = stored?.publicId ?? '';
+		const wins = stored?.isPrivate ? 0 : (stored?.gamesWon ?? 0);
 		/** @type {Player} */
 		const player = {
 			id,
