@@ -115,6 +115,8 @@ export const en = {
 
 	'leave.title': 'Leave the room?',
 	'leave.text': 'You will lose your spot in this game.',
+	'leave.titleSolo': 'Quit the game?',
+	'leave.textSolo': 'Your run will be discarded — the score is not saved.',
 	'leave.confirm': 'Leave',
 	'leave.cancel': 'Stay',
 
@@ -148,6 +150,8 @@ export const en = {
 	'game.getReady': 'Get ready!',
 	'game.go': 'GO!',
 	'game.gameOver': 'Game over',
+	'game.soloDone': 'Nice one!',
+	'game.yourScore': 'Points',
 	'game.winner': '{name} wins!',
 	'game.tie': "It's a tie!",
 	'game.playAgain': 'Back to lobby',

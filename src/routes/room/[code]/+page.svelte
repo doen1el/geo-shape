@@ -26,6 +26,7 @@
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
 	const daily = page.url.searchParams.get('daily') === '1';
+	const singlePlayer = solo || daily;
 
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
@@ -44,6 +45,12 @@
 	let confirmEnd = $state(false);
 	let pendingUrl: string | null = null;
 	let leaving = false;
+
+	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
+
+	const soloPlayer = $derived(
+		game.gameOver?.players.find((p) => p.id === game.playerId) ?? game.gameOver?.players[0] ?? null
+	);
 
 	const room = $derived(game.room);
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
@@ -146,6 +153,12 @@
 	beforeNavigate((nav) => {
 		if (leaving || nav.type === 'leave') return;
 		if (!game.room || game.room.code !== code) return;
+
+		if (singlePlayer && game.gameOver) {
+			leaving = true;
+			game.leave();
+			return;
+		}
 		nav.cancel();
 		pendingUrl = nav.to?.url.href ?? '/';
 		confirmLeave = true;
@@ -303,22 +316,43 @@
 			<Card
 				class="flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-y-auto p-6 text-center"
 			>
-				<div>
-					<h2 class="text-2xl font-extrabold">{t('game.gameOver')}</h2>
-					<p class="mt-1 text-lg font-bold">
-						{#if game.gameOver.isTie}
-							{t('game.tie')}
-						{:else if game.gameOver.winnerName}
-							{t('game.winner', { name: game.gameOver.winnerName })}
-						{/if}
-					</p>
-				</div>
+				{#if singlePlayer}
+					<h2 class="text-2xl font-extrabold">{t('game.soloDone')}</h2>
 
-				<Podium players={game.gameOver.players} playerId={game.playerId} />
+					<Avatar
+						style={soloPlayer?.avatar ?? profile.avatar}
+						seed={soloPlayer?.name ?? profile.name}
+						size={72}
+						alt={soloPlayer?.name ?? profile.name}
+						class="rounded-base border-2 border-border bg-surface shadow-shadow"
+					/>
 
-				<div class="w-full">
-					<Scoreboard players={game.gameOver.players} playerId={game.playerId} />
-				</div>
+					<div class="w-full rounded-base border-2 border-border bg-main px-4 py-5 shadow-shadow">
+						<div class="text-4xl font-extrabold tabular-nums">
+							{nf.format(soloPlayer?.score ?? 0)}
+						</div>
+						<div class="mt-0.5 text-xs font-bold tracking-wide text-ink/60 uppercase">
+							{t('game.yourScore')}
+						</div>
+					</div>
+				{:else}
+					<div>
+						<h2 class="text-2xl font-extrabold">{t('game.gameOver')}</h2>
+						<p class="mt-1 text-lg font-bold">
+							{#if game.gameOver.isTie}
+								{t('game.tie')}
+							{:else if game.gameOver.winnerName}
+								{t('game.winner', { name: game.gameOver.winnerName })}
+							{/if}
+						</p>
+					</div>
+
+					<Podium players={game.gameOver.players} playerId={game.playerId} />
+
+					<div class="w-full">
+						<Scoreboard players={game.gameOver.players} playerId={game.playerId} />
+					</div>
+				{/if}
 
 				{#if game.gameBadges.length}
 					<div class="w-full">
@@ -336,10 +370,10 @@
 				{/if}
 
 				<div class="flex gap-3">
-					<Button variant="neutral" onclick={requestLeave}>{t('lobby.leave')}</Button>
 					{#if daily}
 						<Button href="/daily">{t('daily.title')}</Button>
 					{:else}
+						<Button variant="neutral" onclick={requestLeave}>{t('lobby.leave')}</Button>
 						<Button onclick={playAgain}>{solo ? t('solo.again') : t('game.playAgain')}</Button>
 					{/if}
 				</div>
@@ -597,8 +631,12 @@
 
 <!-- Leave confirmation -->
 <Dialog open={confirmLeave} onclose={cancelLeave}>
-	<h2 class="mb-2 text-xl font-extrabold">{t('leave.title')}</h2>
-	<p class="mb-5 text-sm font-medium text-ink/60">{t('leave.text')}</p>
+	<h2 class="mb-2 text-xl font-extrabold">
+		{singlePlayer ? t('leave.titleSolo') : t('leave.title')}
+	</h2>
+	<p class="mb-5 text-sm font-medium text-ink/60">
+		{singlePlayer ? t('leave.textSolo') : t('leave.text')}
+	</p>
 	<div class="flex justify-end gap-3">
 		<Button variant="neutral" onclick={cancelLeave}>{t('leave.cancel')}</Button>
 		<Button variant="danger" onclick={doLeave}>{t('leave.confirm')}</Button>

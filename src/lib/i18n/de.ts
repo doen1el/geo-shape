@@ -118,6 +118,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'leave.title': 'Raum verlassen?',
 	'leave.text': 'Du verlierst deinen Platz in diesem Spiel.',
+	'leave.titleSolo': 'Spiel abbrechen?',
+	'leave.textSolo': 'Dein Lauf wird verworfen — das Ergebnis wird nicht gespeichert.',
 	'leave.confirm': 'Verlassen',
 	'leave.cancel': 'Bleiben',
 
@@ -151,6 +153,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'game.getReady': 'Bereit machen!',
 	'game.go': 'LOS!',
 	'game.gameOver': 'Spiel vorbei',
+	'game.soloDone': 'Geschafft!',
+	'game.yourScore': 'Punkte',
 	'game.winner': '{name} gewinnt!',
 	'game.tie': 'Unentschieden!',
 	'game.playAgain': 'Zurück zur Lobby',

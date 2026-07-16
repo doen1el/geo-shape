@@ -113,7 +113,13 @@
 							<span class="flex w-7 justify-center text-lg font-extrabold">
 								<RankMedal rank={i + 1} />
 							</span>
-							<Avatar style={p.avatar} seed={p.name} size={32} alt={p.name} />
+							<Avatar
+							style={p.avatar}
+							seed={p.name}
+							size={32}
+							alt={p.name}
+							class="shrink-0 rounded-base border-2 border-border bg-surface"
+						/>
 							<span class="min-w-0 flex-1 truncate font-extrabold">{p.name}</span>
 							<span class="font-extrabold tabular-nums">{nf.format(p.score)}</span>
 						</a>
