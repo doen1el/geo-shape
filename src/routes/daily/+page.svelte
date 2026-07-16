@@ -8,7 +8,7 @@
 	import { game } from '$lib/ws.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { ArrowLeft, Flame, TriangleAlert } from '@lucide/svelte';
+	import { ArrowLeft, Flame } from '@lucide/svelte';
 
 	let starting = $state(false);
 

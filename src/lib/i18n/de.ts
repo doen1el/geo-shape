@@ -132,6 +132,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'game.endTitle': 'Spiel beenden?',
 	'game.endText': 'Das laufende Spiel wird beendet und alle kehren in die Lobby zurück.',
 	'common.cancel': 'Abbrechen',
+	'common.close': 'Schließen',
 	'game.correct': 'Richtig!',
 	'game.close': 'Nah dran!',
 	'game.solvedBy': '{name} hat es erraten!',
@@ -226,6 +227,9 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'transfer.replaceWarning':
 		'Achtung: In diesem Browser gibt es schon ein Profil. Beim Übertragen wird es ersetzt und ist von hier aus nicht mehr erreichbar.',
 	'transfer.done': 'Fertig — dieser Browser ist jetzt {name}.',
+	'transfer.doneTitle': 'Profil übertragen',
+	'transfer.doneNoName': 'Fertig — dieser Browser nutzt jetzt das übertragene Profil.',
+	'transfer.doneHint': 'Beide Browser teilen sich jetzt dieses Profil. Der Code ist verbraucht.',
 
 	'badge.new': 'Abzeichen freigeschaltet!',
 	'badge.rarity': '{pct}% der Spieler haben das',

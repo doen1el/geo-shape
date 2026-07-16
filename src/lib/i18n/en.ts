@@ -129,6 +129,7 @@ export const en = {
 	'game.endTitle': 'End the game?',
 	'game.endText': 'This stops the current game and sends everyone back to the lobby.',
 	'common.cancel': 'Cancel',
+	'common.close': 'Close',
 	'game.correct': 'Correct!',
 	'game.close': 'Close!',
 	'game.solvedBy': '{name} guessed it!',
@@ -222,6 +223,9 @@ export const en = {
 	'transfer.replaceWarning':
 		'Careful: this browser already has a profile. Transferring replaces it, and it cannot be reached from here afterwards.',
 	'transfer.done': 'Done — this browser is now {name}.',
+	'transfer.doneTitle': 'Profile transferred',
+	'transfer.doneNoName': 'Done — this browser now uses the transferred profile.',
+	'transfer.doneHint': 'Both browsers now share this profile. The code has been used up.',
 
 	'badge.new': 'Badge unlocked!',
 	'badge.rarity': '{pct}% of players have this',

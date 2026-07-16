@@ -3,6 +3,7 @@
 	import { fade, scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { cn } from '$lib/utils';
+	import { t } from '$lib/i18n/index.svelte';
 
 	type Props = {
 		open: boolean;
@@ -30,7 +31,7 @@
 			class="absolute inset-0 bg-black/30 backdrop-blur-sm"
 			transition:fade={{ duration: 150 }}
 			onclick={dismiss}
-			aria-label="Close"
+			aria-label={t('common.close')}
 			tabindex="-1"
 		></button>
 		<div

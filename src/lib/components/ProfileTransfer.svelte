@@ -6,20 +6,33 @@
 	import { profile } from '$lib/stores/profile.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { cn } from '$lib/utils';
-	import { Check, KeyRound } from '@lucide/svelte';
+	import { Check, KeyRound, TriangleAlert } from '@lucide/svelte';
 
 	let { class: className = '' }: { class?: string } = $props();
+
+	const CODE_LENGTH = 10;
 
 	let codeOpen = $state(false);
 	let enterOpen = $state(false);
 	let typed = $state('');
 	let busy = $state(false);
 	let errorMsg = $state('');
+	let rejected = $state(false);
 	let copied = $state(false);
 	let done = $state('');
 	let now = $state(Date.now());
 
 	const hasProfile = $derived(!!profile.clientId);
+
+	const codeComplete = $derived(typed.length === CODE_LENGTH);
+
+	$effect(() => {
+		const clean = typed
+			.toUpperCase()
+			.replace(/[^A-Z0-9]/g, '')
+			.slice(0, CODE_LENGTH);
+		if (clean !== typed) typed = clean;
+	});
 
 	const remainingMs = $derived(Math.max(0, (game.transferCode?.expiresAt ?? 0) - now));
 	const expired = $derived(!!game.transferCode && remainingMs === 0);
@@ -48,22 +61,32 @@
 
 	function openEnter() {
 		typed = '';
+		done = '';
 		errorMsg = '';
+		rejected = false;
 		enterOpen = true;
 	}
 
-	async function submit() {
-		if (busy || typed.trim().length === 0) return;
-		busy = true;
+	function closeEnter() {
+		enterOpen = false;
+	}
+
+	function clearError() {
 		errorMsg = '';
+		rejected = false;
+	}
+
+	async function submit() {
+		if (busy || !codeComplete) return;
+		busy = true;
+		clearError();
 		try {
 			const name = await game.redeemTransfer(typed);
-			enterOpen = false;
-			done = t('transfer.done', { name });
-			setTimeout(() => (done = ''), 6000);
+			done = name ? t('transfer.done', { name }) : t('transfer.doneNoName');
 		} catch {
-			// A refused code and a hammered one read very differently to whoever is typing.
-			errorMsg = game.errorCode === 'bad_code' ? t('transfer.badCode') : (game.error ?? '');
+			errorMsg =
+				game.errorCode === 'bad_code' ? t('transfer.badCode') : (game.error ?? t('error.connect'));
+			rejected = true;
 		} finally {
 			busy = false;
 		}
@@ -79,12 +102,6 @@
 	<div class="min-w-0">
 		<h3 class="font-extrabold">{t('transfer.title')}</h3>
 		<p class="mt-0.5 text-xs font-bold text-ink/50">{t('transfer.hint')}</p>
-		{#if done}
-			<p class="mt-1.5 flex items-center gap-1.5 text-xs font-bold text-ink">
-				<Check size={14} aria-hidden="true" />
-				{done}
-			</p>
-		{/if}
 	</div>
 
 	<div class="flex shrink-0 gap-2">
@@ -132,51 +149,79 @@
 	</div>
 </Dialog>
 
-<Dialog open={enterOpen} onclose={() => (enterOpen = false)}>
-	<form
-		class="flex flex-col gap-4"
-		onsubmit={(e) => {
-			e.preventDefault();
-			submit();
-		}}
-	>
-		<h2 class="text-xl font-extrabold">{t('transfer.enterTitle')}</h2>
-		<p class="text-xs font-bold text-ink/50">{t('transfer.enterHint')}</p>
-
-		<Input
-			bind:value={typed}
-			placeholder="XXXXXXXXXX"
-			maxlength={16}
-			autocapitalize="characters"
-			autocomplete="off"
-			spellcheck={false}
-			class="text-center font-mono text-lg tracking-[0.15em] uppercase"
-			oninput={() => (errorMsg = '')}
-		/>
-
-		{#if hasProfile}
-			<p class="rounded-base border-2 border-border bg-danger/20 p-2 text-xs font-bold">
-				{t('transfer.replaceWarning')}
-			</p>
-		{/if}
-
-		{#if errorMsg}
-			<p class="text-sm font-bold text-danger">{errorMsg}</p>
-		{/if}
-
-		<div class="flex gap-2">
-			<Button
-				type="button"
-				variant="neutral"
-				size="sm"
-				class="flex-1"
-				onclick={() => (enterOpen = false)}
+<Dialog open={enterOpen} onclose={closeEnter}>
+	{#if done}
+		<div class="flex flex-col gap-4">
+			<h2 class="flex items-center gap-2 text-xl font-extrabold">
+				<span
+					class="flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-border bg-main-accent"
+				>
+					<Check size={16} class="text-ink" aria-hidden="true" />
+				</span>
+				{t('transfer.doneTitle')}
+			</h2>
+			<p
+				class="rounded-base border-2 border-border bg-main p-3 text-sm font-bold shadow-shadow"
+				role="status"
 			>
-				{t('common.cancel')}
-			</Button>
-			<Button type="submit" size="sm" class="flex-1" disabled={busy || !typed.trim()}>
-				{busy ? t('transfer.working') : t('transfer.submit')}
-			</Button>
+				{done}
+			</p>
+			<p class="text-xs font-bold text-ink/50">{t('transfer.doneHint')}</p>
+			<Button size="sm" class="w-full" onclick={closeEnter}>{t('common.close')}</Button>
 		</div>
-	</form>
+	{:else}
+		<form
+			class="flex flex-col gap-4"
+			onsubmit={(e) => {
+				e.preventDefault();
+				submit();
+			}}
+		>
+			<h2 class="text-xl font-extrabold">{t('transfer.enterTitle')}</h2>
+			<p class="text-xs font-bold text-ink/50">{t('transfer.enterHint')}</p>
+
+			<div class="flex flex-col gap-1.5">
+				<Input
+					bind:value={typed}
+					placeholder="XXXXXXXXXX"
+					maxlength={24}
+					autocapitalize="characters"
+					autocomplete="off"
+					spellcheck={false}
+					aria-invalid={rejected || undefined}
+					class="text-center font-mono text-lg tracking-[0.15em] uppercase {rejected
+						? 'input-invalid'
+						: codeComplete
+							? 'input-valid'
+							: ''}"
+					oninput={clearError}
+				/>
+			</div>
+
+			{#if hasProfile}
+				<p class="rounded-base border-2 border-border bg-danger/20 p-2 text-xs font-bold">
+					{t('transfer.replaceWarning')}
+				</p>
+			{/if}
+
+			{#if errorMsg}
+				<p
+					class="flex items-start gap-2 rounded-base border-2 border-danger bg-danger/15 p-2.5 text-xs font-bold text-ink"
+					role="alert"
+				>
+					<TriangleAlert size={14} class="mt-px shrink-0 text-ink" aria-hidden="true" />
+					<span>{errorMsg}</span>
+				</p>
+			{/if}
+
+			<div class="flex gap-2">
+				<Button type="button" variant="neutral" size="sm" class="flex-1" onclick={closeEnter}>
+					{t('common.cancel')}
+				</Button>
+				<Button type="submit" size="sm" class="flex-1" disabled={busy || !codeComplete}>
+					{busy ? t('transfer.working') : t('transfer.submit')}
+				</Button>
+			</div>
+		</form>
+	{/if}
 </Dialog>

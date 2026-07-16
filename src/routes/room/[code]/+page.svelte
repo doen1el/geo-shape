@@ -474,12 +474,12 @@
 									{/if}
 									{#if p.wins > 0}
 										<span
-										class="flex items-center gap-1 text-xs font-bold text-ink/50"
-										title="Wins"
-									>
-										<Trophy size={13} aria-hidden="true" />
-										{p.wins}
-									</span>
+											class="flex items-center gap-1 text-xs font-bold text-ink/50"
+											title={t('stats.wins')}
+										>
+											<Trophy size={13} class="text-ink" aria-hidden="true" />
+											{p.wins}
+										</span>
 									{/if}
 									<span class="ml-auto flex items-center gap-2">
 										{#if p.isHost}

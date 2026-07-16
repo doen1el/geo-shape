@@ -10,8 +10,8 @@
 	import CategorySelect from '$lib/components/game/CategorySelect.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
-	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { X, Calendar, Flame } from '@lucide/svelte';
+	import { t } from '$lib/i18n/index.svelte';
+	import { X, Calendar } from '@lucide/svelte';
 
 	let name = $state(profile.name);
 	let joinCode = $state('');
@@ -46,7 +46,6 @@
 	}
 
 	const canPlay = $derived(name.trim().length > 0);
-	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
 
 	const code = $derived(joinCode.trim().toUpperCase());
 
@@ -65,8 +64,6 @@
 	);
 
 	onMount(() => {
-		game.requestStats();
-		game.requestDaily();
 		game.watchRooms();
 		const last = getLastRoom();
 		if (last && last !== game.room?.code) {
@@ -334,26 +331,6 @@
 			</Button>
 		</div>
 	</Dialog>
-
-	{#if (game.stats && game.stats.gamesPlayed > 0) || game.daily?.streak}
-		<a href="/profile" class="grid grid-cols-4 gap-2 text-center">
-			{#each [{ v: String(game.stats?.gamesPlayed ?? 0), l: t('stats.games'), hl: false, flame: false }, { v: String(game.stats?.gamesWon ?? 0), l: t('stats.wins'), hl: true, flame: false }, { v: String(game.stats?.bestScore ?? 0), l: t('stats.best'), hl: false, flame: false }, { v: String(game.daily?.streak ?? 0), l: t('daily.streak'), hl: false, flame: true }] as s (s.l)}
-				<div
-					class="rounded-base border-2 border-border px-2 py-2 transition-all hover:translate-x-[2px] hover:translate-y-[2px] {s.hl
-						? 'bg-main'
-						: 'bg-surface'}"
-				>
-					<div class="flex items-center justify-center gap-1 text-xl font-extrabold tabular-nums">
-						{#if s.flame}
-						<Flame size={16} class="text-orange-600" fill="currentColor" aria-hidden="true" />
-					{/if}
-						{s.v}
-					</div>
-					<div class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">{s.l}</div>
-				</div>
-			{/each}
-		</a>
-	{/if}
 
 	<!-- Public lobbies -->
 	{#if game.publicRooms.length > 0}

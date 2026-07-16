@@ -58,6 +58,10 @@
 		<Card class="p-6 text-center font-bold text-ink/50">{t('profile.needsGame')}</Card>
 	{/if}
 
+	{#if profile}
+		<ProfileView {profile} own />
+	{/if}
+
 	<Card class="flex flex-col">
 		<h2 class="px-4 pt-4 pb-3 text-sm font-extrabold tracking-wide text-ink/50 uppercase">
 			{t('account.title')}
@@ -117,16 +121,12 @@
 			</div>
 		{/if}
 	</Card>
-
-	{#if profile}
-		<ProfileView {profile} own />
-	{/if}
 </div>
 
 <Dialog open={deleteOpen} onclose={() => (deleteOpen = false)}>
 	<div class="flex flex-col gap-4">
 		<h2 class="flex items-center gap-2 text-xl font-extrabold">
-			<TriangleAlert size={20} class="text-danger" aria-hidden="true" />
+			<TriangleAlert size={20} class="text-ink" aria-hidden="true" />
 			{t('delete.confirmTitle')}
 		</h2>
 		<p class="rounded-base border-2 border-border bg-danger/20 p-3 text-sm font-bold">
