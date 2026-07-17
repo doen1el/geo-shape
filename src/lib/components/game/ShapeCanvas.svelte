@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { RoundInfo, NeighborShape } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
+	import {
+		playRoundRevealSound,
+		syncTickingClockSound,
+		stopTickingClockSound
+	} from '$lib/audio/roundSounds';
 
 	const REVEAL_TAIL_MS = 10000;
 	const CAP_R = 24;
@@ -53,6 +58,35 @@
 	const nextProgress = $derived(
 		reveal && reveal.totalMs > 0 ? Math.min(100, (nextRemainingMs / reveal.totalMs) * 100) : 0
 	);
+	const tickingRamp = $derived(
+		!revealed && !paused && remainingMs <= 15000 ? Math.min(1, Math.max(0, (15000 - remainingMs) / 15000)) : 0
+	);
+
+	let revealSoundPlayed = $state(false);
+	let tickingClockActive = $state(false);
+
+	$effect(() => {
+		const shouldTick = !revealed && !paused && remainingMs > 0 && secondsLeft <= 15;
+		if (shouldTick) {
+			syncTickingClockSound(true, tickingRamp);
+		} else if (tickingClockActive) {
+			stopTickingClockSound();
+		}
+		tickingClockActive = shouldTick;
+
+		if (revealed && !revealSoundPlayed) {
+			revealSoundPlayed = true;
+			playRoundRevealSound();
+		}
+
+		if (!revealed) {
+			revealSoundPlayed = false;
+		}
+	});
+
+	onDestroy(() => {
+		stopTickingClockSound();
+	});
 
 	const VIEWBOX_PAD = 12;
 	const viewBox = $derived.by(() => {
