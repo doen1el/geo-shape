@@ -5,6 +5,8 @@
 	import { scale, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
+	import { buttonSound } from '$lib/audio/buttonSound';
+	import MusicPlayer from '$lib/components/MusicPlayer.svelte';
 	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -52,6 +54,7 @@
 			{:else}
 				<a
 					href="/leaderboard"
+					use:buttonSound
 					class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
 				>
 					{t('nav.leaderboard')}
@@ -73,4 +76,5 @@
 	</div>
 </div>
 
+<MusicPlayer />
 <SettingsMenu />

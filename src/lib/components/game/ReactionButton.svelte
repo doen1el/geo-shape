@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronDown } from '@lucide/svelte';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { game, REACTION_EMOJIS } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 
@@ -48,6 +49,7 @@
 	{#if open}
 		<button
 			type="button"
+			use:buttonSound
 			class="fixed inset-0 z-40 cursor-default"
 			aria-label={t('common.cancel')}
 			onclick={() => (open = false)}
@@ -58,6 +60,7 @@
 			{#each EMOJIS as emoji (emoji)}
 				<button
 					type="button"
+					use:buttonSound
 					class="flex h-9 w-9 items-center justify-center rounded-base border-2 text-xl transition-transform hover:-translate-y-0.5 {selected ===
 					emoji
 						? 'border-border bg-main'
@@ -72,6 +75,7 @@
 
 	<button
 		type="button"
+		use:buttonSound
 		aria-label={t('chat.react')}
 		aria-haspopup="true"
 		aria-expanded={open}

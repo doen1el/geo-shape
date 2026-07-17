@@ -2,6 +2,7 @@
 	import { Settings } from '@lucide/svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { i18n, t, type Locale } from '$lib/i18n/index.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 
@@ -12,15 +13,20 @@
 		{ id: 'en', label: 'English' }
 	];
 
-	let volumePct = $state(Math.round(settings.volume * 100));
+	let musicPct = $state(Math.round(settings.volume * 100));
+	let sfxPct = $state(Math.round(settings.sfxVolume * 100));
 	$effect(() => {
-		settings.setVolume(volumePct / 100);
+		settings.setVolume(musicPct / 100);
+	});
+	$effect(() => {
+		settings.setSfxVolume(sfxPct / 100);
 	});
 </script>
 
 <!-- Floating settings entry, bottom-right of the screen. -->
 <button
 	type="button"
+	use:buttonSound
 	onclick={() => (open = true)}
 	aria-label={t('settings.title')}
 	title={t('settings.title')}
@@ -42,6 +48,7 @@
 				{#each LANGS as lang (lang.id)}
 					<button
 						type="button"
+						use:buttonSound
 						class="flex-1 rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {i18n.locale ===
 						lang.id
 							? 'bg-main shadow-shadow'
@@ -63,6 +70,7 @@
 				{#each [{ on: true, label: t('common.on') }, { on: false, label: t('common.off') }] as opt (opt.on)}
 					<button
 						type="button"
+						use:buttonSound
 						class="flex-1 rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {settings.soundOn ===
 						opt.on
 							? 'bg-main shadow-shadow'
@@ -79,16 +87,32 @@
 		<div class="flex flex-col gap-1.5">
 			<div class="flex items-center justify-between" class:opacity-40={!settings.soundOn}>
 				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
-					{t('settings.volume')}
+					{t('settings.musicVolume')}
 				</span>
-				<span class="text-xs font-extrabold tabular-nums">{volumePct}%</span>
+				<span class="text-xs font-extrabold tabular-nums">{musicPct}%</span>
 			</div>
 			<Slider
-				bind:value={volumePct}
+				bind:value={musicPct}
 				min={0}
 				max={100}
 				disabled={!settings.soundOn}
-				aria-label={t('settings.volume')}
+				aria-label={t('settings.musicVolume')}
+			/>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<div class="flex items-center justify-between" class:opacity-40={!settings.soundOn}>
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.sfxVolume')}
+				</span>
+				<span class="text-xs font-extrabold tabular-nums">{sfxPct}%</span>
+			</div>
+			<Slider
+				bind:value={sfxPct}
+				min={0}
+				max={100}
+				disabled={!settings.soundOn}
+				aria-label={t('settings.sfxVolume')}
 			/>
 		</div>
 	</div>

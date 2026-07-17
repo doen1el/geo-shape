@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { cn } from '$lib/utils';
 
 	type Props = {
@@ -28,6 +29,7 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
 		<button
 			class="absolute inset-0 bg-black/30 backdrop-blur-sm"
+			use:buttonSound
 			transition:fade={{ duration: 150 }}
 			onclick={dismiss}
 			aria-label="Close"

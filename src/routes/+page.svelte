@@ -8,6 +8,7 @@
 	import Slider from '$lib/components/ui/Slider.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import CategorySelect from '$lib/components/game/CategorySelect.svelte';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
@@ -174,6 +175,7 @@
 			<div class="group relative shrink-0">
 				<button
 					type="button"
+					use:buttonSound
 					onclick={() => profile.cycleAvatar()}
 					aria-label={t('identity.tapAvatar')}
 					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
@@ -263,6 +265,7 @@
 					{#each ['easy', 'hard'] as const as d (d)}
 						<button
 							type="button"
+							use:buttonSound
 							class="flex-1 rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {soloDifficulty ===
 							d
 								? 'bg-main shadow-shadow'

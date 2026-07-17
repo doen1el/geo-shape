@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLButtonAttributes, HTMLAnchorAttributes } from 'svelte/elements';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { cn } from '$lib/utils';
 	import { buttonVariants, type ButtonVariant, type ButtonSize } from './button';
 
@@ -24,11 +25,20 @@
 </script>
 
 {#if href}
-	<a {href} class={cn(buttonVariants({ variant, size }), className)} {...rest}>
+	<a
+		{href}
+		class={cn(buttonVariants({ variant, size }), className)}
+		use:buttonSound
+		{...rest}
+	>
 		{@render children()}
 	</a>
 {:else}
-	<button class={cn(buttonVariants({ variant, size }), className)} {...rest}>
+	<button
+		class={cn(buttonVariants({ variant, size }), className)}
+		use:buttonSound
+		{...rest}
+	>
 		{@render children()}
 	</button>
 {/if}

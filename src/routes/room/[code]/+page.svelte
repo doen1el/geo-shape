@@ -16,6 +16,7 @@
 	import Podium from '$lib/components/game/Podium.svelte';
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { buttonSound } from '$lib/audio/buttonSound';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
@@ -189,6 +190,7 @@
 					{#each [false, true] as pub (pub)}
 						{@const active = (room?.isPublic ?? false) === pub}
 						<button
+							use:buttonSound
 							class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
 								{active ? 'bg-main shadow-shadow' : 'bg-surface'}
 								{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
@@ -231,6 +233,7 @@
 				{#each ['easy', 'hard'] as const as diff (diff)}
 					{@const active = (room?.difficulty ?? 'easy') === diff}
 					<button
+						use:buttonSound
 						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
 							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
 							{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
@@ -543,6 +546,7 @@
 		<div class="flex items-center gap-3">
 			<button
 				type="button"
+				use:buttonSound
 				onclick={() => profile.cycleAvatar()}
 				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow"
 			>
