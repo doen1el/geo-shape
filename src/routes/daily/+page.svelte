@@ -83,8 +83,6 @@
 						</div>
 					{/if}
 				</div>
-			{:else}
-				<p class="mt-4 font-bold text-ink/50">{t('daily.done')}</p>
 			{/if}
 			<p class="mt-3 text-center text-sm font-bold text-ink/50">{t('daily.comeBack')}</p>
 		{:else}

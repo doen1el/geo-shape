@@ -10,11 +10,13 @@
 	import { profile } from '$lib/stores/profile.svelte';
 	import { DEF_BY_ID } from '$lib/badges';
 	import { badgeIcon } from '$lib/badgeIcons';
-	import { Trophy, User, Megaphone, TriangleAlert, Check } from '@lucide/svelte';
+	import { Trophy, User, Megaphone, TriangleAlert, Check, Settings } from '@lucide/svelte';
 	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
 	import { preloadAvatarStyle } from '$lib/components/ui/Avatar.svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	let settingsOpen = $state(false);
 
 	onMount(() => {
 		preloadAvatarStyle();
@@ -98,9 +100,9 @@
 		</div>
 	{/if}
 
-	<div class="flex h-svh flex-col items-center justify-center">
+	<div class="flex min-h-svh flex-col items-center justify-center">
 		<div
-			class="flex h-full max-h-[900px] w-full max-w-3xl flex-col overflow-x-visible overflow-y-clip px-4 py-4"
+			class="flex h-svh max-h-[900px] min-h-[38.75rem] w-full max-w-3xl flex-col overflow-x-visible overflow-y-clip px-4 py-4"
 		>
 			<header class="mb-4 flex shrink-0 items-center justify-between">
 				<a href="/" class="flex items-center gap-2">
@@ -111,24 +113,24 @@
 					</span>
 				</a>
 
-				{#if inRoom && isSolo}
-					<span
-						class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-extrabold tracking-wide uppercase shadow-shadow"
-					>
-						{t('solo.badge')}
-					</span>
-				{:else if inRoom}
-					<button
-						onclick={copyCode}
-						title={roomCode}
-						class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
-					>
-						<span class="mr-1 flex items-center text-ink/40">
-							{#if copied}<Check size={16} aria-hidden="true" />{:else}#{/if}
-						</span>{roomCode}
-					</button>
-				{:else}
-					<nav class="flex items-center gap-2">
+				<div class="flex items-center gap-2">
+					{#if inRoom && isSolo}
+						<span
+							class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 text-sm font-extrabold tracking-wide uppercase shadow-shadow"
+						>
+							{t('solo.badge')}
+						</span>
+					{:else if inRoom}
+						<button
+							onclick={copyCode}
+							title={roomCode}
+							class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+						>
+							<span class="mr-1 flex items-center text-ink/40">
+								{#if copied}<Check size={16} aria-hidden="true" />{:else}#{/if}
+							</span>{roomCode}
+						</button>
+					{:else}
 						<a
 							href="/leaderboard"
 							title={t('nav.leaderboard')}
@@ -145,8 +147,18 @@
 							<User size={18} aria-hidden="true" />
 							<span class="hidden sm:inline">{t('nav.profile')}</span>
 						</a>
-					</nav>
-				{/if}
+					{/if}
+
+					<button
+						type="button"
+						onclick={() => (settingsOpen = true)}
+						title={t('settings.title')}
+						aria-label={t('settings.title')}
+						class="flex h-11 w-11 items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+					>
+						<Settings size={18} aria-hidden="true" />
+					</button>
+				</div>
 			</header>
 
 			<main class="relative flex min-h-0 flex-1 flex-col">
@@ -163,5 +175,5 @@
 		</div>
 	</div>
 
-	<SettingsMenu />
+	<SettingsMenu bind:open={settingsOpen} />
 {/if}

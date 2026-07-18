@@ -404,7 +404,7 @@
 					</div>
 				</div>
 
-				<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-[1fr_300px]">
+				<div class="grid min-h-0 flex-1 gap-4 sm:grid-cols-[1fr_260px] md:grid-cols-[1fr_300px]">
 					<div class="flex min-h-0 flex-col gap-3">
 						{#if revealing}
 							<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 pb-1">
@@ -471,7 +471,7 @@
 		<!-- Lobby (multiplayer) -->
 	{:else}
 		<div class="flex min-h-0 flex-1 flex-col gap-4">
-			<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-2">
+			<div class="grid min-h-0 flex-1 gap-4 sm:grid-cols-2">
 				<!-- Left: players + chat -->
 				<div class="flex min-h-0 flex-col gap-4">
 					<Card class="flex min-h-0 flex-1 flex-col p-4">
@@ -589,7 +589,7 @@
 	<p class="flex flex-1 items-center justify-center font-bold text-ink/60">{t('common.connecting')}</p>
 {:else if needsName}
 	<!-- Skeleton lobby behind the name dialog -->
-	<div class="grid min-h-0 flex-1 gap-4 md:grid-cols-2" aria-hidden="true">
+	<div class="grid min-h-0 flex-1 gap-4 sm:grid-cols-2" aria-hidden="true">
 		<Card class="flex flex-col gap-3 p-4">
 			<div class="h-5 w-24 rounded bg-ink/10"></div>
 			{#each [1, 2, 3] as i (i)}

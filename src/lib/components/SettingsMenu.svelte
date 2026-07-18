@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { Settings, Code, Scale } from '@lucide/svelte';
+	import { Code, Scale } from '@lucide/svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
 	import { i18n, t, type Locale } from '$lib/i18n/index.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
+	import { APP_VERSION } from '$lib/version';
 
-	let open = $state(false);
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const LANGS: { id: Locale; label: string }[] = [
 		{ id: 'de', label: 'Deutsch' },
@@ -17,17 +18,6 @@
 		settings.setVolume(volumePct / 100);
 	});
 </script>
-
-<!-- Floating settings entry, bottom-right of the screen. -->
-<button
-	type="button"
-	onclick={() => (open = true)}
-	aria-label={t('settings.title')}
-	title={t('settings.title')}
-	class="fixed right-4 bottom-4 z-40 flex h-12 w-12 items-center justify-center rounded-base border-2 border-border bg-main text-ink shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
->
-	<Settings size={26} strokeWidth={2.5} aria-hidden="true" />
-</button>
 
 <Dialog {open} onclose={() => (open = false)}>
 	<div class="flex flex-col gap-5">
@@ -125,6 +115,7 @@
 					{t('settings.licenses')}
 				</a>
 			</div>
+			<p class="text-xs font-bold tracking-wide text-ink/40">GeoShape v{APP_VERSION}</p>
 		</div>
 	</div>
 </Dialog>
