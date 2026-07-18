@@ -97,5 +97,5 @@ export const TRANSFER_TTL_MS = envNum('GEOSHAPE_TRANSFER_TTL_MS', 10 * 60 * 1000
 export const DAILY_ROUNDS = 5;
 export const DAILY_ROUND_DURATION_SEC = envNum('GEOSHAPE_DAILY_ROUND_SEC', 60);
 export const DAILY_DIFFICULTY = /** @type {'easy' | 'hard'} */ (
-	process.env.GEOSHAPE_DAILY_DIFFICULTY === 'hard' ? 'hard' : 'easy'
+	process.env.GEOSHAPE_DAILY_DIFFICULTY === 'easy' ? 'easy' : 'hard'
 );

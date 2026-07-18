@@ -1,17 +1,25 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { scale, fade } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
 	import { game } from '$lib/ws.svelte';
+	import { profile } from '$lib/stores/profile.svelte';
 	import { DEF_BY_ID } from '$lib/badges';
 	import { badgeIcon } from '$lib/badgeIcons';
 	import { Trophy, User, Megaphone, TriangleAlert, Check } from '@lucide/svelte';
 	import SettingsMenu from '$lib/components/SettingsMenu.svelte';
+	import { preloadAvatarStyle } from '$lib/components/ui/Avatar.svelte';
 
 	let { children }: { children: Snippet } = $props();
+
+	onMount(() => {
+		preloadAvatarStyle();
+		if (profile.avatar) preloadAvatarStyle(profile.avatar);
+	});
 
 	const inRoom = $derived(page.url.pathname.startsWith('/room/'));
 	const isSolo = $derived(

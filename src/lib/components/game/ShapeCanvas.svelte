@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Pause } from '@lucide/svelte';
 	import type { RoundInfo, NeighborShape } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 
@@ -78,8 +79,11 @@
 					: t('game.nextRoundIn', { seconds: nextSeconds })}
 			</span>
 		{:else if paused}
-			<span class="rounded border-2 border-border bg-secondary px-1.5 text-xs font-extrabold">
-				⏸ {t('game.paused')}
+			<span
+				class="inline-flex items-center gap-1 rounded border-2 border-border bg-secondary px-1.5 text-xs font-extrabold"
+			>
+				<Pause size={12} fill="currentColor" aria-hidden="true" />
+				{t('game.paused')}
 			</span>
 		{:else}
 			<span class="tabular-nums">{secondsLeft}s</span>

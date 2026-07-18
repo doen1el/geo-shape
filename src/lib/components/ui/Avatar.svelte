@@ -45,16 +45,54 @@
 
 	const DEFAULT_STYLE = 'fun-emoji';
 
-	const styleCache = new Map<string, Promise<Style<unknown>>>();
+	const stylePromises = new Map<string, Promise<Style<unknown>>>();
+	const resolvedStyles = new Map<string, Style<unknown>>();
+	const uriCache = new Map<string, string>();
 
-	function loadStyle(name: string): Promise<Style<unknown>> {
-		const key = loaders[name] ? name : DEFAULT_STYLE;
-		let cached = styleCache.get(key);
-		if (!cached) {
-			cached = loaders[key]().then((m) => new Style(m.default as never));
-			styleCache.set(key, cached);
+	function styleKey(name: string): string {
+		return loaders[name] ? name : DEFAULT_STYLE;
+	}
+
+	function cacheKey(key: string, seed: string, size: number): string {
+		return `${key}|${seed?.trim() ? seed.trim() : 'anon'}|${size}`;
+	}
+
+	function loadStyle(key: string): Promise<Style<unknown>> {
+		let pending = stylePromises.get(key);
+		if (!pending) {
+			pending = loaders[key]().then((m) => {
+				const style = new Style(m.default as never);
+				resolvedStyles.set(key, style);
+				return style;
+			});
+			stylePromises.set(key, pending);
 		}
-		return cached;
+		return pending;
+	}
+
+	function makeUri(style: Style<unknown>, seed: string, size: number): string {
+		return new Avatar(style, {
+			seed: seed?.trim() ? seed.trim() : 'anon',
+			size,
+			backgroundColor: PLAYER_COLORS_BARE,
+			borderRadius: 10
+		}).toDataUri();
+	}
+
+	function resolveSync(name: string, seed: string, size: number): string | null {
+		const key = styleKey(name);
+		const ck = cacheKey(key, seed, size);
+		const cached = uriCache.get(ck);
+		if (cached) return cached;
+		const style = resolvedStyles.get(key);
+		if (!style) return null;
+		const uri = makeUri(style, seed, size);
+		uriCache.set(ck, uri);
+		return uri;
+	}
+
+	export function preloadAvatarStyle(name = DEFAULT_STYLE): Promise<unknown> {
+		return loadStyle(styleKey(name));
 	}
 
 	// 1×1 transparent GIF
@@ -62,6 +100,8 @@
 </script>
 
 <script lang="ts">
+	import { untrack } from 'svelte';
+
 	type Props = {
 		seed: string;
 		style: string;
@@ -71,21 +111,27 @@
 	};
 	let { seed, style, size = 64, alt = 'avatar', class: klass = '' }: Props = $props();
 
-	let src = $state(BLANK);
+	let src = $state(untrack(() => resolveSync(style, seed, size)) ?? BLANK);
 
 	$effect(() => {
-		const styleName = style;
+		const sync = resolveSync(style, seed, size);
+		if (sync) {
+			src = sync;
+			return;
+		}
+		const key = styleKey(style);
+		const ck = cacheKey(key, seed, size);
 		const rawSeed = seed;
 		const px = size;
 		let active = true;
-		loadStyle(styleName).then((s) => {
+		loadStyle(key).then((s) => {
 			if (!active) return;
-			src = new Avatar(s, {
-				seed: rawSeed?.trim() ? rawSeed.trim() : 'anon',
-				size: px,
-				backgroundColor: PLAYER_COLORS_BARE,
-				borderRadius: 10
-			}).toDataUri();
+			let uri = uriCache.get(ck);
+			if (!uri) {
+				uri = makeUri(s, rawSeed, px);
+				uriCache.set(ck, uri);
+			}
+			src = uri;
 		});
 		return () => {
 			active = false;
@@ -93,4 +139,4 @@
 	});
 </script>
 
-<img {src} {alt} width={size} height={size} class={klass} />
+<img {src} {alt} width={size} height={size} class={klass} decoding="async" />
