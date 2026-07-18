@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Settings } from '@lucide/svelte';
+	import { Settings, Code, Scale } from '@lucide/svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
 	import { i18n, t, type Locale } from '$lib/i18n/index.svelte';
@@ -90,6 +90,41 @@
 				disabled={!settings.soundOn}
 				aria-label={t('settings.volume')}
 			/>
+		</div>
+
+		<!-- Source code + licenses -->
+		<div class="flex flex-col gap-2 border-t-2 border-border pt-4 items-center text-center">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+				{t('settings.about')}
+			</span>
+			<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-bold">
+				<a
+					href="https://codeberg.org/doen1el/geo-shape"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Code size={15} aria-hidden="true" />
+					{t('settings.sourceCodeberg')}
+				</a>
+				<a
+					href="https://github.com/doen1el/geo-shape"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Code size={15} aria-hidden="true" />
+					{t('settings.sourceGithub')}
+				</a>
+				<a
+					href="/licenses"
+					onclick={() => (open = false)}
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Scale size={15} aria-hidden="true" />
+					{t('settings.licenses')}
+				</a>
+			</div>
 		</div>
 	</div>
 </Dialog>
