@@ -4,6 +4,7 @@
 	import { backOut } from 'svelte/easing';
 	import { buttonSound } from '$lib/audio/buttonSound';
 	import { cn } from '$lib/utils';
+	import { t } from '$lib/i18n/index.svelte';
 
 	type Props = {
 		open: boolean;
@@ -32,7 +33,7 @@
 			use:buttonSound
 			transition:fade={{ duration: 150 }}
 			onclick={dismiss}
-			aria-label="Close"
+			aria-label={t('common.close')}
 			tabindex="-1"
 		></button>
 		<div

@@ -11,7 +11,8 @@
 	import { buttonSound } from '$lib/audio/buttonSound';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
-	import { i18n, t } from '$lib/i18n/index.svelte';
+	import { t } from '$lib/i18n/index.svelte';
+	import { X, Calendar } from '@lucide/svelte';
 
 	let name = $state(profile.name);
 	let joinCode = $state('');
@@ -46,7 +47,6 @@
 	}
 
 	const canPlay = $derived(name.trim().length > 0);
-	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
 
 	const code = $derived(joinCode.trim().toUpperCase());
 
@@ -65,7 +65,6 @@
 	);
 
 	onMount(() => {
-		game.requestStats(profile.clientId);
 		game.watchRooms();
 		const last = getLastRoom();
 		if (last && last !== game.room?.code) {
@@ -114,7 +113,7 @@
 			const newCode = await game.create(profile.toJSON());
 			await goto(`/room/${newCode}`);
 		} catch {
-			errorMsg = t('error.connect');
+			errorMsg = game.errorCode ? '' : t('error.connect');
 		} finally {
 			busy = false;
 		}
@@ -142,7 +141,7 @@
 			soloOpen = false;
 			await goto(`/room/${newCode}?solo=1`);
 		} catch {
-			errorMsg = t('error.connect');
+			errorMsg = game.errorCode ? '' : t('error.connect');
 		} finally {
 			busy = false;
 		}
@@ -164,7 +163,7 @@
 				aria-label={t('rejoin.dismiss')}
 				title={t('rejoin.dismiss')}
 			>
-				✕
+				<X size={18} aria-hidden="true" />
 			</Button>
 		</Card>
 	{/if}
@@ -234,14 +233,25 @@
 			<div class="h-0.5 flex-1 bg-ink/10"></div>
 		</div>
 
-		<Button
-			variant="neutral"
-			class="w-full"
-			disabled={!canPlay || busy}
-			onclick={() => (soloOpen = true)}
-		>
-			{t('solo.button')}
-		</Button>
+		<div class="grid grid-cols-2 gap-3">
+			<Button
+				variant="neutral"
+				class="w-full"
+				disabled={!canPlay || busy}
+				onclick={() => (soloOpen = true)}
+			>
+				{t('solo.button')}
+			</Button>
+			<Button
+				variant="secondary"
+				href={canPlay ? '/daily' : undefined}
+				disabled={!canPlay}
+				class="w-full"
+			>
+				<Calendar size={18} aria-hidden="true" />
+				{t('daily.play')}
+			</Button>
+		</div>
 	</Card>
 
 	{#if errorMsg}
@@ -324,20 +334,6 @@
 			</Button>
 		</div>
 	</Dialog>
-
-	<!-- Your stats -->
-	{#if game.stats && game.stats.gamesPlayed > 0}
-		<div class="grid grid-cols-4 gap-2 text-center">
-			{#each [{ v: game.stats.gamesPlayed, l: t('stats.games'), hl: false }, { v: game.stats.gamesWon, l: t('stats.wins'), hl: true }, { v: game.stats.bestScore, l: t('stats.best'), hl: false }, { v: nf.format(game.stats.totalScore), l: t('stats.total'), hl: false }] as s (s.l)}
-				<div
-					class="rounded-base border-2 border-border px-2 py-2 {s.hl ? 'bg-main' : 'bg-surface'}"
-				>
-					<div class="text-xl font-extrabold tabular-nums">{s.v}</div>
-					<div class="text-[10px] font-bold tracking-wide text-ink/50 uppercase">{s.l}</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
 
 	<!-- Public lobbies -->
 	{#if game.publicRooms.length > 0}

@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { ChevronDown } from '@lucide/svelte';
 	import { buttonSound } from '$lib/audio/buttonSound';
-	import { game, REACTION_EMOJIS } from '$lib/ws.svelte';
+	import { game, REACTION_KEYS } from '$lib/ws.svelte';
+	import { REACTION_ICON } from '$lib/reactions';
 	import { t } from '$lib/i18n/index.svelte';
 
-	const EMOJIS = REACTION_EMOJIS as readonly string[];
+	const KEYS = REACTION_KEYS as readonly string[];
 	const LONG_PRESS_MS = 300;
 
-	let selected = $state(EMOJIS[0]);
+	let selected = $state(KEYS[0]);
 	let open = $state(false);
 	let pressTimer: ReturnType<typeof setTimeout> | null = null;
 	let longFired = false;
+
+	const SelectedIcon = $derived(REACTION_ICON[selected].icon);
 
 	function clearTimer() {
 		if (pressTimer) {
@@ -38,10 +41,10 @@
 		game.react(selected);
 	}
 
-	function pick(emoji: string) {
-		selected = emoji;
+	function pick(key: string) {
+		selected = key;
 		open = false;
-		game.react(emoji);
+		game.react(key);
 	}
 </script>
 
@@ -57,17 +60,24 @@
 		<div
 			class="absolute bottom-full left-1/2 z-50 mb-2 flex -translate-x-1/2 gap-1 rounded-base border-2 border-border bg-surface p-1.5 shadow-shadow"
 		>
-			{#each EMOJIS as emoji (emoji)}
+			{#each KEYS as key (key)}
+				{@const Icon = REACTION_ICON[key].icon}
 				<button
 					type="button"
 					use:buttonSound
-					class="flex h-9 w-9 items-center justify-center rounded-base border-2 text-xl transition-transform hover:-translate-y-0.5 {selected ===
-					emoji
+					class="flex h-9 w-9 items-center justify-center rounded-base border-2 transition-transform hover:-translate-y-0.5 {selected ===
+					key
 						? 'border-border bg-main'
 						: 'border-transparent hover:border-border hover:bg-main'}"
-					onclick={() => pick(emoji)}
+					onclick={() => pick(key)}
 				>
-					{emoji}
+					<Icon
+						size={20}
+						fill={REACTION_ICON[key].fill ?? 'currentColor'}
+						fill-opacity={REACTION_ICON[key].fillOpacity ?? 0.35}
+						class={REACTION_ICON[key].color}
+						aria-hidden="true"
+					/>
 				</button>
 			{/each}
 		</div>
@@ -79,7 +89,7 @@
 		aria-label={t('chat.react')}
 		aria-haspopup="true"
 		aria-expanded={open}
-		class="relative flex h-11 w-11 touch-none items-center justify-center rounded-base border-2 border-border bg-surface text-xl shadow-shadow transition-all select-none hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+		class="relative flex h-11 w-11 touch-none items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow transition-all select-none hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 		onpointerdown={onPointerDown}
 		onpointerup={onPointerUp}
 		onpointerleave={clearTimer}
@@ -92,7 +102,13 @@
 			open = true;
 		}}
 	>
-		{selected}
+		<SelectedIcon
+			size={22}
+			fill={REACTION_ICON[selected].fill ?? 'currentColor'}
+			fill-opacity={REACTION_ICON[selected].fillOpacity ?? 0.35}
+			class={REACTION_ICON[selected].color}
+			aria-hidden="true"
+		/>
 		<ChevronDown
 			class="pointer-events-none absolute right-0.5 bottom-0.5 text-ink"
 			size={12}

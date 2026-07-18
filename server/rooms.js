@@ -6,7 +6,8 @@ import {
 	LOBBY_PUSH_MS
 } from './config.js';
 import { PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
-import { getPlayerStats, touchPlayer } from './db.js';
+import { touchPlayer, getProfileByClientId } from './db.js';
+import { safeTimeout } from './safety.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 4;
@@ -27,9 +28,14 @@ let playerSeq = 0;
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
+ * @property {string} publicId
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
- * @property {ReturnType<typeof setTimeout> | null} disconnectTimer Pending grace-period removal, or null.
+ * @property {ReturnType<typeof setTimeout> | null} disconnectTimer
+ * @property {import('./achievements.js').Run | null} run
+ * @property {AchState | null} ach
+ *
+ * @typedef {ReturnType<typeof import('./achievements.js').loadPlayerState>} AchState
  */
 
 /**
@@ -38,6 +44,8 @@ let playerSeq = 0;
  * @typedef {Object} Room
  * @property {string} code
  * @property {boolean} solo
+ * @property {string} daily
+ * @property {number[]} dailyShapeIds
  * @property {boolean} isPublic
  * @property {number} maxPlayers
  * @property {'easy' | 'hard'} difficulty
@@ -50,6 +58,7 @@ let playerSeq = 0;
  * @property {number} categoryId
  * @property {number} roundDurationSec
  * @property {number} createdAt
+ * @property {number} lastActivityAt
  * @property {Set<number>} usedShapeIds
  * @property {Shape | null} currentShape
  * @property {string} roundPath
@@ -88,14 +97,16 @@ export class RoomManager {
 
 	/**
 	 * Creates an empty room and returns it.
-	 * @param {{ solo?: boolean, difficulty?: string }} [options]
+	 * @param {{ solo?: boolean, difficulty?: string, daily?: import('./daily.js').DailyPlan }} [options]
 	 * @returns {Room}
 	 */
-	createRoom({ solo = false, difficulty } = {}) {
+	createRoom({ solo = false, difficulty, daily } = {}) {
 		/** @type {Room} */
 		const room = {
 			code: this.generateCode(),
 			solo,
+			daily: daily ? daily.day : '',
+			dailyShapeIds: daily ? daily.shapeIds : [],
 			isPublic: false,
 			maxPlayers: DEFAULT_MAX_PLAYERS,
 			difficulty: difficulty === 'hard' ? 'hard' : 'easy',
@@ -108,6 +119,7 @@ export class RoomManager {
 			categoryId: PLAYABLE_CATEGORY_IDS.includes(1) ? 1 : (PLAYABLE_CATEGORY_IDS[0] ?? 0),
 			roundDurationSec: ROUND_DURATION_SEC,
 			createdAt: Date.now(),
+			lastActivityAt: Date.now(),
 			usedShapeIds: new Set(),
 			currentShape: null,
 			roundPath: '',
@@ -159,9 +171,12 @@ export class RoomManager {
 		}
 
 		const id = `p${++playerSeq}`;
-		const wins = getPlayerStats(profile.clientId)?.gamesWon ?? 0;
 
 		touchPlayer({ clientId: profile.clientId, name: profile.name, avatar: profile.avatar });
+
+		const stored = getProfileByClientId(profile.clientId);
+		const publicId = stored?.publicId ?? '';
+		const wins = stored?.isPrivate ? 0 : (stored?.gamesWon ?? 0);
 		/** @type {Player} */
 		const player = {
 			id,
@@ -169,9 +184,12 @@ export class RoomManager {
 			score: 0,
 			roundPoints: 0,
 			wins,
+			publicId,
 			connected: true,
 			socket,
-			disconnectTimer: null
+			disconnectTimer: null,
+			run: null,
+			ach: null
 		};
 		room.players.set(id, player);
 		if (!room.hostId) room.hostId = id;
@@ -235,6 +253,7 @@ export class RoomManager {
 				score: p.score,
 				roundPoints: p.roundPoints,
 				wins: p.wins,
+				publicId: p.publicId,
 				isHost: p.id === room.hostId,
 				connected: p.connected,
 				solved: room.solved.has(p.id)
@@ -261,7 +280,47 @@ export class RoomManager {
 	 * @param {Room} room
 	 */
 	broadcastState(room) {
+		this.touch(room);
 		this.broadcast(room, { type: ServerMsg.ROOM_STATE, room: this.toPublic(room) });
+		this.publishLobby();
+	}
+
+	/**
+	 * Marks the room as alive for the idle sweeper.
+	 * @param {Room} room
+	 */
+	touch(room) {
+		room.lastActivityAt = Date.now();
+	}
+
+	/**
+	 * Rooms with no activity for `idleMs`.
+	 *
+	 * @param {number} idleMs
+	 * @returns {Room[]}
+	 */
+	findStale(idleMs) {
+		const cutoff = Date.now() - idleMs;
+		return [...this.rooms.values()].filter((room) => {
+			if (room.lastActivityAt >= cutoff) return false;
+
+			const gameRunning = room.roundTimer !== null || room.pauseTimer !== null;
+			return !gameRunning;
+		});
+	}
+
+	/**
+	 * Drops a room and disconnects whoever is still in it.
+	 * @param {Room} room
+	 * @param {string} message
+	 */
+	evict(room, message) {
+		this.broadcast(room, { type: ServerMsg.ERROR, message, code: 'closed' });
+		for (const player of room.players.values()) {
+			if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
+			player.disconnectTimer = null;
+		}
+		this.rooms.delete(room.code);
 		this.publishLobby();
 	}
 
@@ -305,17 +364,21 @@ export class RoomManager {
 	 */
 	publishLobby() {
 		if (this.lobbyWatchers.size === 0 || this.lobbyPushTimer) return;
-		this.lobbyPushTimer = setTimeout(() => {
-			this.lobbyPushTimer = null;
-			const payload = JSON.stringify({
-				type: ServerMsg.PUBLIC_ROOMS,
-				rooms: this.listPublic()
-			});
-			for (const socket of this.lobbyWatchers) {
-				if (socket.readyState === 1) socket.send(payload);
-				else this.lobbyWatchers.delete(socket);
-			}
-		}, LOBBY_PUSH_MS);
+		this.lobbyPushTimer = safeTimeout(
+			'publishLobby',
+			() => {
+				this.lobbyPushTimer = null;
+				const payload = JSON.stringify({
+					type: ServerMsg.PUBLIC_ROOMS,
+					rooms: this.listPublic()
+				});
+				for (const socket of this.lobbyWatchers) {
+					if (socket.readyState === 1) socket.send(payload);
+					else this.lobbyWatchers.delete(socket);
+				}
+			},
+			LOBBY_PUSH_MS
+		);
 	}
 
 	/**
@@ -325,6 +388,7 @@ export class RoomManager {
 	 * @param {{kind: string, name?: string, text?: string, playerId?: string, points?: number, variant?: string, round?: number}} entry
 	 */
 	chat(room, entry) {
+		this.touch(room);
 		room.chatLog.push(entry);
 		if (room.chatLog.length > 50) room.chatLog.shift();
 		this.broadcast(room, { type: ServerMsg.CHAT, ...entry });

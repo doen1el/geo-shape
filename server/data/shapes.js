@@ -154,6 +154,17 @@ export function getCategory(categoryId) {
 }
 
 /**
+ * Looks a shape up by id — the daily challenge replays a fixed, pre-drawn list.
+ *
+ * @param {number} categoryId
+ * @param {number} shapeId
+ * @returns {Shape | null}
+ */
+export function getShapeById(categoryId, shapeId) {
+	return CATEGORIES[categoryId]?.shapes.find((s) => s.id === shapeId) ?? null;
+}
+
+/**
  * Picks a random shape from a category, avoiding ids already used this game.
  *
  * @param {number} categoryId
@@ -172,4 +183,38 @@ export function pickShape(categoryId, usedIds) {
 	const shape = available[Math.floor(Math.random() * available.length)];
 	usedIds.add(shape.id);
 	return shape;
+}
+
+/**
+ * The country categories overlap: `world` (8) re-keys the very same countries with fresh
+ * ids, so France is `2:11` in Europe and something else entirely in World. Collection
+ * progress has to see through that, or "every country in Africa" would be unreachable
+ * for someone who plays World.
+ *
+ * Deliberately limited to the country categories — US states and countries share names
+ * ("Georgia"), and crediting one for the other would be wrong.
+ */
+const COUNTRY_CATEGORY_IDS = [2, 4, 5, 6, 7, 8];
+
+/** @type {Map<string, string[]>} name -> every `<categoryId>:<shapeId>` that means it */
+const EQUIVALENT_KEYS = new Map();
+for (const id of COUNTRY_CATEGORY_IDS) {
+	for (const shape of CATEGORIES[id]?.shapes ?? []) {
+		const keys = EQUIVALENT_KEYS.get(shape.name) ?? [];
+		keys.push(`${id}:${shape.id}`);
+		EQUIVALENT_KEYS.set(shape.name, keys);
+	}
+}
+
+/**
+ * Every progress key one solve should credit.
+ *
+ * @param {number} categoryId
+ * @param {Shape} shape
+ * @returns {string[]} `<categoryId>:<shapeId>` keys
+ */
+export function shapeKeys(categoryId, shape) {
+	const own = `${categoryId}:${shape.id}`;
+	if (!COUNTRY_CATEGORY_IDS.includes(categoryId)) return [own];
+	return EQUIVALENT_KEYS.get(shape.name) ?? [own];
 }
