@@ -96,6 +96,30 @@
 	animation: pulse-grey 1.1s ease-in-out infinite;
 }
 
+@keyframes badge-pop {
+	0%,
+	18% {
+		transform: scale(1);
+	}
+	55% {
+		transform: scale(1.3);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.badge-pop {
+	transform-origin: center;
+	animation: badge-pop 600ms ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.badge-pop {
+		animation: none;
+	}
+}
+
 .input-invalid {
 	animation: shake 0.4s ease;
 	border-color: var(--color-danger) !important;

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { Crown } from '@lucide/svelte';
 	import type { PublicPlayer } from '$lib/ws.svelte';
 
 	let { players, playerId }: { players: PublicPlayer[]; playerId: string | null } = $props();
@@ -34,7 +35,7 @@
 		{#if s.player}
 			<div class="flex flex-1 flex-col items-center gap-1.5">
 				{#if s.place === 1}
-					<span class="text-2xl leading-none">👑</span>
+					<Crown size={26} class="text-yellow-500" aria-hidden="true" />
 				{/if}
 				<Avatar
 					style={s.player.avatar}

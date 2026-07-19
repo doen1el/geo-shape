@@ -15,5 +15,22 @@ services:
       GEOSHAPE_DB: "/data/geoshape.db"
       GEOSHAPE_ALLOWED_ORIGINS: "https://geoshape.example.com"
 
+      # Set to "1" when a reverse proxy sits in front, so the per-IP connection cap
+      # reads x-forwarded-for instead of seeing every player as the proxy's address.
+      # GEOSHAPE_TRUST_PROXY: "1"
+
+      # Enables the /admin dashboard. Without it the whole admin surface stays off.
+      # GEOSHAPE_ADMIN_TOKEN: "change-me"
+
+      # Signs the player identities. Optional: if unset, a secret is generated once and
+      # kept in the database. Set it only if you want the same identities to stay valid
+      # across a *fresh* database, changing it invalidates everyone's saved id.
+      # GEOSHAPE_SECRET: "change-me-too"
+
+      # Database snapshots. Default: daily, keeping 7, into <db-dir>/backups i.e.
+      # /data/backups here, so they live on the volume. Set the interval to 0 to disable.
+      # GEOSHAPE_BACKUP_INTERVAL_MS: "86400000"
+      # GEOSHAPE_BACKUP_KEEP: "7"
+
     volumes:
       - "/data:/data"

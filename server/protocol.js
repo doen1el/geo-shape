@@ -16,7 +16,32 @@ export const ClientMsg = /** @type {const} */ ({
 	UNLIST_ROOMS: 'unlist_rooms',
 	GET_LEADERBOARD: 'get_leaderboard',
 	GET_STATS: 'get_stats',
-	PING: 'ping'
+	PING: 'ping',
+
+	GET_PROFILE: 'get_profile',
+	GET_MY_PROFILE: 'get_my_profile',
+	SET_PROFILE_PREFS: 'set_profile_prefs',
+	GET_DAILY: 'get_daily',
+	START_DAILY: 'start_daily',
+	CREATE_TRANSFER: 'create_transfer',
+	REDEEM_TRANSFER: 'redeem_transfer',
+	DELETE_PROFILE: 'delete_profile',
+
+	ADMIN_AUTH: 'admin_auth',
+	ADMIN_WATCH: 'admin_watch',
+	ADMIN_UNWATCH: 'admin_unwatch',
+	ADMIN_ACTION: 'admin_action',
+	ADMIN_SEARCH: 'admin_search'
+});
+
+/** Operator actions available from the admin dashboard. */
+export const AdminAction = /** @type {const} */ ({
+	CLOSE_ROOM: 'close_room',
+	KICK_PLAYER: 'kick_player',
+	ANNOUNCE: 'announce',
+	MAINTENANCE: 'maintenance',
+	DELETE_PLAYER: 'delete_player',
+	BACKUP: 'backup'
 });
 
 /** Message types the server sends to the client. */
@@ -38,6 +63,19 @@ export const ServerMsg = /** @type {const} */ ({
 	LEADERBOARD: 'leaderboard',
 	STATS: 'stats',
 	PONG: 'pong',
+	SERVER_SHUTDOWN: 'server_shutdown',
+	NOTICE: 'notice',
+	IDENTITY: 'identity',
+	ACHIEVEMENT: 'achievement',
+	PROFILE: 'profile',
+	MY_PROFILE: 'my_profile',
+	DAILY: 'daily',
+	TRANSFER_CODE: 'transfer_code',
+	TRANSFER_DONE: 'transfer_done',
+	PROFILE_DELETED: 'profile_deleted',
+	ADMIN_OK: 'admin_ok',
+	ADMIN_STATE: 'admin_state',
+	ADMIN_PLAYERS: 'admin_players',
 	ERROR: 'error'
 });
 
@@ -48,9 +86,21 @@ export const Verdict = /** @type {const} */ ({
 	WRONG: 'wrong'
 });
 
-export const REACTION_EMOJIS = /** @type {const} */ (['🔥', '😂', '😮', '👏', '💀', '🎉']);
+/**
+ * Reaction identifiers carried over the wire. Each side maps a key to its own icon
+ * (`src/lib/reactions.ts` on the client)
+ */
+export const REACTION_KEYS = /** @type {const} */ ([
+	'fire',
+	'laugh',
+	'thumbs',
+	'heart',
+	'skull',
+	'party'
+]);
 
-export const CONFETTI_EMOJI = '🎉';
+/** The one reaction that also rains confetti. */
+export const CONFETTI_KEY = 'party';
 
 /**
  * @typedef {Object} Profile
@@ -67,6 +117,7 @@ export const CONFETTI_EMOJI = '🎉';
  * @property {number} score
  * @property {number} roundPoints
  * @property {number} wins
+ * @property {string} publicId
  * @property {boolean} isHost
  * @property {boolean} connected
  * @property {boolean} solved

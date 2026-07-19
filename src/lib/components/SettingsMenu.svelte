@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { Settings } from '@lucide/svelte';
+	import { Code, Scale } from '@lucide/svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
 	import { buttonSound } from '$lib/audio/buttonSound';
 	import { i18n, t, type Locale } from '$lib/i18n/index.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
+	import { APP_VERSION } from '$lib/version';
 
-	let open = $state(false);
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const LANGS: { id: Locale; label: string }[] = [
 		{ id: 'de', label: 'Deutsch' },
@@ -22,18 +23,6 @@
 		settings.setSfxVolume(sfxPct / 100);
 	});
 </script>
-
-<!-- Floating settings entry, bottom-right of the screen. -->
-<button
-	type="button"
-	use:buttonSound
-	onclick={() => (open = true)}
-	aria-label={t('settings.title')}
-	title={t('settings.title')}
-	class="fixed right-4 bottom-4 z-40 flex h-12 w-12 items-center justify-center rounded-base border-2 border-border bg-main text-ink shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
->
-	<Settings size={26} strokeWidth={2.5} aria-hidden="true" />
-</button>
 
 <Dialog {open} onclose={() => (open = false)}>
 	<div class="flex flex-col gap-5">
@@ -114,6 +103,42 @@
 				disabled={!settings.soundOn}
 				aria-label={t('settings.sfxVolume')}
 			/>
+		</div>
+
+		<!-- Source code + licenses -->
+		<div class="flex flex-col gap-2 border-t-2 border-border pt-4 items-center text-center">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+				{t('settings.about')}
+			</span>
+			<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-bold">
+				<a
+					href="https://codeberg.org/doen1el/geo-shape"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Code size={15} aria-hidden="true" />
+					{t('settings.sourceCodeberg')}
+				</a>
+				<a
+					href="https://github.com/doen1el/geo-shape"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Code size={15} aria-hidden="true" />
+					{t('settings.sourceGithub')}
+				</a>
+				<a
+					href="/licenses"
+					onclick={() => (open = false)}
+					class="inline-flex items-center gap-1.5 text-ink/70 underline-offset-2 hover:text-ink hover:underline"
+				>
+					<Scale size={15} aria-hidden="true" />
+					{t('settings.licenses')}
+				</a>
+			</div>
+			<p class="text-xs font-bold tracking-wide text-ink/40">GeoShape v{APP_VERSION}</p>
 		</div>
 	</div>
 </Dialog>

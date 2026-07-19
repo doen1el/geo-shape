@@ -1,9 +1,27 @@
 import { ServerMsg, Verdict } from './protocol.js';
 import { roomManager } from './rooms.js';
-import { getCategory, pickShape, PLAYABLE_CATEGORY_IDS, CATEGORY_SIZES } from './data/shapes.js';
+import {
+	getCategory,
+	pickShape,
+	getShapeById,
+	shapeKeys,
+	PLAYABLE_CATEGORY_IDS,
+	CATEGORY_SIZES
+} from './data/shapes.js';
 import { judgeGuess } from './match.js';
-import { recordGameResult } from './db.js';
+import {
+	recordGameResult,
+	recordGame,
+	recordShapeSolves,
+	bumpCounters,
+	unlockAchievements,
+	finishDaily,
+	bumpDailyStreak
+} from './db.js';
+import { newRun, loadPlayerState, evaluate, Counter } from './achievements.js';
+import { previousDay } from './daily.js';
 import { cleanText } from './moderation.js';
+import { safeTimeout } from './safety.js';
 import {
 	ROUND_END_PAUSE_MS,
 	COUNTDOWN_MS,
@@ -46,6 +64,62 @@ function allConnectedSolved(room) {
 	return connected.length > 0 && connected.every((p) => room.solved.has(p.id));
 }
 
+/**
+ * Lazily prepares a player's achievement state.
+ *
+ * @param {Player} player
+ */
+function ensureAchState(player) {
+	if (!player.run) player.run = newRun();
+	if (!player.ach) player.ach = loadPlayerState(player.profile.clientId);
+	return player.ach;
+}
+
+/**
+ * Assembles the context the achievement checks read.
+ *
+ * @param {Room} room
+ * @param {Player} player
+ * @param {{ solve?: import('./achievements.js').Solve, game?: import('./achievements.js').GameEnd }} [extra]
+ * @returns {import('./achievements.js').Ctx}
+ */
+function achContext(room, player, extra = {}) {
+	const ach = ensureAchState(player);
+	const run = /** @type {import('./achievements.js').Run} */ (player.run);
+	return {
+		unlocked: ach.unlocked,
+		solvedKeys: ach.solvedKeys,
+		counters: ach.counters,
+		stats: ach.stats,
+		run,
+		isContest: room.players.size > 1,
+		solve: extra.solve ?? null,
+		game: extra.game ?? null,
+		progress: (categoryId) => {
+			const prefix = `${categoryId}:`;
+			let n = 0;
+			for (const key of ach.solvedKeys) if (key.startsWith(prefix)) n++;
+			return n;
+		}
+	};
+}
+
+/**
+ * Evaluates, persists and pushes any newly unlocked badges to that one player.
+ *
+ * @param {Room} room
+ * @param {Player} player
+ * @param {import('./achievements.js').Event} event
+ * @param {import('./achievements.js').Ctx} ctx
+ */
+function award(room, player, event, ctx) {
+	const won = evaluate(event, ctx);
+	if (!won.length) return;
+	unlockAchievements(player.profile.clientId, won);
+	send(player, { type: ServerMsg.ACHIEVEMENT, ids: won });
+	console.log(`[game] ${room.code} ${player.profile.name} unlocked ${won.join(', ')}`);
+}
+
 /** @param {any[]} arr @param {number} k */
 const rotate = (arr, k) => arr.slice(k).concat(arr.slice(0, k));
 
@@ -78,7 +152,10 @@ function randomizePathStart(d) {
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
-	if (typeof settings.categoryId === 'number' && PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)) {
+	if (
+		typeof settings.categoryId === 'number' &&
+		PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)
+	) {
 		room.categoryId = settings.categoryId;
 	}
 
@@ -126,7 +203,11 @@ export function startGame(room, player) {
 	if (room.players.size < 1 || !PLAYABLE_CATEGORY_IDS.includes(room.categoryId)) return;
 
 	clearTimers(room);
-	for (const p of room.players.values()) p.score = 0;
+	for (const p of room.players.values()) {
+		p.score = 0;
+		p.run = newRun();
+		p.ach = loadPlayerState(p.profile.clientId);
+	}
 	room.usedShapeIds.clear();
 	room.round = 0;
 	room.status = 'playing';
@@ -142,11 +223,17 @@ export function startGame(room, player) {
 		durationMs: COUNTDOWN_MS,
 		startsAt: Date.now()
 	});
-	console.log(`[game] ${room.code} starting — category ${room.categoryId}, ${room.maxRounds} rounds`);
-	room.pauseTimer = setTimeout(() => {
-		if (!isAlive(room)) return cleanupRoom(room);
-		startRound(room);
-	}, COUNTDOWN_MS);
+	console.log(
+		`[game] ${room.code} starting — category ${room.categoryId}, ${room.maxRounds} rounds`
+	);
+	room.pauseTimer = safeTimeout(
+		`countdown ${room.code}`,
+		() => {
+			if (!isAlive(room)) return cleanupRoom(room);
+			startRound(room);
+		},
+		COUNTDOWN_MS
+	);
 }
 
 /**
@@ -174,7 +261,11 @@ export function resumeGame(room, player) {
 	if (room.hostId !== player.id || !room.paused) return;
 	room.paused = false;
 	room.roundEndsAt = Date.now() + room.pauseRemainingMs;
-	room.roundTimer = setTimeout(() => endRound(room), room.pauseRemainingMs);
+	room.roundTimer = safeTimeout(
+		`endRound ${room.code}`,
+		() => endRound(room),
+		room.pauseRemainingMs
+	);
 	roomManager.broadcast(room, { type: ServerMsg.RESUMED, endsAt: room.roundEndsAt });
 	console.log(`[game] ${room.code} resumed`);
 }
@@ -249,7 +340,9 @@ function startRound(room) {
 	clearTimers(room);
 	if (!isAlive(room)) return cleanupRoom(room);
 
-	const shape = pickShape(room.categoryId, room.usedShapeIds);
+	const shape = room.daily
+		? getShapeById(room.categoryId, room.dailyShapeIds[room.round] ?? -1)
+		: pickShape(room.categoryId, room.usedShapeIds);
 	if (!shape) return endGame(room);
 
 	room.round += 1;
@@ -262,7 +355,10 @@ function startRound(room) {
 	room.countdownEndsAt = 0;
 
 	roomManager.chat(room, { kind: 'divider', variant: 'round', round: room.round });
-	for (const p of room.players.values()) p.roundPoints = 0;
+	for (const p of room.players.values()) {
+		p.roundPoints = 0;
+		if (p.run) p.run.wrongThisRound = 0;
+	}
 	room.roundEndsAt = Date.now() + room.roundDurationSec * 1000;
 
 	const category = getCategory(room.categoryId);
@@ -281,7 +377,11 @@ function startRound(room) {
 	roomManager.broadcastState(room);
 	console.log(`[game] ${room.code} round ${room.round}/${room.maxRounds}: answer = ${shape.name}`);
 
-	room.roundTimer = setTimeout(() => endRound(room), room.roundDurationSec * 1000);
+	room.roundTimer = safeTimeout(
+		`endRound ${room.code}`,
+		() => endRound(room),
+		room.roundDurationSec * 1000
+	);
 }
 
 /**
@@ -333,8 +433,16 @@ export function handleGuess(room, player, text) {
 		roomManager.broadcastState(room);
 		console.log(`[game] ${room.code} ${player.profile.name} solved (+${points})`);
 
+		recordSolve(room, player, { order, timeLeftMs });
+
 		if (allConnectedSolved(room)) endRound(room);
 		return;
+	}
+
+	ensureAchState(player);
+	if (player.run) {
+		player.run.wrong += 1;
+		player.run.wrongThisRound += 1;
 	}
 
 	send(player, { type: ServerMsg.GUESS_RESULT, verdict });
@@ -347,12 +455,69 @@ export function handleGuess(room, player, text) {
 }
 
 /**
+ * Persists what a correct guess just told us, then hands the fresh state to the
+ * achievement engine.
+ *
+ * @param {Room} room
+ * @param {Player} player
+ * @param {{ order: number, timeLeftMs: number }} solve
+ */
+function recordSolve(room, player, { order, timeLeftMs }) {
+	const shape = room.currentShape;
+	if (!shape) return;
+
+	const ach = ensureAchState(player);
+	const run = /** @type {import('./achievements.js').Run} */ (player.run);
+	const solveMs = Math.max(0, room.roundDurationSec * 1000 - timeLeftMs);
+	const isFirst = order === 0 && room.players.size > 1;
+
+	run.roundsSolved += 1;
+	run.streak += 1;
+	run.maxStreak = Math.max(run.maxStreak, run.streak);
+	run.totalSolveMs += solveMs;
+	if (isFirst) run.firstBlood += 1;
+
+	const keys = shapeKeys(room.categoryId, shape);
+	for (const key of keys) ach.solvedKeys.add(key);
+
+	/** @type {Record<string, number>} */
+	const deltas = { [Counter.SOLVES]: 1 };
+	if (solveMs <= 5000) deltas[Counter.FAST_SOLVES] = 1;
+	if (isFirst) deltas[Counter.FIRST_BLOOD] = 1;
+	for (const [key, by] of Object.entries(deltas)) ach.counters[key] = (ach.counters[key] ?? 0) + by;
+
+	const clientId = player.profile.clientId;
+	recordShapeSolves(clientId, keys, solveMs);
+	bumpCounters(clientId, deltas);
+
+	award(
+		room,
+		player,
+		'solve',
+		achContext(room, player, {
+			solve: {
+				solveMs,
+				timeLeftMs,
+				order,
+				categoryId: room.categoryId,
+				wrongThisRound: run.wrongThisRound
+			}
+		})
+	);
+}
+
+/**
  * Ends the current round, reveals the answer, then schedules what's next.
  * @param {Room} room
  */
 function endRound(room) {
 	clearTimers(room);
 	room.roundActive = false;
+
+	for (const p of room.players.values()) {
+		if (p.run && !room.solved.has(p.id)) p.run.streak = 0;
+	}
+
 	const answer = room.currentShape?.name ?? '';
 	const answerDe = room.currentShape?.nameDe ?? answer;
 	const info = room.currentShape?.info ?? null;
@@ -375,11 +540,15 @@ function endRound(room) {
 
 	if (!isAlive(room)) return cleanupRoom(room);
 
-	room.pauseTimer = setTimeout(() => {
-		if (!isAlive(room)) return cleanupRoom(room);
-		if (isLast) endGame(room);
-		else startRound(room);
-	}, ROUND_END_PAUSE_MS);
+	room.pauseTimer = safeTimeout(
+		`nextRound ${room.code}`,
+		() => {
+			if (!isAlive(room)) return cleanupRoom(room);
+			if (isLast) endGame(room);
+			else startRound(room);
+		},
+		ROUND_END_PAUSE_MS
+	);
 }
 
 /**
@@ -402,11 +571,14 @@ export function endGame(room) {
 		isTie,
 		players: finalPlayers
 	});
-	console.log(`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`);
+	console.log(
+		`[game] ${room.code} game over — winner: ${winners.map((w) => w.name).join(', ') || 'none'}`
+	);
+
+	const winnerIds = new Set(winners.map((w) => w.id));
+	const isContest = room.players.size > 1;
 
 	if (!room.solo) {
-		const winnerIds = new Set(winners.map((w) => w.id));
-		const isContest = room.players.size > 1;
 		for (const p of room.players.values()) {
 			recordGameResult(
 				{ clientId: p.profile.clientId, name: p.profile.name, avatar: p.profile.avatar },
@@ -415,12 +587,62 @@ export function endGame(room) {
 		}
 	}
 
+	const rounds = room.round;
+	const scores = finalPlayers.map((p) => p.score).sort((a, b) => b - a);
+	for (const p of room.players.values()) {
+		const ach = ensureAchState(p);
+		const run = /** @type {import('./achievements.js').Run} */ (p.run);
+		const won = isContest && winnerIds.has(p.id);
+
+		if (room.daily) {
+			finishDaily(room.daily, p.profile.clientId, {
+				score: p.score,
+				solved: run.roundsSolved,
+				totalMs: run.totalSolveMs
+			});
+			const { streak } = bumpDailyStreak(p.profile.clientId, room.daily, previousDay(room.daily));
+			ach.stats.dailyStreak = streak;
+		}
+
+		if (won) ach.stats.gamesWon += 1;
+		ach.stats.gamesPlayed += 1;
+
+		const flawless = rounds >= 3 && run.roundsSolved === rounds && run.wrong === 0;
+		if (flawless) {
+			ach.counters[Counter.FLAWLESS] = (ach.counters[Counter.FLAWLESS] ?? 0) + 1;
+			bumpCounters(p.profile.clientId, { [Counter.FLAWLESS]: 1 });
+		}
+
+		const runnerUpScore = scores.find((s) => s < p.score) ?? 0;
+		award(
+			room,
+			p,
+			'game_end',
+			achContext(room, p, { game: { won, score: p.score, runnerUpScore, rounds, solo: room.solo } })
+		);
+	}
+
+	recordGame({
+		code: room.code,
+		categoryId: room.categoryId,
+		difficulty: room.difficulty,
+		rounds: room.round,
+		players: room.players.size,
+		solo: room.solo,
+		winnerName: !isTie && winners.length === 1 ? winners[0].name : null,
+		topScore: maxScore
+	});
+
 	room.status = 'lobby';
 	room.round = 0;
 	room.currentShape = null;
 	room.solved = new Set();
 	room.usedShapeIds.clear();
-	for (const p of room.players.values()) p.score = 0;
+	for (const p of room.players.values()) {
+		p.score = 0;
+		p.run = null;
+		p.ach = null;
+	}
 	markLobbyReturn(room);
 	roomManager.broadcastState(room);
 }

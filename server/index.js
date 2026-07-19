@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { ClientMsg, ServerMsg, REACTION_EMOJIS } from './protocol.js';
+import { ClientMsg, ServerMsg, REACTION_KEYS } from './protocol.js';
 import { roomManager } from './rooms.js';
 import {
 	startGame,
@@ -12,18 +12,86 @@ import {
 	abortGame,
 	syncJoiner
 } from './game.js';
-import { getLeaderboard, getPlayerStats } from './db.js';
+import {
+	getLeaderboard,
+	getPlayerStats,
+	closeDb,
+	setProfilePrefs,
+	getFullProfile,
+	getFullProfileByPublicId,
+	getProfileByClientId,
+	deletePlayer,
+	getDailyResult,
+	getDailyLeaderboard,
+	getDailyRank,
+	claimDaily,
+	getAchievementRarity
+} from './db.js';
+import { catalogueFor } from './achievements.js';
+import { dailyKey, dailyPlan } from './daily.js';
 import { cleanText } from './moderation.js';
 import { isAvatarStyle, DEFAULT_AVATAR } from './avatars.js';
 import { createRateLimiter } from './ratelimit.js';
-import { RATE_LIMITS, MAX_ROOMS, MAX_MESSAGE_BYTES, RECONNECT_GRACE_MS } from './config.js';
+import {
+	RATE_LIMITS,
+	MAX_ROOMS,
+	MAX_MESSAGE_BYTES,
+	RECONNECT_GRACE_MS,
+	HEARTBEAT_MS,
+	ROOM_IDLE_MS,
+	ROOM_SWEEP_MS,
+	SHUTDOWN_GRACE_MS,
+	MAX_CONNECTIONS,
+	MAX_CONNECTIONS_PER_IP,
+	TRUST_PROXY,
+	DAILY_DIFFICULTY,
+	DAILY_ROUND_DURATION_SEC
+} from './config.js';
+import { guard, safeTimeout, safeInterval, logError, installProcessGuards } from './safety.js';
+import { addConnection, removeConnection, connectionCount, connectionsFrom } from './metrics.js';
+import { resolveIdentity, verify as verifyIdentity } from './identity.js';
+import { createTransfer, redeemTransfer } from './transfer.js';
+import { startBackups } from './backup.js';
+import {
+	adminEnabled,
+	verifyToken,
+	watchAdmin,
+	unwatchAdmin,
+	adminSnapshot,
+	publishAdmin,
+	startAdminPush,
+	runAdminAction,
+	runAdminSearch,
+	inMaintenance
+} from './admin.js';
 
 const WS_PATH = '/ws';
 const ATTACHED = Symbol.for('geoshape.wss.attached');
 
 /**
+ * Sockets that have answered our last ping.
+ * @type {WeakSet<import('ws').WebSocket>}
+ */
+const alive = new WeakSet();
+
+/**
+ * @param {import('http').IncomingMessage} req
+ * @returns {string}
+ */
+function clientIp(req) {
+	if (TRUST_PROXY) {
+		const forwarded = req.headers['x-forwarded-for'];
+		const first = (Array.isArray(forwarded) ? forwarded[0] : (forwarded ?? ''))
+			.split(',')[0]
+			.trim();
+		if (first) return first;
+	}
+	return req.socket.remoteAddress ?? 'unknown';
+}
+
+/**
  * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
- * @param {{ dev?: boolean }} [options] `dev` disables the Origin check (local dev).
+ * @param {{ dev?: boolean }} [options]
  * @returns {WebSocketServer}
  */
 export function attachWebSocketServer(httpServer, { dev = false } = {}) {
@@ -45,14 +113,112 @@ export function attachWebSocketServer(httpServer, { dev = false } = {}) {
 			socket.destroy();
 			return;
 		}
-		wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+
+		const ip = clientIp(req);
+		if (connectionCount() >= MAX_CONNECTIONS || connectionsFrom(ip) >= MAX_CONNECTIONS_PER_IP) {
+			socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
+			socket.destroy();
+			return;
+		}
+
+		wss.handleUpgrade(req, socket, head, (ws) => {
+			addConnection(ip);
+			ws.on('close', () => removeConnection(ip));
+			wss.emit('connection', ws, req);
+		});
 	});
 
-	wss.on('connection', (ws) => handleConnection(/** @type {any} */ (ws)));
+	wss.on('connection', (ws) => {
+		alive.add(ws);
+		ws.on('pong', () => alive.add(ws));
+		handleConnection(ws, wss);
+	});
+
+	const timers = [
+		safeInterval('heartbeat', () => dropDeadSockets(wss), HEARTBEAT_MS),
+		safeInterval('roomSweeper', sweepStaleRooms, ROOM_SWEEP_MS)
+	];
+	startAdminPush(timers);
+	startBackups(timers);
+	if (adminEnabled()) console.log('[admin] dashboard enabled at /admin');
+
+	if (!dev) {
+		const shutdown = createShutdown(httpServer, wss, timers);
+		installProcessGuards({ onFatal: () => shutdown('uncaughtException', 1) });
+		process.once('SIGTERM', () => shutdown('SIGTERM', 0));
+		process.once('SIGINT', () => shutdown('SIGINT', 0));
+	}
 
 	/** @type {any} */ (httpServer)[ATTACHED] = wss;
 	console.log(`[ws] WebSocket server attached on ${WS_PATH}`);
 	return wss;
+}
+
+/**
+ * Terminates sockets that missed the last ping, then pings the rest.
+ * @param {WebSocketServer} wss
+ */
+function dropDeadSockets(wss) {
+	for (const ws of wss.clients) {
+		if (!alive.has(ws)) {
+			ws.terminate();
+			continue;
+		}
+		alive.delete(ws);
+		guard('ping', () => ws.ping());
+	}
+}
+
+function sweepStaleRooms() {
+	for (const room of roomManager.findStale(ROOM_IDLE_MS)) {
+		const idleMin = Math.round((Date.now() - room.lastActivityAt) / 60000);
+		console.log(`[ws] closing idle room ${room.code} (${idleMin}m, ${room.players.size} players)`);
+		cleanupRoom(room);
+		roomManager.evict(room, 'Room closed after a long period of inactivity.');
+	}
+}
+
+/**
+ * Graceful shutdown: tell clients we are going away so they reconnect on their own
+ * instead of hanging, stop the timers, flush the DB, then close.
+
+ * @param {import('http').Server | import('http2').Http2SecureServer} httpServer
+ * @param {WebSocketServer} wss
+ * @param {ReturnType<typeof setInterval>[]} timers
+ */
+function createShutdown(httpServer, wss, timers) {
+	let shuttingDown = false;
+
+	return function shutdown(/** @type {string} */ reason, /** @type {number} */ exitCode) {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		console.log(`[ws] shutting down (${reason}) — ${roomManager.rooms.size} rooms open`);
+
+		for (const timer of timers) clearInterval(timer);
+		for (const room of roomManager.rooms.values()) guard('cleanupRoom', () => cleanupRoom(room));
+
+		const notice = JSON.stringify({ type: ServerMsg.SERVER_SHUTDOWN });
+		for (const ws of wss.clients) {
+			if (ws.readyState === 1) guard('shutdownNotice', () => ws.send(notice));
+		}
+
+		// Force-exit if a socket or the listener refuses to close in time.
+		const hardExit = safeTimeout('hardExit', () => process.exit(exitCode), SHUTDOWN_GRACE_MS * 4);
+		hardExit.unref?.();
+
+		safeTimeout(
+			'closeSockets',
+			() => {
+				for (const ws of wss.clients) ws.close(1012, 'Server restarting');
+				wss.close();
+				httpServer.close(() => {
+					closeDb();
+					process.exit(exitCode);
+				});
+			},
+			SHUTDOWN_GRACE_MS
+		);
+	};
 }
 
 /**
@@ -82,10 +248,13 @@ function isAllowedOrigin(req, dev) {
 /**
  * Per-connection state and message dispatch.
  * @param {import('ws').WebSocket} ws
+ * @param {WebSocketServer} wss Needed by admin actions that address every client.
  */
-function handleConnection(ws) {
+function handleConnection(ws, wss) {
 	/** @type {{ room: import('./rooms.js').Room, playerId: string } | null} */
 	let session = null;
+
+	let isAdmin = false;
 
 	const limiter = createRateLimiter();
 	/** @param {string} key @returns {boolean} true when the action is rate-limited */
@@ -98,6 +267,16 @@ function handleConnection(ws) {
 		if (ws.readyState === 1) ws.send(JSON.stringify(msg));
 	};
 
+	/**
+	 * Hands a freshly minted identity back to the client so it can store the signed
+	 * pair.
+	 * @param {{ clientId: string, sig: string, minted: boolean }} identity
+	 */
+	const issueIdentity = (identity) => {
+		if (!identity.minted) return;
+		send({ type: ServerMsg.IDENTITY, clientId: identity.clientId, sig: identity.sig });
+	};
+
 	ws.on('message', (data) => {
 		if (!limiter.allow('__global', RATE_LIMITS.default.max, RATE_LIMITS.default.windowMs)) return;
 
@@ -108,6 +287,16 @@ function handleConnection(ws) {
 			return send({ type: ServerMsg.ERROR, message: 'Invalid message' });
 		}
 
+		try {
+			dispatch(msg);
+		} catch (err) {
+			logError(`message:${String(msg?.type)}`, err);
+			send({ type: ServerMsg.ERROR, message: 'Something went wrong.' });
+		}
+	});
+
+	/** @param {any} msg */
+	function dispatch(msg) {
 		switch (msg.type) {
 			case ClientMsg.PING:
 				return send({ type: ServerMsg.PONG, t0: msg.t0, serverTime: Date.now() });
@@ -115,10 +304,21 @@ function handleConnection(ws) {
 			case ClientMsg.CREATE: {
 				if (limited('create'))
 					return send({ type: ServerMsg.ERROR, message: 'Too many rooms — slow down.' });
-				const profile = sanitizeProfile(msg.profile);
-				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
+				if (inMaintenance())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'The server is in maintenance — no new rooms right now.',
+						code: 'maintenance'
+					});
 				if (roomManager.rooms.size >= MAX_ROOMS)
-					return send({ type: ServerMsg.ERROR, message: 'Server is at capacity, try again later.' });
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'Server is at capacity, try again later.'
+					});
 				const room = roomManager.createRoom({ solo: !!msg.solo, difficulty: msg.difficulty });
 				const player = roomManager.addPlayer(room, profile, ws);
 				session = { room, playerId: player.id };
@@ -131,8 +331,10 @@ function handleConnection(ws) {
 			case ClientMsg.JOIN: {
 				if (limited('join'))
 					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
-				const profile = sanitizeProfile(msg.profile);
-				if (!profile) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
 				const room = roomManager.getRoom(msg.code);
 
 				const reconnecting =
@@ -228,10 +430,10 @@ function handleConnection(ws) {
 				if (!session || limited('react')) break;
 				const player = session.room.players.get(session.playerId);
 
-				if (player && REACTION_EMOJIS.includes(msg.emoji)) {
+				if (player && REACTION_KEYS.includes(msg.reaction)) {
 					roomManager.broadcast(session.room, {
 						type: ServerMsg.REACTION,
-						emoji: msg.emoji,
+						reaction: msg.reaction,
 						playerId: player.id,
 						name: player.profile.name
 					});
@@ -270,25 +472,202 @@ function handleConnection(ws) {
 			}
 
 			case ClientMsg.GET_STATS: {
-				const clientId =
-					typeof msg.clientId === 'string'
-						? msg.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
-						: '';
-				send({ type: ServerMsg.STATS, stats: getPlayerStats(clientId) });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				const stats = verifyIdentity(clientId, msg.sig) ? getPlayerStats(clientId) : null;
+				send({ type: ServerMsg.STATS, stats });
+				break;
+			}
+
+			case ClientMsg.GET_PROFILE: {
+				if (limited('get_profile')) break;
+				const publicId = typeof msg.publicId === 'string' ? msg.publicId.slice(0, 32) : '';
+				send({ type: ServerMsg.PROFILE, profile: publicProfile(publicId) });
+				break;
+			}
+
+			case ClientMsg.GET_MY_PROFILE: {
+				if (limited('get_my_profile')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.MY_PROFILE, profile: null });
+				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
+				break;
+			}
+
+			case ClientMsg.SET_PROFILE_PREFS: {
+				if (limited('set_profile_prefs')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				setProfilePrefs(clientId, { isPrivate: msg.isPrivate === true });
+				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
+				break;
+			}
+
+			case ClientMsg.GET_DAILY: {
+				if (limited('get_daily')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				send({ type: ServerMsg.DAILY, daily: dailyStatus(clientId, msg.sig) });
+				break;
+			}
+
+			case ClientMsg.START_DAILY: {
+				if (limited('start_daily'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const sanitized = sanitizeProfile(msg.profile);
+				if (!sanitized) return send({ type: ServerMsg.ERROR, message: 'Invalid profile' });
+				const { profile, identity } = sanitized;
+				issueIdentity(identity);
+				if (inMaintenance())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'The server is in maintenance — no new rooms right now.',
+						code: 'maintenance'
+					});
+
+				const day = dailyKey();
+
+				if (!claimDaily(day, profile.clientId))
+					return send({
+						type: ServerMsg.ERROR,
+						message: "You've already played today's challenge.",
+						code: 'daily_done'
+					});
+
+				const plan = dailyPlan(day);
+				const room = roomManager.createRoom({
+					solo: true,
+					difficulty: DAILY_DIFFICULTY,
+					daily: plan
+				});
+				room.categoryId = plan.categoryId;
+				room.maxRounds = plan.shapeIds.length;
+				room.roundDurationSec = DAILY_ROUND_DURATION_SEC;
+
+				const player = roomManager.addPlayer(room, profile, ws);
+				session = { room, playerId: player.id };
+				console.log(`[ws] ${profile.name} started the daily (${day}) in ${room.code}`);
+				send({ type: ServerMsg.CREATED, code: room.code, playerId: player.id });
+				roomManager.broadcastState(room);
+				startGame(room, player);
+				break;
+			}
+
+			case ClientMsg.CREATE_TRANSFER: {
+				if (limited('create_transfer'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				const { code, expiresInMs } = createTransfer(clientId);
+
+				console.log(`[ws] issued a profile transfer code (valid ${expiresInMs / 1000}s)`);
+				send({ type: ServerMsg.TRANSFER_CODE, code, expiresInMs });
+				break;
+			}
+
+			case ClientMsg.REDEEM_TRANSFER: {
+				if (limited('redeem_transfer'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+
+				const identity = redeemTransfer(msg.code);
+				if (!identity)
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'That code is not valid any more.',
+						code: 'bad_code'
+					});
+
+				const stored = getProfileByClientId(identity.clientId);
+				console.log(`[ws] a profile transfer was redeemed${stored ? ` (${stored.name})` : ''}`);
+				send({
+					type: ServerMsg.TRANSFER_DONE,
+					clientId: identity.clientId,
+					sig: identity.sig,
+					name: stored?.name ?? '',
+					avatar: stored?.avatar ?? ''
+				});
+				break;
+			}
+
+			case ClientMsg.DELETE_PROFILE: {
+				if (limited('delete_profile'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts — slow down.' });
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				deletePlayer(clientId);
+				console.log('[ws] a player deleted their profile');
+				send({ type: ServerMsg.PROFILE_DELETED });
+				break;
+			}
+
+			case ClientMsg.ADMIN_AUTH: {
+				if (limited('admin_auth'))
+					return send({ type: ServerMsg.ERROR, message: 'Too many attempts.', code: 'denied' });
+				if (!adminEnabled())
+					return send({
+						type: ServerMsg.ERROR,
+						message: 'Admin is disabled (no GEOSHAPE_ADMIN_TOKEN set).',
+						code: 'denied'
+					});
+				if (!verifyToken(msg.token)) {
+					console.warn('[admin] rejected auth attempt');
+					return send({ type: ServerMsg.ERROR, message: 'Invalid token.', code: 'denied' });
+				}
+				isAdmin = true;
+				console.log('[admin] authenticated');
+				send({ type: ServerMsg.ADMIN_OK });
+				break;
+			}
+
+			case ClientMsg.ADMIN_WATCH: {
+				if (!isAdmin) return denyAdmin();
+				watchAdmin(ws);
+				send({ type: ServerMsg.ADMIN_STATE, state: adminSnapshot() });
+				break;
+			}
+
+			case ClientMsg.ADMIN_UNWATCH: {
+				unwatchAdmin(ws);
+				break;
+			}
+
+			case ClientMsg.ADMIN_ACTION: {
+				if (!isAdmin) return denyAdmin();
+				const result = runAdminAction(msg, wss);
+				console.log(`[admin] ${result}`);
+				send({ type: ServerMsg.NOTICE, text: result, admin: true });
+				publishAdmin();
+				break;
+			}
+
+			case ClientMsg.ADMIN_SEARCH: {
+				if (!isAdmin) return denyAdmin();
+				send({ type: ServerMsg.ADMIN_PLAYERS, players: runAdminSearch(msg) });
 				break;
 			}
 
 			default:
-				send({ type: ServerMsg.ERROR, message: `Unknown message type: ${msg.type}` });
+				send({ type: ServerMsg.ERROR, message: `Unknown message type: ${String(msg.type)}` });
 		}
-	});
+	}
+
+	function denyAdmin() {
+		send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+	}
 
 	ws.on('close', () => {
 		roomManager.unwatchLobby(ws);
+		unwatchAdmin(ws);
 		leaveCurrent(false);
 	});
 	ws.on('error', () => {
 		roomManager.unwatchLobby(ws);
+		unwatchAdmin(ws);
 		leaveCurrent(false);
 	});
 
@@ -313,7 +692,11 @@ function handleConnection(ws) {
 
 		player.connected = false;
 		if (player.disconnectTimer) clearTimeout(player.disconnectTimer);
-		player.disconnectTimer = setTimeout(() => finalizeRemoval(room, playerId), RECONNECT_GRACE_MS);
+		player.disconnectTimer = safeTimeout(
+			`finalizeRemoval ${room.code}`,
+			() => finalizeRemoval(room, playerId),
+			RECONNECT_GRACE_MS
+		);
 
 		if (room.hostId === playerId) {
 			const next = [...room.players.values()].find((p) => p.connected && p.id !== playerId);
@@ -349,9 +732,11 @@ function finalizeRemoval(room, playerId) {
 }
 
 /**
- * Validates, normalizes and moderates an incoming profile.
+ * Validates, normalizes and moderates an incoming profile, and settles its identity.
+ *
  * @param {any} raw
- * @returns {import('./protocol.js').Profile | null}
+ * @returns {{ profile: import('./protocol.js').Profile,
+ *   identity: { clientId: string, sig: string, minted: boolean } } | null}
  */
 function sanitizeProfile(raw) {
 	if (!raw || typeof raw.name !== 'string') return null;
@@ -364,7 +749,64 @@ function sanitizeProfile(raw) {
 	).trim();
 	if (name.length === 0) return null;
 	const avatar = isAvatarStyle(raw.avatar) ? raw.avatar : DEFAULT_AVATAR;
-	const clientId =
-		typeof raw.clientId === 'string' ? raw.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) : '';
-	return { name, avatar, clientId };
+	const identity = resolveIdentity(raw);
+	return { profile: { name, avatar, clientId: identity.clientId }, identity };
+}
+
+/**
+ * A profile as a *visitor* sees it.
+ *
+ * @param {string} publicId
+ */
+function publicProfile(publicId) {
+	const p = getFullProfileByPublicId(publicId);
+	if (!p) return null;
+	if (p.isPrivate) return { publicId: p.publicId, name: p.name, avatar: p.avatar, isPrivate: true };
+	return {
+		...p,
+		catalogue: catalogueFor(new Set(p.achievements.map((a) => a.id))),
+		rarity: getAchievementRarity()
+	};
+}
+
+/**
+ * Your own profile: same payload, never masked, plus the handle you can share.
+ * @param {string} clientId
+ */
+function ownProfile(clientId) {
+	const p = getFullProfile(clientId);
+	if (!p) return null;
+	return {
+		...p,
+		catalogue: catalogueFor(new Set(p.achievements.map((a) => a.id))),
+		rarity: getAchievementRarity()
+	};
+}
+
+/**
+ * Today's challenge as the landing page needs it.
+ *
+ * @param {string} clientId
+ * @param {unknown} sig
+ */
+function dailyStatus(clientId, sig) {
+	const day = dailyKey();
+	const plan = dailyPlan(day);
+	const board = getDailyLeaderboard(day, 10);
+	const me = verifyIdentity(clientId, sig) ? clientId : '';
+	if (!me) return { day, categoryId: plan.categoryId, rounds: plan.shapeIds.length, board };
+
+	const result = getDailyResult(day, me);
+	const profile = getFullProfile(me);
+	return {
+		day,
+		categoryId: plan.categoryId,
+		rounds: plan.shapeIds.length,
+		board,
+		attempted: !!result,
+		result: result && result.finishedAt > 0 ? result : null,
+		rank: getDailyRank(day, me),
+		streak: profile?.dailyStreak ?? 0,
+		bestStreak: profile?.dailyBestStreak ?? 0
+	};
 }
