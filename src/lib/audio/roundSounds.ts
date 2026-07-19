@@ -37,10 +37,12 @@ const tickingClock = createSound('/sounds/tickingClock.mp3', true);
 const revealSound = createSound(
 	'/sounds/chrysalyn-cheerful-traditional-harp-positive-ui-alert- AUFLOSUNG-540977.mp3'
 );
+const revealCountdownSound = createSound('/sounds/countdown-beep-104007.mp3');
 
 const TICKING_CLOCK_BASE_VOLUME = 0.55;
 const TICKING_CLOCK_RAMP_VOLUME = 0.15;
 const REVEAL_SOUND_VOLUME = 0.55;
+const REVEAL_COUNTDOWN_SOUND_VOLUME = 0.55;
 
 export function syncTickingClockSound(active: boolean, rampProgress = 0): void {
 	if (!tickingClock) return;
@@ -64,4 +66,10 @@ export function stopTickingClockSound(): void {
 
 export function playRoundRevealSound(): void {
 	playSound(revealSound, REVEAL_SOUND_VOLUME);
+}
+
+export function playRevealCountdownSound(): void {
+	if (!revealCountdownSound || !settings.soundOn || settings.sfxVolume <= 0) return;
+	if (!revealCountdownSound.paused && !revealCountdownSound.ended) return;
+	playSound(revealCountdownSound, REVEAL_COUNTDOWN_SOUND_VOLUME);
 }

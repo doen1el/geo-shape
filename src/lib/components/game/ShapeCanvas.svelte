@@ -3,12 +3,14 @@
 	import type { RoundInfo, NeighborShape } from '$lib/ws.svelte';
 	import { i18n, t } from '$lib/i18n/index.svelte';
 	import {
+		playRevealCountdownSound,
 		playRoundRevealSound,
 		syncTickingClockSound,
 		stopTickingClockSound
 	} from '$lib/audio/roundSounds';
 
 	const REVEAL_TAIL_MS = 10000;
+	const REVEAL_COUNTDOWN_MS = 3000;
 	const CAP_R = 24;
 	const CAP_W = 12;
 	const CAP_OFF = 5;
@@ -63,6 +65,7 @@
 	);
 
 	let revealSoundPlayed = $state(false);
+	let revealCountdownPlayed = $state(false);
 	let tickingClockActive = $state(false);
 
 	$effect(() => {
@@ -79,8 +82,17 @@
 			playRoundRevealSound();
 		}
 
+		if (showNext && nextRemainingMs <= REVEAL_COUNTDOWN_MS && !revealCountdownPlayed) {
+			revealCountdownPlayed = true;
+			playRevealCountdownSound();
+		}
+
 		if (!revealed) {
 			revealSoundPlayed = false;
+		}
+
+		if (!showNext) {
+			revealCountdownPlayed = false;
 		}
 	});
 
