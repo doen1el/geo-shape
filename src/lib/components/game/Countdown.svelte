@@ -3,11 +3,17 @@
 	import { scale } from 'svelte/transition';
 	import { backOut } from 'svelte/easing';
 	import { t } from '$lib/i18n/index.svelte';
+	import { playStartCountdownSound } from '$lib/audio/roundSounds';
 
 	let { until }: { until: number } = $props();
 
 	let now = $state(Date.now());
+	let countdownSoundPlayed = false;
 	onMount(() => {
+		if (!countdownSoundPlayed) {
+			countdownSoundPlayed = true;
+			playStartCountdownSound();
+		}
 		const id = setInterval(() => (now = Date.now()), 100);
 		return () => clearInterval(id);
 	});
