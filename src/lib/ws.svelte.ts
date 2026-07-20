@@ -237,7 +237,18 @@ class GameSocket {
 
 	gameBadges = $state<string[]>([]);
 
-	roomCheck = $state<{ code: string; exists: boolean; full: boolean } | null>(null);
+	roomCheck = $state<{
+		code: string;
+		exists: boolean;
+		full: boolean;
+		/** Coarse lobby figures, present only for a visible room. */
+		players?: number;
+		maxPlayers?: number;
+		status?: 'lobby' | 'playing' | 'finished';
+		categoryId?: number;
+		difficulty?: 'easy' | 'hard';
+		hostName?: string;
+	} | null>(null);
 	publicRooms = $state<PublicRoomSummary[]>([]);
 
 	#ws: WebSocket | null = null;
@@ -490,7 +501,17 @@ class GameSocket {
 				break;
 			}
 			case ServerMsg.ROOM_EXISTS:
-				this.roomCheck = { code: msg.code, exists: !!msg.exists, full: !!msg.full };
+				this.roomCheck = {
+					code: msg.code,
+					exists: !!msg.exists,
+					full: !!msg.full,
+					players: msg.players,
+					maxPlayers: msg.maxPlayers,
+					status: msg.status,
+					categoryId: msg.categoryId,
+					difficulty: msg.difficulty,
+					hostName: msg.hostName
+				};
 				break;
 			case ServerMsg.PUBLIC_ROOMS:
 				this.publicRooms = msg.rooms ?? [];

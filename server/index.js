@@ -445,11 +445,22 @@ function handleConnection(ws, wss) {
 				if (limited('check_room')) break;
 				const code = typeof msg.code === 'string' ? msg.code.toUpperCase().slice(0, 8) : '';
 				const r = roomManager.getRoom(code);
+				const visible = !!r && !r.solo;
 				send({
 					type: ServerMsg.ROOM_EXISTS,
 					code,
-					exists: !!r && !r.solo,
-					full: !!r && roomManager.isFull(r)
+					exists: visible,
+					full: !!r && roomManager.isFull(r),
+					...(visible
+						? {
+								players: r.players.size,
+								maxPlayers: r.maxPlayers,
+								status: r.status,
+								categoryId: r.categoryId,
+								difficulty: r.difficulty,
+								hostName: (r.hostId ? r.players.get(r.hostId)?.profile.name : '') ?? ''
+							}
+						: {})
 				});
 				break;
 			}

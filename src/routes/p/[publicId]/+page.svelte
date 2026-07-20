@@ -3,6 +3,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import Loading from '$lib/components/ui/Loading.svelte';
 	import ProfileView from '$lib/components/ProfileView.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
@@ -24,7 +25,7 @@
 	</Button>
 
 	{#if profile === undefined}
-		<Card class="p-6 text-center font-bold text-ink/50">{t('common.connecting')}</Card>
+		<Card class="p-6"><Loading /></Card>
 	{:else if profile === null}
 		<Card class="p-6 text-center font-bold text-ink/50">{t('profile.notFound')}</Card>
 	{:else if profile.isPrivate}

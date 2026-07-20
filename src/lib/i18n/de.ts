@@ -56,13 +56,25 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'error.connect': 'Verbindung zum Server fehlgeschlagen.',
 	'error.reconnecting': 'Verbindung verloren — verbinde neu …',
 
+	'error.404.title': 'Diese Seite liegt außerhalb der Karte',
+	'error.404.desc':
+		'Wir konnten die Seite nicht finden.',
+	'error.500.title': 'Bei uns ist etwas schiefgelaufen',
+	'error.500.desc': 'Der Server hat ein Problem. Bitte versuche es gleich noch einmal.',
+	'error.generic.title': 'Etwas ist schiefgelaufen',
+	'error.generic.desc': 'Es ist ein unerwarteter Fehler aufgetreten.',
+	'error.home': 'Zur Startseite',
+	'error.retry': 'Erneut versuchen',
+
 	'rejoin.banner': 'Du warst in Raum {code} — er ist noch offen.',
 	'rejoin.go': 'Zurück',
 	'rejoin.dismiss': 'Schließen',
 
 	'lobby.nameTitle': 'Wie heißt du?',
 	'room.notFound': 'Raum „{code}“ nicht gefunden',
+	'room.notFound.desc': 'Vielleicht stimmt der Code nicht oder der Raum wurde bereits geschlossen.',
 	'room.full': 'Raum „{code}“ ist voll',
+	'room.full.desc': 'Dieser Raum hat sein Spielerlimit erreicht. Versuch es später noch einmal.',
 	'room.codeLabel': 'Raum-Code',
 	'room.copied': 'Kopiert!',
 

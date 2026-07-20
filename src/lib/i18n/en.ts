@@ -54,13 +54,24 @@ export const en = {
 	'error.connect': 'Could not connect to the server.',
 	'error.reconnecting': 'Connection lost — reconnecting…',
 
+	'error.404.title': 'This place is off the map',
+	'error.404.desc': 'We could not find that page.',
+	'error.500.title': 'Something broke on our side',
+	'error.500.desc': 'The server ran into a problem. Please try again in a moment.',
+	'error.generic.title': 'Something went wrong',
+	'error.generic.desc': 'An unexpected error occurred.',
+	'error.home': 'Back to start',
+	'error.retry': 'Try again',
+
 	'rejoin.banner': 'You were in room {code} — it’s still open.',
 	'rejoin.go': 'Rejoin',
 	'rejoin.dismiss': 'Dismiss',
 
 	'lobby.nameTitle': "What's your name?",
 	'room.notFound': 'Room “{code}” not found',
+	'room.notFound.desc': 'The code may be wrong, or the room has already closed.',
 	'room.full': 'Room “{code}” is full',
+	'room.full.desc': 'This room has reached its player limit. Try again later.',
 	'room.codeLabel': 'Room code',
 	'room.copied': 'Copied!',
 

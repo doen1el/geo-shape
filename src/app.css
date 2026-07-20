@@ -120,6 +120,30 @@
 	}
 }
 
+@keyframes gs-load-dot {
+	0%,
+	70%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.55;
+	}
+	35% {
+		transform: translateY(-7px);
+		opacity: 1;
+	}
+}
+
+.gs-load-dot {
+	animation: gs-load-dot 1.05s ease-in-out infinite both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gs-load-dot {
+		animation: none;
+		opacity: 0.7;
+	}
+}
+
 .input-invalid {
 	animation: shake 0.4s ease;
 	border-color: var(--color-danger) !important;

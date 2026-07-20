@@ -2,6 +2,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Loading from '$lib/components/ui/Loading.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { t } from '$lib/i18n/index.svelte';
@@ -144,7 +145,7 @@
 				<p class="text-xs font-bold text-ink/50">{t('transfer.oneTime')}</p>
 			{/if}
 		{:else}
-			<p class="text-sm font-bold text-ink/50">{t('common.connecting')}</p>
+			<Loading size="sm" class="py-2" />
 		{/if}
 	</div>
 </Dialog>

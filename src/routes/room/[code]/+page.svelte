@@ -17,11 +17,13 @@
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import Loading from '$lib/components/ui/Loading.svelte';
+	import ErrorState from '$lib/components/ui/ErrorState.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game } from '$lib/ws.svelte';
 	import { DEF_BY_ID } from '$lib/badges';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { Trophy } from '@lucide/svelte';
+	import { Trophy, MapPinOff, UsersRound, House } from '@lucide/svelte';
 
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
@@ -87,6 +89,11 @@
 
 	const checking = $derived(!room && checkedExists === null);
 	const notFound = $derived(!room && checkedExists === false);
+
+	// Coarse figures from the room check, used to make the lobby behind the join
+	// dialog reflect the real room. Never contains the other players' identities.
+	const preview = $derived(game.roomCheck?.code === code ? game.roomCheck : null);
+	const previewRows = $derived(Math.min(Math.max(preview?.players ?? 3, 1), 6));
 
 	const revealInfo = $derived(
 		game.roundResult
@@ -464,9 +471,7 @@
 
 		<!-- Solo: no lobby, just a brief "starting" screen while it auto-starts -->
 	{:else if solo}
-		<p class="flex flex-1 items-center justify-center font-bold text-ink/60">
-			{t('common.connecting')}
-		</p>
+		<Loading card class="flex-1" />
 
 		<!-- Lobby (multiplayer) -->
 	{:else}
@@ -572,60 +577,154 @@
 		</div>
 	{/if}
 {:else if roomFull}
-	<div class="flex flex-1 items-center justify-center">
-		<Card class="p-8 text-center">
-			<p class="mb-4 text-lg font-extrabold">{t('room.full', { code })}</p>
-			<Button href="/" variant="neutral">{t('common.back')}</Button>
-		</Card>
-	</div>
+	<ErrorState
+		icon={UsersRound}
+		title={t('room.full', { code })}
+		desc={t('room.full.desc')}
+		class="flex-1"
+	>
+		{#snippet actions()}
+			<Button href="/" class="gap-2">
+				<House size={18} aria-hidden="true" />
+				{t('error.home')}
+			</Button>
+		{/snippet}
+	</ErrorState>
 {:else if notFound}
-	<div class="flex flex-1 items-center justify-center">
-		<Card class="p-8 text-center">
-			<p class="mb-4 text-lg font-extrabold">{t('room.notFound', { code })}</p>
-			<Button href="/" variant="neutral">{t('common.back')}</Button>
-		</Card>
-	</div>
+	<ErrorState
+		icon={MapPinOff}
+		title={t('room.notFound', { code })}
+		desc={t('room.notFound.desc')}
+		class="flex-1"
+	>
+		{#snippet actions()}
+			<Button href="/" class="gap-2">
+				<House size={18} aria-hidden="true" />
+				{t('error.home')}
+			</Button>
+		{/snippet}
+	</ErrorState>
 {:else if checking}
-	<p class="flex flex-1 items-center justify-center font-bold text-ink/60">{t('common.connecting')}</p>
+	<Loading card class="flex-1" />
 {:else if needsName}
-	<!-- Skeleton lobby behind the name dialog -->
+	<!-- Skeleton lobby behind the name dialog — mirrors the real lobby layout. -->
 	<div class="grid min-h-0 flex-1 gap-4 sm:grid-cols-2" aria-hidden="true">
-		<Card class="flex flex-col gap-3 p-4">
-			<div class="h-5 w-24 rounded bg-ink/10"></div>
-			{#each [1, 2, 3] as i (i)}
-				<div class="h-12 rounded-base border-2 border-border/20 bg-bg"></div>
+		<div class="flex min-h-0 flex-col gap-4">
+			<Card class="flex min-h-0 flex-1 flex-col gap-3 p-4">
+				<h2 class="text-lg font-extrabold">
+					{t('lobby.players')}
+					{#if preview?.players != null}
+						<span class="text-ink/40">({preview.players}/{preview.maxPlayers})</span>
+					{/if}
+				</h2>
+				{#each { length: previewRows } as _, i (i)}
+					<div class="flex items-center gap-3 rounded-base border-2 border-border bg-bg px-3 py-2">
+						<div class="h-9 w-9 shrink-0 rounded-base border-2 border-border bg-surface"></div>
+						{#if i === 0 && preview?.hostName}
+							<span class="truncate font-bold">{preview.hostName}</span>
+							<span
+								class="ml-auto rounded border-2 border-border bg-secondary px-1.5 py-0.5 text-[10px] font-extrabold"
+							>
+								{t('lobby.host')}
+							</span>
+						{:else}
+							<div class="h-3.5 rounded bg-ink/15" style="width: {[7, 5, 6, 4, 6, 5][i % 6]}rem"></div>
+						{/if}
+					</div>
+				{/each}
+			</Card>
+
+			<Card class="flex min-h-0 flex-1 flex-col gap-3 p-4">
+				<div class="h-6 w-20 rounded bg-ink/10"></div>
+				<div class="h-3 w-3/4 rounded bg-ink/10"></div>
+				<div class="h-3 w-1/2 rounded bg-ink/10"></div>
+				<div class="mt-auto h-11 rounded-base border-2 border-border bg-bg"></div>
+			</Card>
+		</div>
+
+		<Card class="flex min-h-0 flex-col gap-4 p-4">
+			<h2 class="text-lg font-extrabold">{t('settings.title')}</h2>
+
+			{#if preview?.difficulty}
+				<div class="flex flex-col gap-1.5">
+					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+						{t('settings.difficulty')}
+					</span>
+					<div class="flex gap-2">
+						{#each ['easy', 'hard'] as const as d (d)}
+							<span
+								class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold
+									{preview.difficulty === d ? 'bg-main shadow-shadow' : 'bg-surface opacity-40'}"
+							>
+								{t(d === 'easy' ? 'difficulty.easy' : 'difficulty.hard')}
+							</span>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if preview?.categoryId != null}
+				<div class="flex flex-col gap-1.5">
+					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+						{t('settings.category')}
+					</span>
+					<span
+						class="w-fit rounded-base border-2 border-border bg-main px-3 py-1.5 text-sm font-extrabold shadow-shadow"
+					>
+						{t(`category.${preview.categoryId}` as 'category.0')}
+					</span>
+				</div>
+			{/if}
+
+			{#each [0, 1] as i (i)}
+				<div class="flex flex-col gap-1.5">
+					<div class="h-3 w-24 rounded bg-ink/10"></div>
+					<div class="h-3.5 rounded-base border-2 border-border bg-surface"></div>
+				</div>
 			{/each}
-		</Card>
-		<Card class="flex flex-col gap-3 p-4">
-			<div class="h-5 w-28 rounded bg-ink/10"></div>
-			<div class="h-9 w-full rounded bg-ink/5"></div>
-			<div class="h-9 w-full rounded bg-ink/5"></div>
-			<div class="grid grid-cols-2 gap-2">
-				<div class="h-16 rounded-base border-2 border-border/20 bg-bg"></div>
-				<div class="h-16 rounded-base border-2 border-border/20 bg-bg"></div>
-			</div>
+			<div class="mt-auto h-11 rounded-base border-2 border-border bg-main shadow-shadow"></div>
 		</Card>
 	</div>
 {:else}
-	<p class="flex flex-1 items-center justify-center font-bold text-ink/60">{t('common.connecting')}</p>
+	<Loading card class="flex-1" />
 {/if}
 
-<!-- Name dialog for players opening a room link directly (only once the room is confirmed to exist) -->
+<!-- Name dialog for players opening a room link directly -->
 <Dialog open={needsName && checkedExists === true} dismissable={false}>
-	<h2 class="mb-1 text-xl font-extrabold">{t('lobby.nameTitle')}</h2>
-	<p class="mb-4 text-sm font-medium text-ink/50">{code}</p>
-	<form class="flex items-center gap-3" onsubmit={(e) => (e.preventDefault(), confirmName())}>
+	<h2 class="text-xl font-extrabold">{t('lobby.nameTitle')}</h2>
+
+	<div class="mt-3 mb-5 flex items-center gap-2">
+		<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+			{t('room.codeLabel')}
+		</span>
+		<span
+			class="rounded-base border-2 border-border bg-bg px-2.5 py-1 text-sm font-extrabold tracking-[0.25em]"
+		>
+			{code}
+		</span>
+	</div>
+
+	<form class="flex flex-col gap-3" onsubmit={(e) => (e.preventDefault(), confirmName())}>
 		<div class="flex items-center gap-3">
 			<button
 				type="button"
 				onclick={() => profile.cycleAvatar()}
-				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow"
+				title={t('identity.tapAvatar')}
+				aria-label={t('identity.tapAvatar')}
+				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 			>
-				<Avatar style={profile.avatar} seed={nameInput} size={44} alt="avatar" />
+				<Avatar style={profile.avatar} seed={nameInput} size={56} alt="avatar" />
 			</button>
-			<Input bind:value={nameInput} placeholder={t('identity.namePlaceholder')} maxlength={20} />
+			<Input
+				bind:value={nameInput}
+				placeholder={t('identity.namePlaceholder')}
+				maxlength={20}
+				class="flex-1"
+			/>
 		</div>
-		<Button type="submit" disabled={nameInput.trim().length === 0}>{t('join.title')}</Button>
+		<Button type="submit" class="w-full" disabled={nameInput.trim().length === 0}>
+			{t('join.title')}
+		</Button>
 	</form>
 </Dialog>
 

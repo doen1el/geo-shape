@@ -156,4 +156,19 @@ export const CONFETTI_KEY = 'party';
  * @property {string} hostName
  */
 
+/**
+ * Answer to CHECK_ROOM. The lobby figures are present only when the room is
+ * visible; they are deliberately coarse so a guessed code reveals no players.
+ * @typedef {Object} RoomExists
+ * @property {string} code
+ * @property {boolean} exists
+ * @property {boolean} full
+ * @property {number} [players]
+ * @property {number} [maxPlayers]
+ * @property {'lobby' | 'playing' | 'finished'} [status]
+ * @property {number} [categoryId]
+ * @property {'easy' | 'hard'} [difficulty]
+ * @property {string} [hostName]
+ */
+
 export {};
