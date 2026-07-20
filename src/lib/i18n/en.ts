@@ -195,8 +195,6 @@ export const en = {
 	'profile.badges': 'Badges',
 	'profile.badgeCount': '{n} of {total}',
 	'profile.collection': 'Collection',
-	'profile.noBadges': 'No badges yet — play a game!',
-	'profile.noBadgesOther': 'No badges yet.',
 	'profile.needsGame': 'Play a game to start a profile.',
 
 	'account.title': 'Account',

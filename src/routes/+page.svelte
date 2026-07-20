@@ -25,6 +25,18 @@
 	let resumeCode = $state<string | null>(null);
 	let resumeAvailable = $state(false);
 
+	let avatarHint = $state(false);
+	let avatarHintTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function cycleAvatar() {
+		profile.cycleAvatar();
+		avatarHint = true;
+		clearTimeout(avatarHintTimer);
+		avatarHintTimer = setTimeout(() => (avatarHint = false), 1600);
+	}
+
+	onMount(() => () => clearTimeout(avatarHintTimer));
+
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
 	const TIME_STEP = 15;
@@ -173,14 +185,16 @@
 			<div class="group relative shrink-0">
 				<button
 					type="button"
-					onclick={() => profile.cycleAvatar()}
+					onclick={cycleAvatar}
 					aria-label={t('identity.tapAvatar')}
 					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 				>
 					<Avatar style={profile.avatar} seed={name} size={64} alt="avatar" />
 				</button>
 				<div
-					class="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap text-ink opacity-0 shadow-shadow transition-opacity duration-150 group-hover:opacity-100"
+					class="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap text-ink shadow-shadow transition-opacity duration-150 group-hover:opacity-100 {avatarHint
+						? 'opacity-100'
+						: 'opacity-0'}"
 				>
 					{t('identity.tapAvatar')}
 				</div>

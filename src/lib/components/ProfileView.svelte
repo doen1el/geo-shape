@@ -74,12 +74,6 @@
 		{/each}
 	</dl>
 
-	{#if unlockedIds.size === 0}
-		<Card class="p-4 text-center font-bold text-ink/50">
-			{own ? t('profile.noBadges') : t('profile.noBadgesOther')}
-		</Card>
-	{/if}
-
 	{#each grouped as { group, items } (group)}
 		<Card class="p-4">
 			<h2 class="mb-3 text-sm font-extrabold tracking-wide uppercase">

@@ -198,8 +198,6 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'profile.badges': 'Abzeichen',
 	'profile.badgeCount': '{n} von {total}',
 	'profile.collection': 'Sammlung',
-	'profile.noBadges': 'Noch keine Abzeichen — spiel eine Runde!',
-	'profile.noBadgesOther': 'Noch keine Abzeichen.',
 	'profile.needsGame': 'Spiel eine Runde, um ein Profil anzulegen.',
 
 	'account.title': 'Account',
