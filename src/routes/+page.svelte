@@ -175,7 +175,7 @@
 					type="button"
 					onclick={() => profile.cycleAvatar()}
 					aria-label={t('identity.tapAvatar')}
-					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 				>
 					<Avatar style={profile.avatar} seed={name} size={64} alt="avatar" />
 				</button>

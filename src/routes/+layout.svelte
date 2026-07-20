@@ -124,7 +124,7 @@
 						<button
 							onclick={copyCode}
 							title={roomCode}
-							class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+							class="flex h-11 items-center rounded-base border-2 border-border bg-surface px-3 font-extrabold tracking-[0.25em] shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 						>
 							<span class="mr-1 flex items-center text-ink/40">
 								{#if copied}<Check size={16} aria-hidden="true" />{:else}#{/if}
@@ -134,7 +134,7 @@
 						<a
 							href="/leaderboard"
 							title={t('nav.leaderboard')}
-							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 						>
 							<Trophy size={18} aria-hidden="true" />
 							<span class="hidden sm:inline">{t('nav.leaderboard')}</span>
@@ -142,7 +142,7 @@
 						<a
 							href="/profile"
 							title={t('nav.profile')}
-							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+							class="flex h-11 items-center gap-1.5 rounded-base border-2 border-border bg-surface px-3 text-sm font-bold shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 						>
 							<User size={18} aria-hidden="true" />
 							<span class="hidden sm:inline">{t('nav.profile')}</span>
@@ -154,7 +154,7 @@
 						onclick={() => (settingsOpen = true)}
 						title={t('settings.title')}
 						aria-label={t('settings.title')}
-						class="flex h-11 w-11 items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
+						class="flex h-11 w-11 items-center justify-center rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
 					>
 						<Settings size={18} aria-hidden="true" />
 					</button>
