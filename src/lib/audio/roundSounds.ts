@@ -35,7 +35,7 @@ function stopSound(audio: HTMLAudioElement | null): void {
 
 const tickingClock = createSound('/sounds/tickingClock.mp3', true);
 const revealSound = createSound(
-	'/sounds/chrysalyn-cheerful-traditional-harp-positive-ui-alert- AUFLOSUNG-540977.mp3'
+	'/sounds/auflosung.mp3'
 );
 const startCountdownSound = createSound('/sounds/countdown.mp3');
 const revealCountdownSound = createSound('/sounds/countdown-beep-104007.mp3');
