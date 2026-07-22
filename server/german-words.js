@@ -570,6 +570,7 @@ export const GERMAN_WORDS = [
 	"schamhaarschädel",
 	"schandmaul",
 	"scheisse",
+	"scheiße",
 	"scheisser",
 	"scheissgesicht",
 	"scheisshaufen",
