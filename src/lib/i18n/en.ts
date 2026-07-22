@@ -156,6 +156,7 @@ export const en = {
 	'game.theAnswerWas': 'The answer was {answer}',
 	'game.nextRoundIn': 'Next round in {seconds}s',
 	'game.resultsIn': 'Results in {seconds}s',
+	'game.skipReveal': 'Skip',
 
 	'info.capital': 'Capital',
 	'info.countries': 'Countries',

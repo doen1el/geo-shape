@@ -159,6 +159,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'game.theAnswerWas': 'Die Antwort war {answer}',
 	'game.nextRoundIn': 'Nächste Runde in {seconds}s',
 	'game.resultsIn': 'Ergebnis in {seconds}s',
+	'game.skipReveal': 'Überspringen',
 
 	'info.capital': 'Hauptstadt',
 	'info.countries': 'Länder',

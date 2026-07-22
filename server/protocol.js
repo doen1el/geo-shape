@@ -7,6 +7,7 @@ export const ClientMsg = /** @type {const} */ ({
 	START: 'start',
 	PAUSE: 'pause',
 	RESUME: 'resume',
+	SKIP: 'skip',
 	ABORT: 'abort',
 	GUESS: 'guess',
 	SAY: 'say',

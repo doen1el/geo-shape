@@ -682,6 +682,10 @@ class GameSocket {
 		this.#send({ type: ClientMsg.RESUME });
 	}
 
+	skip(): void {
+		this.#send({ type: ClientMsg.SKIP });
+	}
+
 	abort(): void {
 		this.#send({ type: ClientMsg.ABORT });
 	}

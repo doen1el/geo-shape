@@ -66,6 +66,8 @@ let playerSeq = 0;
  * @property {number} roundEndsAt
  * @property {boolean} paused
  * @property {number} pauseRemainingMs
+ * @property {boolean} revealing
+ * @property {boolean} revealIsLast
  * @property {number} countdownEndsAt
  * @property {Set<string>} solved
  * @property {Array<{kind: string, name?: string, text?: string, playerId?: string, points?: number, variant?: string, round?: number}>} chatLog
@@ -127,6 +129,8 @@ export class RoomManager {
 			roundEndsAt: 0,
 			paused: false,
 			pauseRemainingMs: 0,
+			revealing: false,
+			revealIsLast: false,
 			countdownEndsAt: 0,
 			solved: new Set(),
 			chatLog: [],

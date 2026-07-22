@@ -24,7 +24,7 @@
 	import { game } from '$lib/ws.svelte';
 	import { DEF_BY_ID } from '$lib/badges';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { Trophy, MapPinOff, UsersRound, House } from '@lucide/svelte';
+	import { Trophy, MapPinOff, UsersRound, House, SkipForward } from '@lucide/svelte';
 
 	const code = (page.params.code ?? '').toUpperCase();
 	const solo = page.url.searchParams.get('solo') === '1';
@@ -395,9 +395,14 @@
 		{:else if game.round}
 			{@const revealing = !!game.roundResult}
 			<div class="flex min-h-0 flex-1 flex-col gap-3">
-				<!-- Control bar: host pause / end + everyone can leave -->
 				<div class="flex shrink-0 items-center gap-2">
 					<div class="ml-auto flex items-center gap-2">
+						{#if isHost && revealing}
+							<Button size="sm" onclick={() => game.skip()}>
+								<SkipForward size={16} fill="currentColor" aria-hidden="true" />
+								{t('game.skipReveal')}
+							</Button>
+						{/if}
 						{#if isHost && !daily && !revealing}
 							<Button size="sm" variant="neutral" onclick={togglePause}>
 								{game.paused ? t('game.resume') : t('game.pause')}

@@ -9,6 +9,7 @@ import {
 	cleanupRoom,
 	pauseGame,
 	resumeGame,
+	skipReveal,
 	abortGame,
 	syncJoiner
 } from './game.js';
@@ -393,6 +394,13 @@ function handleConnection(ws, wss) {
 				if (!session) break;
 				const player = session.room.players.get(session.playerId);
 				if (player) resumeGame(session.room, player);
+				break;
+			}
+
+			case ClientMsg.SKIP: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				if (player) skipReveal(session.room, player);
 				break;
 			}
 

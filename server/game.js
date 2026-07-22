@@ -214,6 +214,7 @@ export function startGame(room, player) {
 	room.roundActive = false;
 	room.paused = false;
 	room.pauseRemainingMs = 0;
+	room.revealing = false;
 	room.currentShape = null;
 	room.countdownEndsAt = Date.now() + COUNTDOWN_MS;
 
@@ -283,6 +284,7 @@ export function abortGame(room, player) {
 	room.roundActive = false;
 	room.paused = false;
 	room.pauseRemainingMs = 0;
+	room.revealing = false;
 	room.countdownEndsAt = 0;
 	room.currentShape = null;
 	room.solved = new Set();
@@ -352,6 +354,7 @@ function startRound(room) {
 	room.roundActive = true;
 	room.paused = false;
 	room.pauseRemainingMs = 0;
+	room.revealing = false;
 	room.countdownEndsAt = 0;
 
 	roomManager.chat(room, { kind: 'divider', variant: 'round', round: room.round });
@@ -540,15 +543,41 @@ function endRound(room) {
 
 	if (!isAlive(room)) return cleanupRoom(room);
 
+	room.revealing = true;
+	room.revealIsLast = isLast;
 	room.pauseTimer = safeTimeout(
 		`nextRound ${room.code}`,
 		() => {
 			if (!isAlive(room)) return cleanupRoom(room);
-			if (isLast) endGame(room);
-			else startRound(room);
+			advanceFromReveal(room);
 		},
 		ROUND_END_PAUSE_MS
 	);
+}
+
+/**
+ * Leaves the reveal behind: next round, or the final scoreboard.
+ * @param {Room} room
+ */
+function advanceFromReveal(room) {
+	const wasLast = room.revealIsLast;
+	room.revealing = false;
+	if (wasLast) endGame(room);
+	else startRound(room);
+}
+
+/**
+ * Host cuts the reveal short instead of sitting out the full pause.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function skipReveal(room, player) {
+	if (room.hostId !== player.id) return;
+	if (room.status !== 'playing' || !room.revealing) return;
+	clearTimers(room);
+	if (!isAlive(room)) return cleanupRoom(room);
+	console.log(`[game] ${room.code} reveal skipped by host`);
+	advanceFromReveal(room);
 }
 
 /**
@@ -558,6 +587,7 @@ function endRound(room) {
 export function endGame(room) {
 	clearTimers(room);
 	room.roundActive = false;
+	room.revealing = false;
 	room.status = 'finished';
 
 	const finalPlayers = roomManager.toPublic(room).players;
