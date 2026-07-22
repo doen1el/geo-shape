@@ -398,7 +398,7 @@
 				<!-- Control bar: host pause / end + everyone can leave -->
 				<div class="flex shrink-0 items-center gap-2">
 					<div class="ml-auto flex items-center gap-2">
-						{#if isHost && !revealing}
+						{#if isHost && !daily && !revealing}
 							<Button size="sm" variant="neutral" onclick={togglePause}>
 								{game.paused ? t('game.resume') : t('game.pause')}
 							</Button>

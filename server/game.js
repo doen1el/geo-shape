@@ -242,7 +242,7 @@ export function startGame(room, player) {
  * @param {Player} player
  */
 export function pauseGame(room, player) {
-	if (room.hostId !== player.id) return;
+	if (room.hostId !== player.id || room.daily) return;
 	if (room.status !== 'playing' || !room.roundActive || room.paused) return;
 	if (room.roundTimer) clearTimeout(room.roundTimer);
 	room.roundTimer = null;
