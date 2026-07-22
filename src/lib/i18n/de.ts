@@ -36,8 +36,6 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'join.found': 'Raum gefunden!',
 	'join.notFound': 'Kein Raum mit diesem Code',
 
-	'identity.tapAvatar': 'Avatar antippen zum Umstylen',
-
 	'browse.title': 'Öffentliche Lobbies',
 	'browse.join': 'Beitreten',
 	'browse.lobby': 'Lobby',
@@ -57,8 +55,7 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'error.reconnecting': 'Verbindung verloren — verbinde neu …',
 
 	'error.404.title': 'Diese Seite liegt außerhalb der Karte',
-	'error.404.desc':
-		'Wir konnten die Seite nicht finden.',
+	'error.404.desc': 'Wir konnten die Seite nicht finden.',
 	'error.500.title': 'Bei uns ist etwas schiefgelaufen',
 	'error.500.desc': 'Der Server hat ein Problem. Bitte versuche es gleich noch einmal.',
 	'error.generic.title': 'Etwas ist schiefgelaufen',

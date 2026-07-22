@@ -6,7 +6,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Dialog from '$lib/components/ui/Dialog.svelte';
 	import Slider from '$lib/components/ui/Slider.svelte';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import CategorySelect from '$lib/components/game/CategorySelect.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
 	import { game, getLastRoom, forgetRoom } from '$lib/ws.svelte';
@@ -24,18 +24,6 @@
 	let soloTime = $state(90);
 	let resumeCode = $state<string | null>(null);
 	let resumeAvailable = $state(false);
-
-	let avatarHint = $state(false);
-	let avatarHintTimer: ReturnType<typeof setTimeout> | undefined;
-
-	function cycleAvatar() {
-		profile.cycleAvatar();
-		avatarHint = true;
-		clearTimeout(avatarHintTimer);
-		avatarHintTimer = setTimeout(() => (avatarHint = false), 1600);
-	}
-
-	onMount(() => () => clearTimeout(avatarHintTimer));
 
 	const MIN_TIME = 30;
 	const MAX_TIME = 180;
@@ -182,23 +170,7 @@
 	<!-- Identity -->
 	<Card class="p-4">
 		<div class="flex items-center gap-4">
-			<div class="group relative shrink-0">
-				<button
-					type="button"
-					onclick={cycleAvatar}
-					aria-label={t('identity.tapAvatar')}
-					class="block rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
-				>
-					<Avatar style={profile.avatar} seed={name} size={64} alt="avatar" />
-				</button>
-				<div
-					class="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-base border-2 border-border bg-secondary px-2.5 py-1 text-xs font-bold whitespace-nowrap text-ink shadow-shadow transition-opacity duration-150 group-hover:opacity-100 {avatarHint
-						? 'opacity-100'
-						: 'opacity-0'}"
-				>
-					{t('identity.tapAvatar')}
-				</div>
-			</div>
+			<AvatarPicker seed={name} size={64} />
 			<div class="flex min-w-0 flex-1 flex-col gap-1">
 				<Input
 					bind:value={name}

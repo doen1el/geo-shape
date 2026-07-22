@@ -34,8 +34,6 @@ export const en = {
 	'join.found': 'Room found!',
 	'join.notFound': 'No room with that code',
 
-	'identity.tapAvatar': 'Tap avatar to restyle',
-
 	'browse.title': 'Public lobbies',
 	'browse.join': 'Join',
 	'browse.lobby': 'Lobby',

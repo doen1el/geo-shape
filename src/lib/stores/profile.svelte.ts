@@ -43,6 +43,18 @@ export const AVATAR_STYLES = [
 	'triangles'
 ] as const;
 
+export const AVATAR_PICKER_STYLES = [
+	'notionists',
+	'notionists-neutral',
+	'fun-emoji',
+	'avataaars',
+	'avataaars-neutral',
+	'lorelei',
+	'lorelei-neutral',
+	'bottts',
+	'bottts-neutral'
+] as const;
+
 const DEFAULT_STYLE = AVATAR_STYLES[0];
 
 export type Profile = { name: string; avatar: string; clientId: string; clientSig: string };
@@ -93,12 +105,6 @@ class ProfileStore {
 	setAvatar(style: string): void {
 		if (!isStyle(style)) return;
 		this.avatar = style;
-		this.persist();
-	}
-
-	cycleAvatar(): void {
-		const i = AVATAR_STYLES.indexOf(this.avatar as (typeof AVATAR_STYLES)[number]);
-		this.avatar = AVATAR_STYLES[(i + 1) % AVATAR_STYLES.length];
 		this.persist();
 	}
 

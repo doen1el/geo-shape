@@ -16,6 +16,7 @@
 	import Podium from '$lib/components/game/Podium.svelte';
 	import StateInfo from '$lib/components/game/StateInfo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Loading from '$lib/components/ui/Loading.svelte';
 	import ErrorState from '$lib/components/ui/ErrorState.svelte';
@@ -706,15 +707,7 @@
 
 	<form class="flex flex-col gap-3" onsubmit={(e) => (e.preventDefault(), confirmName())}>
 		<div class="flex items-center gap-3">
-			<button
-				type="button"
-				onclick={() => profile.cycleAvatar()}
-				title={t('identity.tapAvatar')}
-				aria-label={t('identity.tapAvatar')}
-				class="shrink-0 rounded-base border-2 border-border bg-surface shadow-shadow transition-all hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
-			>
-				<Avatar style={profile.avatar} seed={nameInput} size={56} alt="avatar" />
-			</button>
+			<AvatarPicker seed={nameInput} size={56} />
 			<Input
 				bind:value={nameInput}
 				placeholder={t('identity.namePlaceholder')}
