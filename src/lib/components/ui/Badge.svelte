@@ -48,7 +48,7 @@
 	aria-expanded={open}
 	aria-describedby="badge-tip-{id}"
 	class={cn(
-		'group relative flex flex-col items-center gap-1 rounded-base border-2 border-border p-2 text-center',
+		'group relative flex flex-col items-center justify-center gap-1 rounded-base border-2 border-border p-2 text-center',
 		locked ? 'bg-bg' : 'bg-main shadow-shadow',
 		className
 	)}
