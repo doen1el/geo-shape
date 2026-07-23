@@ -2,8 +2,10 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import { cn } from '$lib/utils';
 	import { i18n, t } from '$lib/i18n/index.svelte';
-	import { Flame } from '@lucide/svelte';
+	import { game } from '$lib/ws.svelte';
+	import { Flame, Pin } from '@lucide/svelte';
 	import type { PlayerProfile, Tier } from '$lib/ws.svelte';
 
 	type Props = {
@@ -17,6 +19,11 @@
 
 	const unlockedIds = $derived(new Set((profile.achievements ?? []).map((a) => a.id)));
 	const catalogue = $derived(profile.catalogue ?? []);
+	const pinnedId = $derived(profile.pinnedBadge ?? '');
+
+	function togglePin(id: string) {
+		game.setPinnedBadge(pinnedId === id ? '' : id);
+	}
 
 	const GROUPS = ['basics', 'speed', 'streak', 'competition', 'collection', 'daily', 'hidden'];
 
@@ -74,6 +81,13 @@
 		{/each}
 	</dl>
 
+	{#if own}
+		<p class="flex items-center gap-1.5 text-xs font-bold text-ink/50">
+			<Pin size={13} aria-hidden="true" />
+			{t('badge.pinHint')}
+		</p>
+	{/if}
+
 	{#each grouped as { group, items } (group)}
 		<Card class="p-4">
 			<h2 class="mb-3 text-sm font-extrabold tracking-wide uppercase">
@@ -87,11 +101,17 @@
 							: a.counter
 								? (profile.counters?.[a.counter] ?? 0)
 								: 0}
+					{@const unlocked = unlockedIds.has(a.id)}
+					{@const pinnable = own && unlocked}
+					{@const isPinned = pinnedId === a.id}
 					<Badge
 						id={a.id}
-						locked={!unlockedIds.has(a.id)}
-						rarity={unlockedIds.has(a.id) ? (profile.rarity?.[a.id] ?? null) : null}
+						locked={!unlocked}
+						rarity={unlocked ? (profile.rarity?.[a.id] ?? null) : null}
 						progress={a.target ? { have, target: a.target } : null}
+						onActivate={pinnable ? () => togglePin(a.id) : null}
+						pressed={isPinned}
+						class={cn(isPinned && 'ring-2 ring-ink ring-offset-2 ring-offset-surface')}
 					/>
 				{/each}
 			</div>

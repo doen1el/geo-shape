@@ -18,6 +18,7 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import AvatarPicker from '$lib/components/ui/AvatarPicker.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
+	import BadgeChip from '$lib/components/ui/BadgeChip.svelte';
 	import Loading from '$lib/components/ui/Loading.svelte';
 	import ErrorState from '$lib/components/ui/ErrorState.svelte';
 	import { profile } from '$lib/stores/profile.svelte';
@@ -551,6 +552,9 @@
 										</a>
 									{:else}
 										<span class="truncate font-bold">{p.name}</span>
+									{/if}
+									{#if p.pinnedBadge}
+										<BadgeChip id={p.pinnedBadge} />
 									{/if}
 									{#if p.wins > 0}
 										<span

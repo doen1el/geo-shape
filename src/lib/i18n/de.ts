@@ -264,6 +264,9 @@ export const de: Partial<Record<MessageKey, string>> = {
 
 	'badge.new': 'Abzeichen freigeschaltet!',
 	'badge.rarity': '{pct}% der Spieler haben das',
+	'badge.pin': 'Neben meinem Namen zeigen',
+	'badge.unpin': 'Nicht mehr zeigen',
+	'badge.pinHint': 'Tippe ein Abzeichen an, um es in Lobbys neben deinem Namen zu zeigen.',
 	'badge.group.basics': 'Einstieg',
 	'badge.group.speed': 'Tempo',
 	'badge.group.streak': 'Konstanz',

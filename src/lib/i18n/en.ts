@@ -260,6 +260,9 @@ export const en = {
 
 	'badge.new': 'Badge unlocked!',
 	'badge.rarity': '{pct}% of players have this',
+	'badge.pin': 'Show next to my name',
+	'badge.unpin': 'Stop showing this',
+	'badge.pinHint': 'Tap a badge to show it next to your name in lobbies.',
 	'badge.group.basics': 'Getting started',
 	'badge.group.speed': 'Speed',
 	'badge.group.streak': 'Consistency',

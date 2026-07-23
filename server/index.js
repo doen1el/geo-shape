@@ -19,6 +19,8 @@ import {
 	getPlayerStats,
 	closeDb,
 	setProfilePrefs,
+	setPinnedBadge,
+	getUnlocked,
 	getFullProfile,
 	getFullProfileByPublicId,
 	getProfileByClientId,
@@ -528,6 +530,28 @@ function handleConnection(ws, wss) {
 					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
 
 				setProfilePrefs(clientId, { isPrivate: msg.isPrivate === true });
+				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
+				break;
+			}
+
+			case ClientMsg.SET_PINNED_BADGE: {
+				if (limited('set_profile_prefs')) break;
+				const clientId = typeof msg.clientId === 'string' ? msg.clientId : '';
+				if (!verifyIdentity(clientId, msg.sig))
+					return send({ type: ServerMsg.ERROR, message: 'Not authorized.', code: 'denied' });
+
+				const requested = typeof msg.badgeId === 'string' ? msg.badgeId : '';
+				const badgeId = requested && getUnlocked(clientId).includes(requested) ? requested : '';
+				setPinnedBadge(clientId, badgeId);
+
+				if (session) {
+					const player = session.room.players.get(session.playerId);
+					if (player && player.profile.clientId === clientId) {
+						player.pinnedBadge = badgeId;
+						roomManager.broadcastState(session.room);
+					}
+				}
+
 				send({ type: ServerMsg.MY_PROFILE, profile: ownProfile(clientId) });
 				break;
 			}

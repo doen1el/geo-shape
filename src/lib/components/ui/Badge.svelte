@@ -9,6 +9,8 @@
 		progress?: { have: number; target: number } | null;
 		rarity?: number | null;
 		size?: 'sm' | 'default';
+		onActivate?: (() => void) | null;
+		pressed?: boolean;
 		class?: string;
 	};
 
@@ -18,6 +20,8 @@
 		progress = null,
 		rarity = null,
 		size = 'default',
+		onActivate = null,
+		pressed = false,
 		class: className
 	}: Props = $props();
 
@@ -44,8 +48,9 @@
 <button
 	bind:this={root}
 	type="button"
-	onclick={() => (open = !open)}
-	aria-expanded={open}
+	onclick={() => (onActivate ? onActivate() : (open = !open))}
+	aria-expanded={onActivate ? undefined : open}
+	aria-pressed={onActivate ? pressed : undefined}
 	aria-describedby="badge-tip-{id}"
 	class={cn(
 		'group relative flex flex-col items-center justify-center gap-1 rounded-base border-2 border-border p-2 text-center',

@@ -23,6 +23,7 @@ export const ClientMsg = /** @type {const} */ ({
 	GET_PROFILE: 'get_profile',
 	GET_MY_PROFILE: 'get_my_profile',
 	SET_PROFILE_PREFS: 'set_profile_prefs',
+	SET_PINNED_BADGE: 'set_pinned_badge',
 	GET_DAILY: 'get_daily',
 	START_DAILY: 'start_daily',
 	CREATE_TRANSFER: 'create_transfer',
@@ -121,6 +122,7 @@ export const CONFETTI_KEY = 'party';
  * @property {number} roundPoints
  * @property {number} wins
  * @property {string} publicId
+ * @property {string} pinnedBadge The achievement id shown next to the name, or '' for none.
  * @property {boolean} isHost
  * @property {boolean} connected
  * @property {boolean} solved

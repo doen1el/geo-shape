@@ -29,6 +29,7 @@ let playerSeq = 0;
  * @property {number} roundPoints
  * @property {number} wins
  * @property {string} publicId
+ * @property {string} pinnedBadge
  * @property {boolean} connected
  * @property {import('ws').WebSocket} socket
  * @property {ReturnType<typeof setTimeout> | null} disconnectTimer
@@ -191,6 +192,7 @@ export class RoomManager {
 			roundPoints: 0,
 			wins,
 			publicId,
+			pinnedBadge: stored?.pinnedBadge ?? '',
 			connected: true,
 			socket,
 			disconnectTimer: null,
@@ -261,6 +263,7 @@ export class RoomManager {
 				roundPoints: p.roundPoints,
 				wins: p.wins,
 				publicId: p.publicId,
+				pinnedBadge: p.pinnedBadge,
 				isHost: p.id === room.hostId,
 				connected: p.connected,
 				solved: room.solved.has(p.id)

@@ -12,6 +12,7 @@ export type PublicPlayer = {
 	roundPoints: number;
 	wins: number;
 	publicId: string;
+	pinnedBadge: string;
 	isHost: boolean;
 	connected: boolean;
 	solved: boolean;
@@ -142,6 +143,7 @@ export type PlayerProfile = {
 	dailyStreak?: number;
 	dailyBestStreak?: number;
 	lastSeen?: number;
+	pinnedBadge?: string;
 	achievements?: Unlocked[];
 	progress?: Record<number, number>;
 	counters?: Record<string, number>;
@@ -766,6 +768,18 @@ class GameSocket {
 			clientId: profileStore.clientId,
 			sig: profileStore.clientSig,
 			isPrivate
+		});
+	}
+
+	async setPinnedBadge(badgeId: string): Promise<void> {
+		await this.connect();
+		if (!profileStore.clientId) return;
+		if (this.myProfile) this.myProfile = { ...this.myProfile, pinnedBadge: badgeId };
+		this.#send({
+			type: ClientMsg.SET_PINNED_BADGE,
+			clientId: profileStore.clientId,
+			sig: profileStore.clientSig,
+			badgeId
 		});
 	}
 

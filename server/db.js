@@ -44,6 +44,7 @@ function getDb() {
 		addColumn(db, 'players', 'daily_streak', 'INTEGER NOT NULL DEFAULT 0');
 		addColumn(db, 'players', 'daily_best_streak', 'INTEGER NOT NULL DEFAULT 0');
 		addColumn(db, 'players', 'daily_last_day', 'TEXT');
+		addColumn(db, 'players', 'pinned_badge', 'TEXT');
 		db.exec(
 			'CREATE UNIQUE INDEX IF NOT EXISTS idx_players_public_id ON players (public_id) WHERE public_id IS NOT NULL;'
 		);
@@ -848,6 +849,7 @@ export function bumpDailyStreak(clientId, day, yesterday) {
  * @property {number} dailyStreak
  * @property {number} dailyBestStreak
  * @property {number} lastSeen
+ * @property {string} pinnedBadge
  */
 
 /** @param {any} r @returns {PlayerProfile} */
@@ -863,12 +865,13 @@ function toProfile(r) {
 		bestScore: Number(r.best_score),
 		dailyStreak: Number(r.daily_streak),
 		dailyBestStreak: Number(r.daily_best_streak),
-		lastSeen: Number(r.last_seen)
+		lastSeen: Number(r.last_seen),
+		pinnedBadge: r.pinned_badge ? String(r.pinned_badge) : ''
 	};
 }
 
 const PROFILE_COLS = `public_id, name, avatar, is_private, games_played, games_won,
-	total_score, best_score, daily_streak, daily_best_streak, last_seen`;
+	total_score, best_score, daily_streak, daily_best_streak, last_seen, pinned_badge`;
 
 /**
  * Looks a player up by the *public* handle. Never returns the client id.
@@ -919,6 +922,25 @@ export function setProfilePrefs(clientId, prefs) {
 			.run(prefs.isPrivate ? 1 : 0, clientId);
 	} catch (e) {
 		console.error('[db] setProfilePrefs failed:', e instanceof Error ? e.message : e);
+	}
+}
+
+/**
+ * Pins one earned achievement next to the player's name (or clears it with '').
+ *
+ * @param {string} clientId
+ * @param {string} badgeId
+ */
+export function setPinnedBadge(clientId, badgeId) {
+	if (!clientId) return;
+	const conn = getDb();
+	if (!conn) return;
+	try {
+		conn
+			.prepare('UPDATE players SET pinned_badge = ? WHERE client_id = ?')
+			.run(badgeId || null, clientId);
+	} catch (e) {
+		console.error('[db] setPinnedBadge failed:', e instanceof Error ? e.message : e);
 	}
 }
 
