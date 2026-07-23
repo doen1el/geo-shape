@@ -55,6 +55,7 @@ let playerSeq = 0;
  * @property {number} round
  * @property {number} maxRounds
  * @property {boolean} allRounds
+ * @property {boolean} endless
  * @property {number} categoryId
  * @property {number} roundDurationSec
  * @property {number} createdAt
@@ -118,6 +119,7 @@ export class RoomManager {
 			round: 0,
 			maxRounds: DEFAULT_MAX_ROUNDS,
 			allRounds: false,
+			endless: false,
 			categoryId: PLAYABLE_CATEGORY_IDS.includes(1) ? 1 : (PLAYABLE_CATEGORY_IDS[0] ?? 0),
 			roundDurationSec: ROUND_DURATION_SEC,
 			createdAt: Date.now(),
@@ -245,6 +247,7 @@ export class RoomManager {
 			round: room.round,
 			maxRounds: room.maxRounds,
 			allRounds: room.allRounds,
+			endless: room.endless,
 			categoryId: room.categoryId,
 			categorySizes: CATEGORY_SIZES,
 			roundDurationSec: room.roundDurationSec,

@@ -58,6 +58,7 @@
 	const room = $derived(game.room);
 	const me = $derived(room?.players.find((p) => p.id === game.playerId) ?? null);
 	const isHost = $derived(me?.isHost ?? false);
+	const endless = $derived(room?.endless ?? false);
 	const canStart = $derived((room?.players.length ?? 0) >= 2);
 	const categorySize = $derived(room ? (room.categorySizes?.[room.categoryId] ?? Infinity) : Infinity);
 	const roundMax = $derived(Number.isFinite(categorySize) ? categorySize : 10);
@@ -274,6 +275,30 @@
 
 		<div class="flex flex-col gap-1.5">
 			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+				{t('settings.mode')}
+			</span>
+			<div class="flex flex-wrap gap-2">
+				{#each [false, true] as const as endlessMode (endlessMode)}
+					{@const active = (room?.endless ?? false) === endlessMode}
+					<button
+						class="rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all
+							{active ? 'bg-main shadow-shadow' : 'bg-surface'}
+							{isHost ? 'hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none' : ''}
+							{!isHost && !active ? 'opacity-40' : ''}"
+						disabled={!isHost}
+						onclick={() => game.setSettings({ endless: endlessMode })}
+					>
+						{endlessMode ? t('mode.endless') : t('mode.normal')}
+					</button>
+				{/each}
+			</div>
+			<p class="text-[11px] font-medium text-ink/50">
+				{room?.endless ? t('mode.endless.desc') : t('mode.normal.desc')}
+			</p>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 				{t('settings.category')}
 			</span>
 			<CategorySelect
@@ -286,13 +311,13 @@
 		<div class="flex flex-col gap-1.5">
 			<div class="flex items-baseline justify-between gap-2">
 				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">{t('settings.rounds')}</span>
-				<span class="text-sm font-extrabold">{roundsLabel}</span>
+				<span class="text-sm font-extrabold">{endless ? t('mode.endless') : roundsLabel}</span>
 			</div>
 			<Slider
 				bind:value={roundsUi}
 				min={1}
 				max={roundMax}
-				disabled={!isHost}
+				disabled={!isHost || endless}
 				oncommit={commitRounds}
 				aria-label={t('settings.rounds')}
 			/>
@@ -397,7 +422,17 @@
 			<div class="flex min-h-0 flex-1 flex-col gap-3">
 				<div class="flex shrink-0 items-center gap-2">
 					<div class="ml-auto flex items-center gap-2">
-						{#if isHost && revealing}
+						{#if isHost && revealing && endless}
+							{#if !game.roundResult?.isLast}
+								<Button size="sm" onclick={() => game.skip()}>
+									<SkipForward size={16} fill="currentColor" aria-hidden="true" />
+									{t('game.next')}
+								</Button>
+							{/if}
+							<Button size="sm" variant="secondary" onclick={() => game.finish()}>
+								{t('game.finish')}
+							</Button>
+						{:else if isHost && revealing}
 							<Button size="sm" onclick={() => game.skip()}>
 								<SkipForward size={16} fill="currentColor" aria-hidden="true" />
 								{t('game.skipReveal')}

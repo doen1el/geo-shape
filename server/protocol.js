@@ -8,6 +8,7 @@ export const ClientMsg = /** @type {const} */ ({
 	PAUSE: 'pause',
 	RESUME: 'resume',
 	SKIP: 'skip',
+	FINISH: 'finish',
 	ABORT: 'abort',
 	GUESS: 'guess',
 	SAY: 'say',
@@ -136,6 +137,7 @@ export const CONFETTI_KEY = 'party';
  * @property {number} round
  * @property {number} maxRounds
  * @property {boolean} allRounds
+ * @property {boolean} endless
  * @property {number} categoryId
  * @property {Record<number, number>} categorySizes
  * @property {number} roundDurationSec

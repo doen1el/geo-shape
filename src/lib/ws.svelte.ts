@@ -27,6 +27,7 @@ export type PublicRoom = {
 	round: number;
 	maxRounds: number;
 	allRounds: boolean;
+	endless: boolean;
 	categoryId: number;
 	categorySizes: Record<number, number>;
 	roundDurationSec: number;
@@ -85,6 +86,7 @@ export type RoundResult = {
 	nextInMs: number;
 	nextRoundAt: number;
 	isLast: boolean;
+	endless: boolean;
 };
 export type GameOver = { winnerName: string | null; isTie: boolean; players: PublicPlayer[] };
 export type Verdict = 'correct' | 'similar' | 'close' | 'wrong';
@@ -443,7 +445,8 @@ class GameSocket {
 					players: msg.players,
 					nextInMs: msg.nextInMs,
 					nextRoundAt: Date.now() + (msg.nextInMs ?? 0),
-					isLast: !!msg.isLast
+					isLast: !!msg.isLast,
+					endless: !!msg.endless
 				};
 				break;
 			case ServerMsg.PAUSED:
@@ -662,6 +665,7 @@ class GameSocket {
 		categoryId?: number;
 		maxRounds?: number;
 		allRounds?: boolean;
+		endless?: boolean;
 		roundDurationSec?: number;
 		difficulty?: Difficulty;
 		isPublic?: boolean;
@@ -684,6 +688,10 @@ class GameSocket {
 
 	skip(): void {
 		this.#send({ type: ClientMsg.SKIP });
+	}
+
+	finish(): void {
+		this.#send({ type: ClientMsg.FINISH });
 	}
 
 	abort(): void {

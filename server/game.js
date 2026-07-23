@@ -148,7 +148,7 @@ function randomizePathStart(d) {
  * Host changes lobby settings (category / number of rounds).
  * @param {Room} room
  * @param {Player} player
- * @param {{ categoryId?: number, maxRounds?: number, allRounds?: boolean, roundDurationSec?: number, difficulty?: string, isPublic?: boolean, maxPlayers?: number }} settings
+ * @param {{ categoryId?: number, maxRounds?: number, allRounds?: boolean, endless?: boolean, roundDurationSec?: number, difficulty?: string, isPublic?: boolean, maxPlayers?: number }} settings
  */
 export function updateSettings(room, player, settings) {
 	if (room.hostId !== player.id || room.status !== 'lobby') return;
@@ -157,6 +157,10 @@ export function updateSettings(room, player, settings) {
 		PLAYABLE_CATEGORY_IDS.includes(settings.categoryId)
 	) {
 		room.categoryId = settings.categoryId;
+	}
+
+	if (typeof settings.endless === 'boolean') {
+		room.endless = settings.endless;
 	}
 
 	if (settings.allRounds === true) {
@@ -209,6 +213,8 @@ export function startGame(room, player) {
 		p.ach = loadPlayerState(p.profile.clientId);
 	}
 	room.usedShapeIds.clear();
+
+	if (room.endless) room.maxRounds = CATEGORY_SIZES[room.categoryId] ?? MAX_ROUNDS;
 	room.round = 0;
 	room.status = 'playing';
 	room.roundActive = false;
@@ -331,6 +337,25 @@ export function syncJoiner(room, player) {
 		if (room.paused) {
 			send(player, { type: ServerMsg.PAUSED, remainingMs: room.pauseRemainingMs });
 		}
+		return;
+	}
+
+	// An endless reveal can sit open indefinitely, so bring a mid-reveal joiner onto it
+	// instead of stranding them on the "waiting" screen.
+	if (room.revealing && room.endless && room.currentShape) {
+		const shape = room.currentShape;
+		send(player, {
+			type: ServerMsg.ROUND_END,
+			answer: shape.name,
+			answerDe: shape.nameDe ?? shape.name,
+			info: shape.info ?? null,
+			context: shape.context ?? null,
+			revealPath: shape.revealPath ?? null,
+			players: roomManager.toPublic(room).players,
+			nextInMs: 0,
+			isLast: room.revealIsLast,
+			endless: true
+		});
 	}
 }
 
@@ -536,8 +561,9 @@ function endRound(room) {
 		context,
 		revealPath,
 		players: roomManager.toPublic(room).players,
-		nextInMs: ROUND_END_PAUSE_MS,
-		isLast
+		nextInMs: room.endless ? 0 : ROUND_END_PAUSE_MS,
+		isLast,
+		endless: room.endless
 	});
 	console.log(`[game] ${room.code} round ${room.round} ended — answer was ${answer}`);
 
@@ -545,6 +571,9 @@ function endRound(room) {
 
 	room.revealing = true;
 	room.revealIsLast = isLast;
+
+	if (room.endless) return;
+
 	room.pauseTimer = safeTimeout(
 		`nextRound ${room.code}`,
 		() => {
@@ -578,6 +607,22 @@ export function skipReveal(room, player) {
 	if (!isAlive(room)) return cleanupRoom(room);
 	console.log(`[game] ${room.code} reveal skipped by host`);
 	advanceFromReveal(room);
+}
+
+/**
+ * Endless mode: the host ends the run now instead of drawing another shape,
+ * jumping straight to the results.
+ * @param {Room} room
+ * @param {Player} player
+ */
+export function finishEndless(room, player) {
+	if (room.hostId !== player.id) return;
+	if (room.status !== 'playing' || !room.endless) return;
+	clearTimers(room);
+	if (!isAlive(room)) return cleanupRoom(room);
+	room.revealing = false;
+	console.log(`[game] ${room.code} endless run finished by host`);
+	endGame(room);
 }
 
 /**

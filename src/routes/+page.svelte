@@ -18,6 +18,7 @@
 	let busy = $state(false);
 	let errorMsg = $state('');
 	let soloOpen = $state(false);
+	let soloMode = $state<'normal' | 'endless'>('normal');
 	let soloDifficulty = $state<'easy' | 'hard'>('easy');
 	let soloCategory = $state(1);
 	let soloRounds = $state(5);
@@ -134,10 +135,16 @@
 		saveName();
 		try {
 			const newCode = await game.create(profile.toJSON(), true, soloDifficulty);
+			const endless = soloMode === 'endless';
 			game.setSettings({
 				categoryId: soloCategory,
 				roundDurationSec: soloTime,
-				...(soloRounds >= roundMax ? { allRounds: true } : { maxRounds: soloRounds })
+				endless,
+				...(endless
+					? {}
+					: soloRounds >= roundMax
+						? { allRounds: true }
+						: { maxRounds: soloRounds })
 			});
 			game.start();
 			soloOpen = false;
@@ -272,6 +279,29 @@
 
 			<div class="flex flex-col gap-1.5">
 				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
+					{t('settings.mode')}
+				</span>
+				<div class="flex gap-2">
+					{#each ['normal', 'endless'] as const as m (m)}
+						<button
+							type="button"
+							class="flex-1 rounded-base border-2 border-border px-3 py-1.5 text-sm font-extrabold transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none {soloMode ===
+							m
+								? 'bg-main shadow-shadow'
+								: 'bg-surface'}"
+							onclick={() => (soloMode = m)}
+						>
+							{t(`mode.${m}`)}
+						</button>
+					{/each}
+				</div>
+				<p class="text-[11px] font-medium text-ink/50">
+					{t(`mode.${soloMode}.desc` as 'mode.normal.desc')}
+				</p>
+			</div>
+
+			<div class="flex flex-col gap-1.5">
+				<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 					{t('settings.difficulty')}
 				</span>
 				<div class="flex gap-2">
@@ -305,12 +335,15 @@
 					<span class="text-xs font-bold tracking-wide text-ink/50 uppercase">
 						{t('settings.rounds')}
 					</span>
-					<span class="text-sm font-extrabold">{soloRoundsLabel}</span>
+					<span class="text-sm font-extrabold">
+						{soloMode === 'endless' ? t('mode.endless') : soloRoundsLabel}
+					</span>
 				</div>
 				<Slider
 					bind:value={soloRounds}
 					min={1}
 					max={roundMax}
+					disabled={soloMode === 'endless'}
 					aria-label={t('settings.rounds')}
 				/>
 			</div>

@@ -10,6 +10,7 @@ import {
 	pauseGame,
 	resumeGame,
 	skipReveal,
+	finishEndless,
 	abortGame,
 	syncJoiner
 } from './game.js';
@@ -401,6 +402,13 @@ function handleConnection(ws, wss) {
 				if (!session) break;
 				const player = session.room.players.get(session.playerId);
 				if (player) skipReveal(session.room, player);
+				break;
+			}
+
+			case ClientMsg.FINISH: {
+				if (!session) break;
+				const player = session.room.players.get(session.playerId);
+				if (player) finishEndless(session.room, player);
 				break;
 			}
 
