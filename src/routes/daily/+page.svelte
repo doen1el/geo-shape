@@ -11,12 +11,36 @@
 	import { ArrowLeft, Flame } from '@lucide/svelte';
 
 	let starting = $state(false);
+	let now = $state(Date.now());
 
 	const nf = $derived(new Intl.NumberFormat(i18n.locale === 'de' ? 'de-DE' : 'en-US'));
 	const daily = $derived(game.daily);
+	const played = $derived(!!daily?.attempted);
+
+	const resetAt = $derived.by(() => {
+		if (!daily) return 0;
+		const d = new Date(`${daily.day}T00:00:00Z`);
+		d.setUTCDate(d.getUTCDate() + 1);
+		return d.getTime();
+	});
+	const remainingMs = $derived(Math.max(0, resetAt - now));
+	const countdown = $derived.by(() => {
+		const total = Math.floor(remainingMs / 1000);
+		const h = Math.floor(total / 3600);
+		const m = Math.floor((total % 3600) / 60);
+		const s = total % 60;
+		return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+	});
 
 	onMount(() => {
 		game.requestDaily();
+		const id = setInterval(() => (now = Date.now()), 1000);
+		return () => clearInterval(id);
+	});
+
+	// When the reset boundary passes, a fresh challenge is available — pull it in.
+	$effect(() => {
+		if (played && resetAt > 0 && remainingMs === 0) game.requestDaily();
 	});
 
 	async function start() {
@@ -31,8 +55,6 @@
 			starting = false;
 		}
 	}
-
-	const played = $derived(!!daily?.attempted);
 </script>
 
 <div class="flex h-full flex-col gap-4 overflow-y-auto pb-4">
@@ -84,6 +106,10 @@
 					{/if}
 				</div>
 			{/if}
+			<div class="mt-4 rounded-base border-2 border-border bg-bg px-3 py-2 text-center">
+				<p class="text-[11px] font-bold tracking-wide text-ink/50 uppercase">{t('daily.nextIn')}</p>
+				<p class="text-lg font-extrabold tabular-nums">{countdown}</p>
+			</div>
 			<p class="mt-3 text-center text-sm font-bold text-ink/50">{t('daily.comeBack')}</p>
 		{:else}
 			<Button

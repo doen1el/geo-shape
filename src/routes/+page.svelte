@@ -63,8 +63,11 @@
 					: 'input-invalid'
 	);
 
+	const dailyAvailable = $derived(!!game.daily && !game.daily.attempted);
+
 	onMount(() => {
 		game.watchRooms();
+		game.requestDaily();
 		const last = getLastRoom();
 		if (last && last !== game.room?.code) {
 			resumeCode = last;
@@ -226,15 +229,31 @@
 			>
 				{t('solo.button')}
 			</Button>
-			<Button
-				variant="secondary"
-				href={canPlay ? '/daily' : undefined}
-				disabled={!canPlay}
-				class="w-full"
-			>
-				<Calendar size={18} aria-hidden="true" />
-				{t('daily.play')}
-			</Button>
+			<div class="relative flex">
+				<Button
+					variant="secondary"
+					href={canPlay ? '/daily' : undefined}
+					disabled={!canPlay}
+					title={dailyAvailable ? t('daily.available') : undefined}
+					class="w-full"
+				>
+					<Calendar size={18} aria-hidden="true" />
+					{t('daily.play')}
+				</Button>
+				{#if dailyAvailable}
+					<span
+						class="pointer-events-none absolute -top-1.5 -right-1.5 flex h-4 w-4"
+						aria-hidden="true"
+					>
+						<span
+							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-main opacity-75"
+						></span>
+						<span
+							class="relative inline-flex h-4 w-4 rounded-full border-2 border-border bg-main"
+						></span>
+					</span>
+				{/if}
+			</div>
 		</div>
 	</Card>
 

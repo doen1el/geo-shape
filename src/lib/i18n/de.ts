@@ -195,6 +195,8 @@ export const de: Partial<Record<MessageKey, string>> = {
 	'daily.board': 'Heutige Rangliste',
 	'daily.empty': 'Heute war noch niemand fertig — sei die erste Person.',
 	'daily.comeBack': 'Komm morgen wieder, um deine Serie zu halten.',
+	'daily.available': 'Heute verfügbar',
+	'daily.nextIn': 'Nächstes Rätsel in',
 	'daily.tab': 'Heute',
 	'daily.allTime': 'Ewig',
 

@@ -192,6 +192,8 @@ export const en = {
 	'daily.board': "Today's board",
 	'daily.empty': 'Nobody has finished today yet — go first.',
 	'daily.comeBack': 'Come back tomorrow to keep your streak.',
+	'daily.available': 'Available today',
+	'daily.nextIn': 'Next challenge in',
 	'daily.tab': 'Daily',
 	'daily.allTime': 'All-time',
 
