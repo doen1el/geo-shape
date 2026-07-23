@@ -659,7 +659,6 @@ export const GERMAN_WORDS = [
 	"spiesser",
 	"spießer",
 	"spoastie",
-	"spongebob",
 	"sponk",
 	"spritzer",
 	"späner",
