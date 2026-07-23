@@ -64,20 +64,22 @@ export function judgeGuess(guess, answers, neighbors = []) {
 	for (let i = 0; i < answers.length; i++) {
 		if (answers[i].length < 4) continue;
 		const target = normalized[i];
-		if (g.length >= 4 && target.startsWith(g)) return Verdict.CLOSE;
+		if (g.length >= 4 && target.startsWith(g)) return Verdict.SIMILAR;
 
 		if (levenshtein(g, target) <= threshold && commonPrefixLen(g, target) >= 2)
-			return Verdict.CLOSE;
+			return Verdict.SIMILAR;
 
 		if (g.length >= 4 && answers[i].includes(' ')) {
 			for (const word of answers[i].split(/[\s-]+/)) {
-				if (normalize(word) === g) return Verdict.CLOSE;
+				if (normalize(word) === g) return Verdict.SIMILAR;
 			}
 		}
 
-		if (g.length >= 5 && target.includes(g)) return Verdict.CLOSE;
+		if (g.length >= 5 && target.includes(g)) return Verdict.SIMILAR;
 	}
 
+	// A guess that names a real, different bordering country is CLOSE — right region,
+	// wrong country.
 	if (neighbors.some((n) => normalize(n) === g)) return Verdict.CLOSE;
 
 	return Verdict.WRONG;

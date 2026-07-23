@@ -87,7 +87,7 @@ export type RoundResult = {
 	isLast: boolean;
 };
 export type GameOver = { winnerName: string | null; isTie: boolean; players: PublicPlayer[] };
-export type Verdict = 'correct' | 'close' | 'wrong';
+export type Verdict = 'correct' | 'similar' | 'close' | 'wrong';
 export type ChatEntry = {
 	id: number;
 	kind: 'guess' | 'solved' | 'msg' | 'divider';

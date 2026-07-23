@@ -3,7 +3,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import ReactionButton from '$lib/components/game/ReactionButton.svelte';
 	import ReactionOverlay from '$lib/components/game/ReactionOverlay.svelte';
-	import { Send, Check, PartyPopper, Flame } from '@lucide/svelte';
+	import { Send, Check, PartyPopper, Flame, Pencil } from '@lucide/svelte';
 	import { game } from '$lib/ws.svelte';
 	import { t } from '$lib/i18n/index.svelte';
 	import { playerColor } from '$lib/playerColors';
@@ -11,7 +11,7 @@
 	let text = $state('');
 	let listEl = $state<HTMLDivElement | null>(null);
 	let inputEl = $state<HTMLInputElement | null>(null);
-	let banner = $state<{ kind: 'correct' | 'close'; until: number } | null>(null);
+	let banner = $state<{ kind: 'correct' | 'similar' | 'close'; until: number } | null>(null);
 
 	const mySolved = $derived(
 		game.room?.players.find((p) => p.id === game.playerId)?.solved ?? false
@@ -20,7 +20,7 @@
 
 	$effect(() => {
 		const v = game.verdict;
-		if (v && (v.value === 'correct' || v.value === 'close')) {
+		if (v && (v.value === 'correct' || v.value === 'similar' || v.value === 'close')) {
 			banner = { kind: v.value, until: v.at + 1600 };
 			const id = setTimeout(() => (banner = null), 1600);
 			return () => clearTimeout(id);
@@ -89,11 +89,16 @@
 			class="flex items-center justify-center gap-1.5 rounded-base border-2 border-border px-3 py-1 text-center font-extrabold {banner.kind ===
 			'correct'
 				? 'bg-main'
-				: 'bg-[var(--color-main-accent)]/40'}"
+				: banner.kind === 'similar'
+					? 'bg-sand'
+					: 'bg-[var(--color-main-accent)]/40'}"
 		>
 			{#if banner.kind === 'correct'}
 				<PartyPopper size={20} aria-hidden="true" />
 				{t('game.correct')}
+			{:else if banner.kind === 'similar'}
+				<Pencil size={16} class="text-amber-700" aria-hidden="true" />
+				{t('game.similar')}
 			{:else}
 				<Flame size={16} class="text-orange-600" fill="currentColor" aria-hidden="true" />
 				{t('game.close')}

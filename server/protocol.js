@@ -83,6 +83,7 @@ export const ServerMsg = /** @type {const} */ ({
 /** Verdict for a submitted guess. */
 export const Verdict = /** @type {const} */ ({
 	CORRECT: 'correct',
+	SIMILAR: 'similar',
 	CLOSE: 'close',
 	WRONG: 'wrong'
 });
